@@ -1,6 +1,6 @@
 import type { CSSProperties } from 'react'
 import { useMemo, useRef, useState } from 'react'
-import { SANS_ESPACE, useAtlas, type Espace } from '../store/atlas'
+import { aUneCouleur, SANS_COULEUR, SANS_ESPACE, useAtlas, type Espace } from '../store/atlas'
 import { useCompte } from '../store/compte'
 import { oublierImage, stockerImage } from '../store/db'
 import { lisible, peutAjouterImage, QUOTA_IMAGES } from '../store/quota'
@@ -43,7 +43,13 @@ function vueGardee(): Vue {
 }
 
 /** Le style porte la teinte : tout le reste s'en déduit en CSS. */
-const teinte = (hue: number) => ({ '--sc-h': hue }) as CSSProperties
+const teinte = (hue: number) => (aUneCouleur(hue) ? ({ '--sc-h': hue } as CSSProperties) : undefined)
+
+/** Un espace peut n'avoir aucune couleur : il devient alors sobre, et
+    c'est un choix de mise en page autant qu'un choix de goût — dans une
+    grille où tout est teinté, le neutre ressort. */
+const classeCarte = (hue: number, base: string) =>
+  aUneCouleur(hue) ? base : `${base} ${base}--neutre`
 
 export function EspacesPanel() {
   const espaces = useAtlas((s) => s.espaces)
@@ -88,55 +94,60 @@ export function EspacesPanel() {
     setNav('flux')
   }
 
+  /* La tête ne défile pas : le filtre et le tas non trié restent sous
+     la main pendant qu'on parcourt la grille. Seule la liste bouge —
+     c'est elle qui est longue, et elle seule. */
   return (
-    <div className="scroll">
-      <div className="esp__barre">
-        <div className="esp__chercher">
-          <IconSearch size={15} />
-          <input
-            type="search"
-            value={q}
-            onChange={(e) => setQ(e.target.value)}
-            placeholder="Filtrer les espaces"
-            aria-label="Filtrer les espaces"
-          />
+    <div className="esp">
+      <div className="esp__fixe">
+        <div className="esp__barre">
+          <div className="esp__chercher">
+            <IconSearch size={15} />
+            <input
+              type="search"
+              value={q}
+              onChange={(e) => setQ(e.target.value)}
+              placeholder="Filtrer les espaces"
+              aria-label="Filtrer les espaces"
+            />
+          </div>
+
+          <div className="seg" role="group" aria-label="Affichage">
+            <button
+              className="seg__item"
+              aria-current={vue === 'grille'}
+              onClick={() => changerVue('grille')}
+              aria-label="Vue en grille"
+            >
+              <IconGrille size={15} />
+            </button>
+            <button
+              className="seg__item"
+              aria-current={vue === 'liste'}
+              onClick={() => changerVue('liste')}
+              aria-label="Vue en liste"
+            >
+              <IconListe size={15} />
+            </button>
+          </div>
         </div>
 
-        <div className="seg" role="group" aria-label="Affichage">
-          <button
-            className="seg__item"
-            aria-current={vue === 'grille'}
-            onClick={() => changerVue('grille')}
-            aria-label="Vue en grille"
-          >
-            <IconGrille size={15} />
-          </button>
-          <button
-            className="seg__item"
-            aria-current={vue === 'liste'}
-            onClick={() => changerVue('liste')}
-            aria-label="Vue en liste"
-          >
-            <IconListe size={15} />
-          </button>
-        </div>
+        {/* Le tas non trié, en tête et à part — visuellement séparé du
+            reste par un vrai intervalle, pas par un simple ordre. */}
+        {!recherche && (
+          <div className="esp__tete">
+            <NonTries
+              n={parEspace.libres}
+              onOuvrir={() => {
+                setEspaceActif(SANS_ESPACE)
+                setNav('flux')
+              }}
+            />
+          </div>
+        )}
       </div>
 
-      {/* Le tas non trié, en tête et à part — visuellement séparé du
-          reste par un vrai intervalle, pas par un simple ordre. */}
-      {!recherche && (
-        <div className="esp__tete">
-          <NonTries
-            n={parEspace.libres}
-            vue={vue}
-            onOuvrir={() => {
-              setEspaceActif(SANS_ESPACE)
-              setNav('flux')
-            }}
-          />
-        </div>
-      )}
-
+      <div className="scroll">
       <div className={vue === 'grille' ? 'esp__grille' : 'esp__liste'}>
         {visibles.map((e) =>
           vue === 'grille' ? (
@@ -163,31 +174,35 @@ export function EspacesPanel() {
             className={vue === 'grille' ? 'esp__carte esp__carte--neuf' : 'esp__ligne esp__ligne--neuf'}
             onClick={() => setEdite(creerEspace())}
           >
-            <IconPlus size={18} />
+            <span className="esp__plus" aria-hidden="true">
+              <IconPlus size={17} />
+            </span>
             <span>Nouvel espace</span>
           </button>
         )}
       </div>
 
-      {recherche && visibles.length === 0 && (
-        <p className="esp__vide">Aucun espace à ce nom.</p>
-      )}
-
-      {/* Où vivent-ils ? La question se pose vraiment, et la réponse
-          change selon qu'on est connecté ou non. Autant la donner. */}
-      <p className="esp__note">
-        {session ? (
-          <>
-            Tes espaces suivent ton compte : ils sont les mêmes sur tous tes appareils, et se
-            synchronisent avec tes notes.
-          </>
-        ) : (
-          <>
-            Sans compte, tes espaces ne vivent que sur cet appareil. Ils partiront avec lui — les
-            créer maintenant n'est pas perdu pour autant : ils remonteront à la première connexion.
-          </>
+        {recherche && visibles.length === 0 && (
+          <p className="esp__vide">Aucun espace à ce nom.</p>
         )}
-      </p>
+
+        {/* Où vivent-ils ? La question se pose vraiment, et la réponse
+            change selon qu'on est connecté ou non. Autant la donner. */}
+        <p className="esp__note">
+          {session ? (
+            <>
+              Tes espaces suivent ton compte : ils sont les mêmes sur tous tes appareils, et se
+              synchronisent avec tes notes.
+            </>
+          ) : (
+            <>
+              Sans compte, tes espaces ne vivent que sur cet appareil. Ils partiront avec lui — les
+              créer maintenant n'est pas perdu pour autant : ils remonteront à la première
+              connexion.
+            </>
+          )}
+        </p>
+      </div>
 
       {edite && <EspaceEditor id={edite} onFermer={() => setEdite(null)} />}
     </div>
@@ -196,30 +211,24 @@ export function EspacesPanel() {
 
 /* ================= non triés ================= */
 
-function NonTries({ n, vue, onOuvrir }: { n: number; vue: Vue; onOuvrir: () => void }) {
-  const corps = (
-    <>
-      <span className="esp__nom">Non triés</span>
-      <span className="esp__compte">
-        {n} note{n > 1 ? 's' : ''}
-      </span>
-    </>
-  )
-
+/* Le bandeau est le MÊME dans les deux vues : il ne fait pas partie de
+   la grille, il la précède. Le faire changer de forme avec l'affichage
+   reviendrait à le faire passer pour un espace parmi les autres. */
+function NonTries({ n, onOuvrir }: { n: number; onOuvrir: () => void }) {
   return (
-    <button
-      className={vue === 'grille' ? 'esp__carte esp__carte--libre' : 'esp__ligne esp__ligne--libre'}
-      onClick={onOuvrir}
-    >
+    <button className="esp__carte esp__carte--libre" onClick={onOuvrir}>
       <span className="esp__jeton esp__jeton--vide" aria-hidden="true">
-        <IconTas size={vue === 'grille' ? 18 : 16} />
+        <IconTas size={18} />
       </span>
-      <span className="esp__corps">{corps}</span>
-      {vue === 'grille' && (
-        <span className="esp__filigrane" aria-hidden="true">
-          {n}
+      <span className="esp__corps">
+        <span className="esp__nom">Non triés</span>
+        <span className="esp__compte">
+          {n} note{n > 1 ? 's' : ''}
         </span>
-      )}
+      </span>
+      <span className="esp__filigrane" aria-hidden="true">
+        {n}
+      </span>
     </button>
   )
 }
@@ -240,11 +249,11 @@ function CarteEspace({
   const image = useImageUrl(espace.imageId)
 
   return (
-    <div className="esp__carte" style={teinte(espace.hue)}>
+    <div className={classeCarte(espace.hue, 'esp__carte')} style={teinte(espace.hue)}>
       {/* Le halo est un élément à part, sous le contenu : c'est lui qui
           porte la couleur, et il peut donc grandir au survol sans que
           rien d'autre ne bouge — une transformation, pas une mise en page. */}
-      <span className="esp__halo" aria-hidden="true" />
+      {aUneCouleur(espace.hue) && <span className="esp__halo" aria-hidden="true" />}
       {image && <img className="esp__img" src={image} alt="" />}
 
       <button className="esp__hit" onClick={onOuvrir} aria-label={`Ouvrir ${espace.nom}`} />
@@ -283,13 +292,16 @@ function LigneEspace({
   const image = useImageUrl(espace.imageId)
 
   return (
-    <div className="esp__ligne" style={teinte(espace.hue)}>
+    <div className={classeCarte(espace.hue, 'esp__ligne')} style={teinte(espace.hue)}>
       <button className="esp__hit" onClick={onOuvrir} aria-label={`Ouvrir ${espace.nom}`} />
 
       {/* Le jeton reprend la couleur en dégradé, et l'image en vignette
           quand il y en a une : en liste, c'est le seul endroit où la
           couleur a la place d'exister. */}
-      <span className="esp__jeton" aria-hidden="true">
+      <span
+        className={aUneCouleur(espace.hue) ? 'esp__jeton' : 'esp__jeton esp__jeton--neutre'}
+        aria-hidden="true"
+      >
         {image ? <img src={image} alt="" /> : espace.nom.slice(0, 1).toUpperCase()}
       </span>
 
@@ -343,8 +355,11 @@ function EspaceEditor({ id, onFermer }: { id: string; onFermer: () => void }) {
 
         {/* L'aperçu vaut mieux qu'un nuancier : on règle en voyant le
             résultat, pas en imaginant ce qu'il donnera. */}
-        <div className="esp__apercu esp__carte" style={teinte(espace.hue)}>
-          <span className="esp__halo" aria-hidden="true" />
+        <div
+          className={`esp__apercu ${classeCarte(espace.hue, 'esp__carte')}`}
+          style={teinte(espace.hue)}
+        >
+          {aUneCouleur(espace.hue) && <span className="esp__halo" aria-hidden="true" />}
           {image && <img className="esp__img" src={image} alt="" />}
           <span className="esp__filigrane" aria-hidden="true">
             {n}
@@ -369,23 +384,46 @@ function EspaceEditor({ id, onFermer }: { id: string; onFermer: () => void }) {
 
         <div className="field">
           <span className="field__label">Couleur</span>
-          <div className="hue-row">
-            <input
-              className="hue"
-              type="range"
-              min={0}
-              max={359}
-              value={espace.hue}
-              aria-label="Teinte de l'espace"
-              onChange={(e) => majEspace(id, { hue: Number(e.target.value) })}
-              style={{ '--accent': `hsl(${espace.hue} 80% 56%)` } as CSSProperties}
-            />
-            <span
-              className="hue-row__dot"
-              style={{ background: `hsl(${espace.hue} 80% 56%)` }}
-              aria-hidden="true"
-            />
+
+          {/* Sans couleur est un CHOIX, pas une absence de choix : dans une
+              grille où tout est teinté, le neutre finit par ressortir. Le
+              curseur disparaît alors, au lieu de rester là à mentir. */}
+          <div className="seg" role="group" aria-label="Couleur de l'espace" style={{ marginBottom: 12 }}>
+            <button
+              className="seg__item"
+              aria-current={aUneCouleur(espace.hue)}
+              onClick={() => aUneCouleur(espace.hue) || majEspace(id, { hue: 200 })}
+            >
+              Teintée
+            </button>
+            <button
+              className="seg__item"
+              aria-current={!aUneCouleur(espace.hue)}
+              onClick={() => majEspace(id, { hue: SANS_COULEUR })}
+            >
+              Sans couleur
+            </button>
           </div>
+
+          {aUneCouleur(espace.hue) && (
+            <div className="hue-row">
+              <input
+                className="hue"
+                type="range"
+                min={0}
+                max={359}
+                value={espace.hue}
+                aria-label="Teinte de l'espace"
+                onChange={(e) => majEspace(id, { hue: Number(e.target.value) })}
+                style={{ '--accent': `hsl(${espace.hue} 80% 56%)` } as CSSProperties}
+              />
+              <span
+                className="hue-row__dot"
+                style={{ background: `hsl(${espace.hue} 80% 56%)` }}
+                aria-hidden="true"
+              />
+            </div>
+          )}
         </div>
 
         <div className="field">

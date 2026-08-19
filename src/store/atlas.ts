@@ -581,6 +581,19 @@ export function espaceOf(espaces: Espace[], idEspace: string | null) {
  */
 export const SANS_ESPACE = '~sans-espace'
 
+/**
+ * Un espace sans couleur.
+ *
+ * Une teinte négative plutôt qu'un `hue: null` : la colonne est
+ * `int not null` en base, et rendre un champ nullable pour porter un
+ * cas d'absence coûte une migration, un `?? 200` à chaque lecture, et
+ * une ambiguïté durable entre « pas encore choisi » et « choisi : rien ».
+ * Une valeur hors du cercle chromatique dit exactement la seconde.
+ */
+export const SANS_COULEUR = -1
+
+export const aUneCouleur = (hue: number) => hue >= 0
+
 export function filtrer(posts: Post[], query: string, espaceId: string | null, archives = false) {
   const q = query.trim().toLowerCase()
   return posts.filter((p) => {

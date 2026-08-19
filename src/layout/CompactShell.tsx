@@ -36,13 +36,6 @@ const TABS: Onglet[] = [
   { id: 'reglages', label: 'Réglages', icon: IconSettings },
 ]
 
-const TITRES: Record<Nav, string> = {
-  capture: 'Atlas',
-  flux: 'Le Flux',
-  espaces: 'Espaces',
-  compte: 'Compte',
-  reglages: 'Réglages',
-}
 
 export function CompactShell() {
   const nav = useAtlas((s) => s.nav)
@@ -55,19 +48,16 @@ export function CompactShell() {
   const enDetail = nav === 'flux' && selectedId !== null
 
   return (
-    <div className="shell-compact">
+    <div className="shell-compact" data-bande={nav === 'flux'}>
       {/* Une ligne entière de barre de titre pour un mot, c'est de la place
           perdue. Le titre devient une pastille posée dans la zone de
           l'encoche : le contenu remonte, et le nom reste lisible. */}
-      {/* Sur le Flux, le bonjour PREND LA PLACE de la pastille au lieu
-          de s'ajouter à elle : dire « Le Flux » à quelqu'un qu'on vient
-          de saluer par son prénom, sur la même ligne, c'est une
-          étiquette de trop. Partout ailleurs, la pastille reste. */}
-      {nav === 'flux' && !enDetail ? (
-        <Bonjour variante="encoche" />
-      ) : (
-        <h1 className="encoche glass">{enDetail ? 'Capture' : TITRES[nav]}</h1>
-      )}
+      {/* La pastille de titre a été retirée. Elle répétait ce que la barre
+          d'onglets dit déjà — celui qui est en surbrillance EST l'écran
+          courant — et elle coûtait quarante pixels de haut sur chaque
+          écran. La bande n'est donc réservée que lorsqu'elle porte
+          vraiment quelque chose : le bonjour, ou le retour. */}
+      {nav === 'flux' && !enDetail && <Bonjour variante="encoche" />}
 
       {enDetail && (
         <button className="retour glass" onClick={() => select(null)} aria-label="Retour">

@@ -17,6 +17,20 @@
    au survol, il ne se redessine pas.
    ======================================================== */
 
+/* Le filtre et le tas non trié NE DÉFILENT PAS : ils restent sous la
+   main pendant qu'on parcourt la grille. Seule la liste bouge — c'est
+   elle qui est longue, et elle seule. */
+.esp {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.esp__fixe {
+  flex: none;
+}
+
 .esp__barre {
   display: flex;
   align-items: center;
@@ -107,14 +121,18 @@
   transform: scale(0.985);
 }
 
-/* Le halo : une source de lumière propre à chaque espace, ancrée en bas
-   à gauche. Il déborde largement de la carte, ce qui lui permet de
-   grandir au survol sans jamais montrer son bord. */
+/* Le halo : une source de lumière propre à chaque espace, ancrée EN BAS
+   À DROITE. Le coin compte — c'est le coin opposé au nom, donc celui où
+   la couleur peut devenir dense sans jamais gêner la lecture ; et c'est
+   là que le regard finit sa course sur une carte occidentale.
+
+   Il déborde largement, ce qui lui permet de grandir au survol sans
+   jamais montrer son bord. */
 .esp__halo {
   position: absolute;
-  left: -38%;
-  bottom: -62%;
-  width: 156%;
+  right: -34%;
+  bottom: -58%;
+  width: 152%;
   aspect-ratio: 1;
   z-index: -1;
   border-radius: 50%;
@@ -130,9 +148,9 @@
   transform: scale(1.18);
 }
 
-/* Le second ton, en biais depuis le coin opposé. Deux teintes voisines
-   plutôt qu'une seule : c'est ce décalage qui donne la profondeur, et
-   il se calcule à partir de la même variable. */
+/* Le second ton descend du coin OPPOSÉ au halo, en haut à gauche. Deux
+   teintes voisines plutôt qu'une seule : c'est ce décalage qui donne la
+   profondeur, et il se calcule à partir de la même variable. */
 .esp__carte::after {
   content: '';
   position: absolute;
@@ -140,9 +158,9 @@
   z-index: -1;
   pointer-events: none;
   background: linear-gradient(
-    152deg,
-    hsl(calc(var(--sc-h) + 28) 90% 60% / 0.18),
-    transparent 58%
+    148deg,
+    hsl(calc(var(--sc-h) + 22) 90% 60% / 0.15),
+    transparent 62%
   );
 }
 
@@ -255,13 +273,30 @@
   border: 1px dashed var(--border-strong);
   box-shadow: none;
 }
+
+/* PLEINE LARGEUR, et en bandeau. Ce n'est pas une carte parmi les
+   autres : c'est le tas où tombe la majorité des notes. Lui donner la
+   taille d'un espace le ferait passer pour un rangement de plus ;
+   couché sur toute la largeur, il se lit comme ce qu'il est — la
+   porte d'entrée, avant la grille. */
 .esp__carte--libre {
-  min-height: 96px;
-  justify-content: space-between;
+  flex-direction: row;
+  align-items: center;
+  gap: 13px;
+  min-height: 0;
+  padding: 13px 16px;
+  width: 100%;
+}
+.esp__carte--libre .esp__corps {
+  flex: 1;
 }
 .esp__carte--libre .esp__filigrane {
+  top: 50%;
+  right: 18px;
+  transform: translateY(-50%);
+  font-size: 38px;
   color: var(--text-3);
-  opacity: 0.28;
+  opacity: 0.3;
 }
 .esp__carte--libre:hover,
 .esp__ligne--libre:hover {
@@ -300,6 +335,37 @@
   box-shadow: none;
   color: var(--text-3);
   border: 1px solid var(--border-strong);
+}
+
+/* ---------- un espace sans couleur ---------- */
+
+/* Le neutre n'est pas un espace « pas encore réglé » : c'est une carte
+   sobre, qui assume de ne rien afficher. Dans une grille où tout est
+   teinté, c'est même elle qu'on remarque. */
+.esp__carte--neutre {
+  border-color: var(--border);
+}
+.esp__carte--neutre:hover {
+  border-color: var(--border-strong);
+}
+.esp__carte--neutre::after {
+  display: none;
+}
+.esp__carte--neutre .esp__filigrane {
+  color: var(--text-3);
+  opacity: 0.26;
+}
+
+.esp__ligne--neutre:hover {
+  background: var(--surface-sunken);
+  border-color: var(--border);
+}
+
+.esp__jeton--neutre {
+  background: var(--surface-sunken);
+  border: 1px solid var(--border-strong);
+  box-shadow: none;
+  color: var(--text-2);
 }
 
 /* ---------- la ligne ---------- */
@@ -348,16 +414,23 @@
 
 /* ---------- créer ---------- */
 
+/* Il était gris sur gris, en pointillés, et il disparaissait dans la
+   grille. C'est pourtant la seule action de l'écran : il prend donc la
+   couleur de l'app, un médaillon plein, et une graisse de texte qui le
+   met au niveau des noms d'espaces. */
 .esp__carte--neuf,
 .esp__ligne--neuf {
   display: flex;
   align-items: center;
-  gap: 9px;
-  color: var(--text-3);
-  border: 1px dashed var(--border-strong);
-  background: transparent;
+  gap: 11px;
+  color: var(--accent-text);
+  border: 1px dashed var(--accent-line);
+  background: hsl(var(--accent-h) var(--accent-s) var(--accent-l) / 0.07);
   font-size: 14px;
-  transition: color var(--fast) var(--ease), border-color var(--fast) var(--ease);
+  font-weight: 550;
+  transition:
+    background var(--fast) var(--ease),
+    border-color var(--fast) var(--ease);
 }
 .esp__carte--neuf {
   flex-direction: column;
@@ -366,12 +439,82 @@
 }
 .esp__carte--neuf:hover,
 .esp__ligne--neuf:hover {
-  color: var(--text-2);
-  border-color: var(--text-3);
+  background: hsl(var(--accent-h) var(--accent-s) var(--accent-l) / 0.14);
+  border-color: hsl(var(--accent-h) var(--accent-s) var(--accent-l) / 0.6);
 }
 .esp__ligne--neuf {
-  padding: 12px;
+  padding: 11px 12px;
   border-radius: var(--r-sm);
+}
+
+.esp__plus {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  color: var(--accent-ink);
+  background: var(--accent);
+  box-shadow: 0 4px 14px var(--accent-glow);
+}
+
+/* ---------- le bandeau, en tête du flux ---------- */
+
+/* Le même objet que la carte, couché et élargi : on entre dans le lieu
+   qu'on a vu dans la grille, et on le reconnaît avant de lire son nom. */
+.esp__banniere {
+  min-height: 92px;
+  margin: 0 16px 10px;
+  border-radius: var(--r-lg);
+  cursor: default;
+}
+.esp__banniere:active {
+  transform: none;
+}
+.esp__banniere .esp__corps {
+  pointer-events: auto;
+}
+.esp__banniere .esp__nom {
+  font-size: 19px;
+  font-weight: 620;
+  letter-spacing: -0.02em;
+}
+.esp__banniere .esp__filigrane {
+  font-size: 62px;
+  right: 58px;
+}
+
+/* La sortie est un bouton PLEIN, posé sur le coin : sur une bannière
+   teintée ou couverte d'une image, une croix nue disparaîtrait. */
+.esp__quitter {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 3;
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  color: var(--text-2);
+  background: var(--surface-solid);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-sm);
+  transition: color var(--fast) var(--ease);
+}
+.esp__quitter:hover {
+  color: var(--text);
+}
+
+@media (max-width: 560px) {
+  .esp__banniere {
+    margin: 0 12px 10px;
+    min-height: 84px;
+  }
+  .esp__banniere .esp__filigrane {
+    font-size: 50px;
+  }
 }
 
 /* ---------- l'aperçu, dans la feuille de réglage ---------- */

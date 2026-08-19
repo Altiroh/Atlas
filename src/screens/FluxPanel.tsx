@@ -1,5 +1,6 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useState, type CSSProperties } from 'react'
 import {
+  aUneCouleur,
   espaceOf,
   filtrer,
   grouperParJour,
@@ -29,6 +30,59 @@ import { useImageUrl } from '../ui/useImageUrl'
    · vers la droite → Classer, le tri « tiré par le projet » ;
    · vers la gauche → Archiver, qui ne supprime jamais rien.
    --------------------------------------------------------------- */
+
+/* ---------------------------------------------------------------
+   Le bandeau d'espace.
+
+   Il réemploie exactement la matière des cartes du panneau Espaces —
+   mêmes classes, même halo déduit de `--sc-h`, même filigrane. Ce
+   n'est pas de l'économie de code : c'est ce qui fait qu'on RECONNAÎT
+   l'espace en arrivant. Une carte orange dans la grille, un bandeau
+   orange dans le flux : c'est le même lieu, et ça se voit avant qu'on
+   ait lu le nom.
+   --------------------------------------------------------------- */
+
+function EnTete({
+  titre,
+  hue,
+  imageId,
+  n,
+  onFermer,
+}: {
+  titre: string
+  hue?: number
+  imageId?: string | null
+  n: number
+  onFermer: () => void
+}) {
+  const image = useImageUrl(imageId ?? null)
+  const teinte = hue !== undefined && aUneCouleur(hue)
+
+  return (
+    <div
+      className={`esp__carte esp__banniere${teinte ? '' : ' esp__carte--neutre'}`}
+      style={teinte ? ({ '--sc-h': hue } as CSSProperties) : undefined}
+    >
+      {teinte && <span className="esp__halo" aria-hidden="true" />}
+      {image && <img className="esp__img" src={image} alt="" />}
+
+      <span className="esp__filigrane" aria-hidden="true">
+        {n}
+      </span>
+
+      <span className="esp__corps">
+        <span className="esp__nom">{titre}</span>
+        <span className="esp__compte">
+          {n} note{n > 1 ? 's' : ''}
+        </span>
+      </span>
+
+      <button className="esp__quitter" onClick={onFermer} aria-label="Revenir à tout le flux">
+        <IconClose size={16} />
+      </button>
+    </div>
+  )
+}
 
 export function FluxPanel({ onPick }: { onPick?: (id: string) => void }) {
   const posts = useAtlas((s) => s.posts)
@@ -66,22 +120,28 @@ export function FluxPanel({ onPick }: { onPick?: (id: string) => void }) {
         />
       </div>
 
-      {/* « Non triés » n'est pas un espace : il n'a pas de couleur, et sa
-          pastille reste neutre. C'est ce qui empêche de le confondre avec
-          un rangement qu'on aurait fait. */}
+      {/* Entrer dans un espace, ce n'est pas « appliquer un filtre » :
+          c'est ouvrir un lieu. Il se présente donc avec ce que
+          l'utilisateur y a mis — son nom, sa couleur, son image — plutôt
+          qu'avec une pastille grise qui pourrait dire n'importe quoi.
+
+          « Non triés » a droit au même bandeau, en neutre : c'est bien
+          un lieu, mais personne ne l'a décoré. */}
       {espaceActif === SANS_ESPACE ? (
-        <button className="filtre" onClick={() => setEspaceActif(null)}>
-          <span className="filtre__dot filtre__dot--vide" />
-          Non triés
-          <IconClose size={14} />
-        </button>
+        <EnTete
+          titre="Non triés"
+          n={posts.filter((p) => !p.espaceId && p.etat !== 'archivee').length}
+          onFermer={() => setEspaceActif(null)}
+        />
       ) : (
         espace && (
-          <button className="filtre" onClick={() => setEspaceActif(null)}>
-            <span className="filtre__dot" style={{ background: `hsl(${espace.hue} 80% 56%)` }} />
-            {espace.nom}
-            <IconClose size={14} />
-          </button>
+          <EnTete
+            titre={espace.nom}
+            hue={espace.hue}
+            imageId={espace.imageId}
+            n={posts.filter((p) => p.espaceId === espace.id && p.etat !== 'archivee').length}
+            onFermer={() => setEspaceActif(null)}
+          />
         )
       )}
 

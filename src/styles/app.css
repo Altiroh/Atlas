@@ -1728,9 +1728,16 @@
 .shell-compact .pane {
   /* le minimum protège du cas où iOS ne renvoie aucune marge sûre —
      sans lui, le contenu passe sous l'encoche */
-  padding-top: calc(max(var(--safe-top), 10px) + 40px);
+  padding-top: calc(max(var(--safe-top), 10px) + 8px);
   padding-left: var(--safe-left);
   padding-right: var(--safe-right);
+}
+
+/* La bande du haut n'est réservée QUE quand elle porte quelque chose —
+   le bonjour, ou le bouton de retour. Ailleurs, ces quarante pixels
+   revenaient au contenu. */
+.shell-compact[data-bande='true'] .pane {
+  padding-top: calc(max(var(--safe-top), 10px) + 40px);
 }
 
 /* la carte de capture n'a plus besoin de sa marge haute d'origine */
