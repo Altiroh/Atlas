@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { libelleHeure, libelleJour, titreDe, useAtlas } from '../store/atlas'
 import { oublierImage, stockerImage } from '../store/db'
+import { peutAjouterImage } from '../store/quota'
 import { IconBolt, IconImage, IconTrash } from '../ui/Icon'
 import { useImageUrl } from '../ui/useImageUrl'
 import { MindMap, carteInitiale } from './MindMap'
@@ -91,6 +92,11 @@ export function PostEditor() {
 
   const importer = async (f: File | undefined) => {
     if (!f) return
+    // le plafond se dit AVANT le travail de réduction, pas après
+    if (!peutAjouterImage(f.size)) {
+      alert("Plafond atteint : impossible d'ajouter une image. Le texte, lui, passe toujours.")
+      return
+    }
     setEnvoi(true)
     try {
       if (post.coverId) oublierImage(post.coverId)

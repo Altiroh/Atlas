@@ -3246,3 +3246,51 @@
   min-height: 76px;
   font-size: 18px;
 }
+
+/* ========================================================
+   49. Le quota du compte
+   ======================================================== */
+
+.quota { margin-bottom: 4px; }
+
+.quota__ligne {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin-bottom: 7px;
+}
+
+.quota__titre { flex: 1; font-size: 13px; font-weight: 540; }
+
+.quota__chiffre {
+  font-size: 12.5px;
+  font-weight: 560;
+  font-variant-numeric: tabular-nums;
+}
+.quota__chiffre span { color: var(--text-3); font-weight: 440; }
+
+.quota__barre {
+  height: 6px;
+  border-radius: 99px;
+  background: var(--surface-sunken);
+  overflow: hidden;
+}
+
+.quota__barre span {
+  display: block;
+  height: 100%;
+  border-radius: 99px;
+  background: var(--accent);
+  transition: width var(--slow) var(--ease), background var(--mid) var(--ease);
+}
+
+.quota__note { margin-top: 7px; font-size: 12px; line-height: 1.5; color: var(--text-3); }
+
+/* la barre change de ton avant de changer de sens */
+.quota[data-etat='proche'] .quota__barre span { background: hsl(36 84% 52%); }
+.quota[data-etat='proche'] .quota__note { color: hsl(36 80% 40%); }
+.quota[data-etat='plein'] .quota__barre span { background: hsl(2 78% 54%); }
+.quota[data-etat='plein'] .quota__note { color: hsl(2 72% 48%); }
+
+:root[data-theme='dark'] .quota[data-etat='proche'] .quota__note { color: hsl(36 90% 64%); }
+:root[data-theme='dark'] .quota[data-etat='plein'] .quota__note { color: hsl(2 90% 70%); }

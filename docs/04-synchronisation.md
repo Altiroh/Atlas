@@ -134,75 +134,11 @@ recupererImage(id)
 
 Rien d'autre. Tout le difficile est côté client.
 
-### Le schéma à créer (Supabase / PostgreSQL)
+### Le schéma à créer
 
-```sql
-create table espaces (
-  id          text primary key,
-  nom         text not null default '',
-  hue         int  not null default 200,
-  image_id    text,
-  ordre       int  not null default 0,
-  updated_at  bigint not null,
-  supprime    boolean not null default false,
-  proprietaire uuid not null default auth.uid()
-);
-
-create table posts (
-  id          text primary key,
-  titre       text not null default '',
-  texte       text not null default '',
-  espace_id   text,
-  cover_id    text,
-  carte       jsonb,
-  etat        text not null default 'libre',
-  created_at  bigint not null,
-  updated_at  bigint not null,
-  supprime    boolean not null default false,
-  proprietaire uuid not null default auth.uid()
-);
-
-create index on posts (updated_at);
-create index on espaces (updated_at);
-
--- Chacun ne voit que ses propres lignes.
-alter table posts   enable row level security;
-alter table espaces enable row level security;
-create policy "les miennes" on posts   for all using (proprietaire = auth.uid());
-create policy "les miens"   on espaces for all using (proprietaire = auth.uid());
-
--- LA règle du § 3.3 : on refuse d'écraser par une version plus ancienne.
-create or replace function refuser_perime() returns trigger as $$
-begin
-  if old.updated_at > new.updated_at then return old; end if;
-  return new;
-end $$ language plpgsql;
-
-create trigger posts_perime   before update on posts   for each row execute function refuser_perime();
-create trigger espaces_perime before update on espaces for each row execute function refuser_perime();
-```
-
-### Le stockage des images
-
-Créer un bucket **privé** nommé `images`, puis poser ses règles — **elles manquaient au document
-précédent**, et sans elles le bucket est soit totalement inaccessible, soit ouvert à tous.
-
-```sql
--- Le bucket est privé. Chacun ne touche qu'à SON dossier, dont le nom est
--- son identifiant : c'est exactement le chemin qu'écrit le client,
--- `{proprietaire}/{image}`.
-create policy "images — lire les miennes"
-  on storage.objects for select
-  using (bucket_id = 'images' and (storage.foldername(name))[1] = auth.uid()::text);
-
-create policy "images — déposer les miennes"
-  on storage.objects for insert
-  with check (bucket_id = 'images' and (storage.foldername(name))[1] = auth.uid()::text);
-
-create policy "images — supprimer les miennes"
-  on storage.objects for delete
-  using (bucket_id = 'images' and (storage.foldername(name))[1] = auth.uid()::text);
-```
+Tout est dans **[docs/schema.sql](schema.sql)** — à coller d'un bloc dans l'éditeur SQL du
+projet. Le script est rejouable : deux tables, la sécurité au niveau des lignes, la règle
+anti-écrasement, et le bucket privé avec ses règles.
 
 ---
 

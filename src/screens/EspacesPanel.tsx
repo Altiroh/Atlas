@@ -2,6 +2,7 @@ import type { CSSProperties } from 'react'
 import { useRef, useState } from 'react'
 import { useAtlas, type Espace } from '../store/atlas'
 import { oublierImage, stockerImage } from '../store/db'
+import { peutAjouterImage } from '../store/quota'
 import { IconClose, IconImage, IconPencil, IconPlus, IconTrash } from '../ui/Icon'
 import { useImageUrl } from '../ui/useImageUrl'
 
@@ -98,6 +99,11 @@ function EspaceEditor({ id, onFermer }: { id: string; onFermer: () => void }) {
 
   const importer = async (f: File | undefined) => {
     if (!f) return
+    // le plafond se dit AVANT le travail de réduction, pas après
+    if (!peutAjouterImage(f.size)) {
+      alert("Plafond atteint : impossible d'ajouter une image. Le texte, lui, passe toujours.")
+      return
+    }
     if (espace.imageId) oublierImage(espace.imageId)
     majEspace(id, { imageId: await stockerImage(f) })
   }

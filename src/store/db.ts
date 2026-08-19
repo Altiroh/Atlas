@@ -94,10 +94,60 @@ export async function preparerImage(fichier: File): Promise<Blob> {
   })
 }
 
+/* ---------------------------------------------------------------
+   Le registre des tailles.
+
+   Connaître la place occupée sans relire tous les fichiers : une
+   somme sur les blobs obligerait à les charger tous en mémoire, ce
+   qui coûterait de plus en plus cher à mesure que la base grandit.
+   On tient donc un registre, mis à jour à chaque dépôt et à chaque
+   retrait. Lire l'occupation devient instantané.
+   --------------------------------------------------------------- */
+
+const REGISTRE = 'atlas.images.tailles'
+
+function lireRegistre(): Record<string, number> {
+  try {
+    return JSON.parse(localStorage.getItem(REGISTRE) ?? '{}') as Record<string, number>
+  } catch {
+    return {}
+  }
+}
+
+function ecrireRegistre(r: Record<string, number>) {
+  try {
+    localStorage.setItem(REGISTRE, JSON.stringify(r))
+  } catch {
+    /* sans importance : au pire l'occupation est sous-estimée */
+  }
+}
+
+/** Place occupée par les images, en octets. */
+export function octetsImages(): number {
+  return Object.values(lireRegistre()).reduce((n, v) => n + v, 0)
+}
+
+export function nombreImages(): number {
+  return Object.keys(lireRegistre()).length
+}
+
 export async function stockerImage(fichier: File): Promise<string> {
   const id = `img${Date.now().toString(36)}${Math.random().toString(36).slice(2, 7)}`
-  await db.poser('images', await preparerImage(fichier), id)
+  const blob = await preparerImage(fichier)
+  await db.poser('images', blob, id)
+  ecrireRegistre({ ...lireRegistre(), [id]: blob.size })
   return id
+}
+
+/** Recompte à partir des fichiers réels — pour rattraper un registre perdu. */
+export async function refaireRegistre(): Promise<void> {
+  const cles = await tx<IDBValidKey[]>('images', 'readonly', (s) => s.getAllKeys())
+  const blobs = await db.tout<Blob>('images')
+  const r: Record<string, number> = {}
+  cles.forEach((c, i) => {
+    if (blobs[i]) r[String(c)] = blobs[i].size
+  })
+  ecrireRegistre(r)
 }
 
 /* Les URL d'objet sont conservées pour la session : les recréer à chaque
@@ -121,4 +171,7 @@ export function oublierImage(id: string) {
     urls.delete(id)
   }
   void db.effacer('images', id)
+  const r = lireRegistre()
+  delete r[id]
+  ecrireRegistre(r)
 }
