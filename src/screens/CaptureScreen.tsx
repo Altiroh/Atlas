@@ -15,6 +15,7 @@ export function CaptureScreen({ autoFocus = true }: { autoFocus?: boolean }) {
   const majPost = useAtlas((s) => s.majPost)
   const select = useAtlas((s) => s.select)
   const setNav = useAtlas((s) => s.setNav)
+  const setFormeInitiale = useAtlas((s) => s.setFormeInitiale)
 
   const [texte, setTexte] = useState('')
   const [espaceId, setEspaceId] = useState<string | null>(null)
@@ -41,7 +42,9 @@ export function CaptureScreen({ autoFocus = true }: { autoFocus?: boolean }) {
     if (forme === 'texte') {
       ref.current?.focus()
     } else {
-      // on n'enchaîne pas : on va travailler cette idée-là
+      // on n'enchaîne pas : on va travailler cette idée-là, ET on ouvre
+      // directement dans la forme demandée — pas sur le texte
+      setFormeInitiale(forme)
       select(id)
       setNav('flux')
     }

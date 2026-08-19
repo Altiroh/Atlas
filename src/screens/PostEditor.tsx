@@ -6,7 +6,7 @@ import { useImageUrl } from '../ui/useImageUrl'
 import { MindMap, carteInitiale } from './MindMap'
 import { Dessin } from './Dessin'
 import { Confirmation } from '../ui/Confirmation'
-import { IconPlus } from '../ui/Icon'
+import { IconCarte, IconPencil, IconPlus, IconTexte } from '../ui/Icon'
 
 /* ---------------------------------------------------------------
    L'éditeur de post. Deux manières de travailler la même matière :
@@ -25,10 +25,16 @@ type Mode = 'texte' | 'carte' | 'dessin'
 /* Un post n'a pas UN type : il a des FORMES, et il peut en cumuler.
    Le texte est toujours là ; la carte et le dessin s'ajoutent quand
    on en a besoin, et ne se retirent jamais tout seuls. */
-const FORMES: { id: Mode; libelle: string }[] = [
-  { id: 'texte', libelle: 'Texte' },
-  { id: 'carte', libelle: 'Carte' },
-  { id: 'dessin', libelle: 'Dessin' },
+const FORMES: {
+  id: Mode
+  libelle: string
+  icone: typeof IconTexte
+  quoi: string
+  indice: string
+}[] = [
+  { id: 'texte', libelle: 'Texte', icone: IconTexte, quoi: 'Écrire au fil de la plume.', indice: 'défaut' },
+  { id: 'carte', libelle: 'Carte mentale', icone: IconCarte, quoi: 'Ramifier une idée en branches.', indice: 'nœuds' },
+  { id: 'dessin', libelle: 'Dessin', icone: IconPencil, quoi: 'Croquer, annoter, surligner.', indice: 'vectoriel' },
 ]
 
 export function PostEditor() {
@@ -39,6 +45,8 @@ export function PostEditor() {
   const supprimerPost = useAtlas((s) => s.supprimerPost)
   const creerPost = useAtlas((s) => s.creerPost)
   const select = useAtlas((s) => s.select)
+  const formeInitiale = useAtlas((s) => s.formeInitiale)
+  const setFormeInitiale = useAtlas((s) => s.setFormeInitiale)
 
   const post = posts.find((p) => p.id === selectedId) ?? null
   const cover = useImageUrl(post?.coverId)
@@ -48,8 +56,18 @@ export function PostEditor() {
   const [aSupprimer, setASupprimer] = useState(false)
   const [choixForme, setChoixForme] = useState(false)
 
-  // changer de post ramène toujours au texte
-  useEffect(() => setMode('texte'), [post?.id])
+  /* Changer de post ramène au texte — sauf si la capture a demandé une
+     forme précise : « En dessin » doit ouvrir sur le dessin, pas sur un
+     texte qu'il faudrait ensuite quitter. Le vœu est consommé une fois. */
+  useEffect(() => {
+    if (formeInitiale) {
+      setMode(formeInitiale)
+      setFormeInitiale(null)
+    } else {
+      setMode('texte')
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [post?.id])
 
   if (!post) {
     return (
@@ -230,20 +248,24 @@ export function PostEditor() {
       {choixForme && (
         <div className="sheet" role="dialog" onClick={() => setChoixForme(false)}>
           <div className="sheet__panel glass rise" onClick={(e) => e.stopPropagation()}>
-            <div className="sheet__head">
-              <h3 className="sheet__titre">Ajouter une forme</h3>
-            </div>
-            <p className="sheet__note" style={{ marginTop: 0, marginBottom: 14 }}>
-              La même idée, travaillée autrement. Rien ne remplace rien : les formes s'ajoutent.
-            </p>
-            <div className="choix">
+            <div className="menu__section">Ajouter une forme</div>
+            <div className="menu">
               {absentes.map((f) => (
-                <button key={f.id} className="choix__item" onClick={() => ouvrirForme(f.id)}>
-                  <i style={{ background: 'var(--accent)' }} />
-                  {f.libelle}
+                <button key={f.id} className="menu__item" onClick={() => ouvrirForme(f.id)}>
+                  <span className="menu__icone">
+                    <f.icone size={17} />
+                  </span>
+                  <span className="menu__corps">
+                    <span className="menu__nom">{f.libelle}</span>
+                    <span className="menu__quoi">{f.quoi}</span>
+                  </span>
+                  <span className="menu__indice">{f.indice}</span>
                 </button>
               ))}
             </div>
+            <p className="menu__pied">
+              La même idée, travaillée autrement. Rien ne remplace rien : les formes s'ajoutent.
+            </p>
           </div>
         </div>
       )}

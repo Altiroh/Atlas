@@ -3102,3 +3102,102 @@
   from { transform: translateX(2vw); }
   to   { transform: translateX(97vw); }
 }
+
+/* ========================================================
+   46. Menu de blocs — à la manière de Notion
+   ========================================================
+   Une liste, pas une grille de boutons : une icône encadrée, un nom,
+   ce que ça fait en une ligne, et un indice discret à droite. C'est
+   ce qui permet de choisir sans lire tout le menu. */
+
+.menu__section {
+  padding: 2px 4px 8px;
+  font-size: 11px;
+  font-weight: 580;
+  letter-spacing: 0.02em;
+  color: var(--text-3);
+}
+
+.menu { display: flex; flex-direction: column; gap: 2px; }
+
+.menu__item {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 8px 10px;
+  border-radius: var(--r-sm);
+  text-align: left;
+  transition: background var(--fast) var(--ease);
+}
+.menu__item:hover { background: var(--surface-sunken); }
+
+.menu__icone {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  flex: none;
+  border-radius: var(--r-xs);
+  border: 1px solid var(--border);
+  background: var(--surface-sunken);
+  color: var(--text-2);
+}
+
+.menu__corps { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.menu__nom { font-size: 14px; font-weight: 540; letter-spacing: -0.008em; }
+.menu__quoi { font-size: 12px; color: var(--text-3); margin-top: 1px; }
+
+.menu__indice {
+  flex: none;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-3);
+  opacity: 0.7;
+}
+
+.menu__pied {
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--text-3);
+}
+
+/* ========================================================
+   47. Dessin — outils avancés
+   ======================================================== */
+
+/* le trait à épaisseur variable est REMPLI, pas tracé */
+.dessin__encre-pleine {
+  stroke: none;
+  pointer-events: none;
+}
+.dessin__encre-pleine[data-encre='accent'] { fill: var(--accent); }
+.dessin__encre-pleine[data-encre='encre'] { fill: var(--text); }
+.dessin__encre-pleine[data-encre='douce'] { fill: var(--text-3); }
+
+.dessin__toile[data-gomme='true'] .dessin__encre-pleine {
+  pointer-events: fill;
+  cursor: pointer;
+}
+
+/* le surligneur se cumule au lieu de couvrir : le texte dessous reste lisible */
+.dessin__trait[data-outil='surligneur'] {
+  opacity: 0.3;
+  stroke-linecap: butt;
+  mix-blend-mode: multiply;
+}
+
+:root[data-theme='dark'] .dessin__trait[data-outil='surligneur'] {
+  mix-blend-mode: screen;
+  opacity: 0.24;
+}
+
+/* le papier */
+.pap-marque { fill: var(--border-strong); }
+.pap-ligne { fill: none; stroke: var(--border); stroke-width: 1; }
+
+.dessin__outils .seg { flex: none; }

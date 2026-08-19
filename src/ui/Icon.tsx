@@ -172,6 +172,21 @@ export const IconFolder = ({ size = 20, className, style }: Props) => (
   </svg>
 )
 
+export const IconCarte = ({ size = 20, className, style }: Props) => (
+  <svg {...base(size)} className={className} style={style} aria-hidden="true">
+    <rect x="2.5" y="9.5" width="7" height="5" rx="1.6" />
+    <rect x="14.5" y="3.5" width="7" height="4.5" rx="1.6" />
+    <rect x="14.5" y="16" width="7" height="4.5" rx="1.6" />
+    <path d="M9.5 12h2.5a1 1 0 0 0 1-1V6.8a1 1 0 0 1 1-1M12 12h.5a1 1 0 0 1 1 1v4.3a1 1 0 0 0 1 1" />
+  </svg>
+)
+
+export const IconTexte = ({ size = 20, className, style }: Props) => (
+  <svg {...base(size)} className={className} style={style} aria-hidden="true">
+    <path d="M5 5.5h14M5 12h14M5 18.5h9" />
+  </svg>
+)
+
 export const IconPencil = ({ size = 20, className, style }: Props) => (
   <svg {...base(size)} className={className} style={style} aria-hidden="true">
     <path d="M14.8 4.6a1.9 1.9 0 0 1 2.7 0l1.9 1.9a1.9 1.9 0 0 1 0 2.7L9.3 19.3l-4.8 1 1-4.8Z" />

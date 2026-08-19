@@ -41,13 +41,22 @@ export type Espace = Synchronisable & {
   ordre: number
 }
 
+/** L'outil qui a tracé — il change le rendu, pas seulement la couleur. */
+export type Outil = 'plume' | 'surligneur' | 'ligne'
+
+/** Le papier sous le dessin. */
+export type Papier = 'uni' | 'points' | 'grille' | 'lignes'
+
 /** Un trait de dessin : une suite de points, pas une image. */
 export type Trait = {
   /** points aplatis : x, y, x, y… */
   pts: number[]
+  /** pression relevée point par point, quand le stylet en donne une */
+  pr?: number[]
   encre: 'accent' | 'encre' | 'douce'
-  /** épaisseur */
+  /** épaisseur de référence */
   ep: number
+  outil?: Outil
 }
 
 /** Un nœud de mind map. La carte est une propriété du post, pas un objet séparé. */
@@ -68,6 +77,7 @@ export type Post = Synchronisable & {
   carte: Noeud[] | null
   /** null tant que le post n'a pas de dessin */
   dessin: Trait[] | null
+  papier?: Papier
   etat: Etat
   createdAt: number
 }
@@ -95,6 +105,7 @@ function normaliserPost(p: Partial<Post> & { id: string }): Post {
     coverId: p.coverId ?? null,
     carte: p.carte ?? null,
     dessin: p.dessin ?? null,
+    papier: p.papier ?? 'points',
     etat: p.etat ?? 'libre',
     createdAt: p.createdAt ?? Date.now(),
     updatedAt: p.updatedAt ?? p.createdAt ?? Date.now(),
@@ -217,6 +228,8 @@ type AtlasStore = {
   espaceActif: string | null
   query: string
   focus: boolean
+  /** forme dans laquelle ouvrir le prochain post sélectionné */
+  formeInitiale: 'texte' | 'carte' | 'dessin' | null
 
   hydrater: (options?: { amorcer?: boolean }) => Promise<void>
   /** Vide tout le contenu local puis relit. Utilisé au changement de compte. */
@@ -227,6 +240,7 @@ type AtlasStore = {
   select: (id: string | null) => void
   setEspaceActif: (id: string | null) => void
   setQuery: (query: string) => void
+  setFormeInitiale: (f: 'texte' | 'carte' | 'dessin' | null) => void
   toggleFocus: () => void
 
   creerPost: (texte?: string, espaceId?: string | null) => string
@@ -269,6 +283,7 @@ export const useAtlas = create<AtlasStore>((set, get) => ({
   espaceActif: null,
   query: '',
   focus: false,
+  formeInitiale: null,
 
   /* Deux garde-fous, appris à la dure :
 
@@ -343,6 +358,7 @@ export const useAtlas = create<AtlasStore>((set, get) => ({
   select: (selectedId) => set({ selectedId }),
   setEspaceActif: (espaceActif) => set({ espaceActif }),
   setQuery: (query) => set({ query }),
+  setFormeInitiale: (formeInitiale) => set({ formeInitiale }),
   toggleFocus: () => set((s) => ({ focus: !s.focus })),
 
   creerPost: (texte = '', espaceId = null) => {

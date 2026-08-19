@@ -1,4 +1,4 @@
-import type { Espace, Noeud, Post, Trait } from './atlas'
+import type { Espace, Noeud, Papier, Post, Trait } from './atlas'
 import type { Dorsale, Lot } from './dorsale'
 import { SEAU_IMAGES, supabase } from './supabase'
 
@@ -31,6 +31,7 @@ type LignePost = {
   cover_id: string | null
   carte: Noeud[] | null
   dessin: Trait[] | null
+  papier: Papier | null
   etat: string
   created_at: number
   updated_at: number
@@ -55,6 +56,7 @@ const versPost = (l: LignePost): Post => ({
   coverId: l.cover_id,
   carte: l.carte,
   dessin: l.dessin,
+  papier: l.papier ?? undefined,
   etat: (l.etat as Post['etat']) ?? 'libre',
   createdAt: Number(l.created_at),
   updatedAt: Number(l.updated_at),
@@ -70,6 +72,7 @@ const versLignePost = (p: Post): LignePost => ({
   cover_id: p.coverId,
   carte: p.carte,
   dessin: p.dessin,
+  papier: p.papier ?? null,
   etat: p.etat,
   created_at: p.createdAt,
   updated_at: p.updatedAt,
