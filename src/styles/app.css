@@ -2365,6 +2365,40 @@
   100%      { transform: translateY(0); }
 }
 
+/* LA PAUPIÈRE SUIT LE REGARD.
+
+   Elle porte le même découpage temporel que `regard`, à la même durée,
+   avec une amplitude d'un dixième — c'est ce rapport qui compte. Une
+   paupière rigoureusement immobile pendant que l'iris roule dessous
+   donne un œil de poupée : le globe bouge, l'orbite non. Ici elle
+   descend un peu quand il regarde en bas, se relève quand il regarde
+   en haut, et personne ne le remarque — c'est précisément le but. */
+.oeil__voile {
+  animation: paupiere-suit 14s cubic-bezier(0.6, 0, 0.2, 1) infinite;
+}
+
+@keyframes paupiere-suit {
+  0%, 16%   { transform: translateY(0); }
+  /* il regarde en haut à droite : elle se relève */
+  22%, 38%  { transform: translateY(-1px); }
+  44%, 58%  { transform: translateY(0.4px); }
+  /* il regarde en bas : elle suit, c'est là que ça se voit */
+  64%, 74%  { transform: translateY(2.4px); }
+  80%, 100% { transform: translateY(0); }
+}
+
+.oeil--cause .oeil__voile {
+  animation: paupiere-cause 5.4s cubic-bezier(0.5, 0, 0.15, 1) infinite;
+}
+
+@keyframes paupiere-cause {
+  /* il lit, en bas : la paupière descend */
+  0%, 36%   { transform: translateY(2.6px); }
+  /* il relève les yeux : elle s'ouvre */
+  47%, 86%  { transform: translateY(-0.4px); }
+  96%, 100% { transform: translateY(2.6px); }
+}
+
 /* --- EN CONVERSATION ---
 
    Un seul œil anime la conversation : celui de la bulle, en bas à

@@ -120,12 +120,23 @@ export const OeilAtlas = memo(function OeilAtlas({
         </g>
 
         {/* La paupière : hors champ le reste du temps. L'ombre la précède,
-            le bord bombé lui donne sa forme. */}
-        <g className="oeil__paupiere">
-          <ellipse className="oeil__ombre" cx="50" cy="0" rx="52" ry="10" filter="url(#oeil-ombre)" />
-          <rect x="-6" y="-108" width="112" height="108" fill="url(#oeil-paupiere)" />
-          <ellipse cx="50" cy="-1" rx="56" ry="9" fill="var(--paupiere-bas)" />
-          <path className="oeil__cil" d="M -6 -1 Q 50 9, 106 -1" />
+            le bord bombé lui donne sa forme.
+
+            DEUX GROUPES IMBRIQUÉS, et c'est nécessaire : une paupière
+            porte DEUX mouvements à la fois — le clignement, brusque et
+            complet, et le suivi du regard, minuscule et permanent. Une
+            paupière qui reste parfaitement immobile pendant que l'œil
+            roule dessous ne trompe personne : on regarde vers le bas,
+            la paupière descend un peu ; vers le haut, elle se relève.
+            Deux `transform` sur un même élément s'écrasent — il faut
+            donc un groupe par mouvement. */}
+        <g className="oeil__voile">
+          <g className="oeil__paupiere">
+            <ellipse className="oeil__ombre" cx="50" cy="0" rx="52" ry="10" filter="url(#oeil-ombre)" />
+            <rect x="-6" y="-108" width="112" height="108" fill="url(#oeil-paupiere)" />
+            <ellipse cx="50" cy="-1" rx="56" ry="9" fill="var(--paupiere-bas)" />
+            <path className="oeil__cil" d="M -6 -1 Q 50 9, 106 -1" />
+          </g>
         </g>
       </g>
 
