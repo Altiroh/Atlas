@@ -1,0 +1,418 @@
+/* ========================================================
+   Les espaces.
+
+   LA COULEUR N'EST PAS UNE BORDURE. C'est le principe de toute
+   la feuille : la teinte de l'espace ne se pose pas *à côté* de
+   la carte, elle la traverse — un halo qui monte d'un coin, un
+   dégradé en biais, le nombre de notes en filigrane. Un liseré
+   coloré, c'est une gommette collée sur une boîte ; ici la boîte
+   a une couleur, et on reconnaît son espace sans lire.
+
+   Un seul jeton porte tout ça : `--sc-h`, la teinte, posée en
+   style en ligne par le composant. Tout le reste — halo, dégradé,
+   liseré, filigrane, jeton de liste — s'en déduit par calcul,
+   exactement comme l'accent de l'app se déduit de `--accent-h`.
+
+   Rien n'est animé qu'en `transform` et `opacity` : le halo grandit
+   au survol, il ne se redessine pas.
+   ======================================================== */
+
+.esp__barre {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 4px 16px 12px;
+}
+
+.esp__chercher {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 36px;
+  padding: 0 12px;
+  border-radius: var(--r-sm);
+  background: var(--surface-sunken);
+  border: 1px solid var(--border);
+  color: var(--text-3);
+}
+.esp__chercher input {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  background: none;
+  color: var(--text);
+  font: inherit;
+  font-size: 13.5px;
+}
+.esp__chercher input::placeholder {
+  color: var(--text-3);
+}
+.esp__chercher input:focus {
+  outline: none;
+}
+.esp__chercher input::-webkit-search-cancel-button {
+  -webkit-appearance: none;
+}
+
+/* Le tas non trié est SÉPARÉ, pas juste premier : un intervalle et
+   un filet disent qu'il n'est pas de la même nature que les autres. */
+.esp__tete {
+  padding: 0 16px 14px;
+  margin-bottom: 4px;
+  border-bottom: 1px solid var(--border);
+}
+
+.esp__grille {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(158px, 1fr));
+  gap: 12px;
+  padding: 12px 16px 4px;
+}
+
+.esp__liste {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 12px 12px 4px;
+}
+
+/* ---------- la carte ---------- */
+
+.esp__carte {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  min-height: 122px;
+  padding: 14px;
+  border-radius: var(--r-lg);
+  text-align: left;
+  overflow: hidden;
+  /* le contexte d'empilement : sans lui, les z-index négatifs du halo
+     et de l'image iraient se glisser sous le fond de la page */
+  isolation: isolate;
+  background: var(--surface);
+  border: 1px solid hsl(var(--sc-h) 55% 48% / 0.18);
+  box-shadow: var(--shadow-sm);
+  transition:
+    transform var(--fast) var(--ease),
+    border-color var(--mid) var(--ease);
+}
+.esp__carte:hover {
+  border-color: hsl(var(--sc-h) 60% 50% / 0.34);
+}
+.esp__carte:active {
+  transform: scale(0.985);
+}
+
+/* Le halo : une source de lumière propre à chaque espace, ancrée en bas
+   à gauche. Il déborde largement de la carte, ce qui lui permet de
+   grandir au survol sans jamais montrer son bord. */
+.esp__halo {
+  position: absolute;
+  left: -38%;
+  bottom: -62%;
+  width: 156%;
+  aspect-ratio: 1;
+  z-index: -1;
+  border-radius: 50%;
+  background: radial-gradient(
+    circle,
+    hsl(var(--sc-h) 92% 58% / 0.55),
+    hsl(var(--sc-h) 92% 58% / 0) 68%
+  );
+  transform: scale(1);
+  transition: transform var(--slow) var(--ease);
+}
+.esp__carte:hover .esp__halo {
+  transform: scale(1.18);
+}
+
+/* Le second ton, en biais depuis le coin opposé. Deux teintes voisines
+   plutôt qu'une seule : c'est ce décalage qui donne la profondeur, et
+   il se calcule à partir de la même variable. */
+.esp__carte::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background: linear-gradient(
+    152deg,
+    hsl(calc(var(--sc-h) + 28) 90% 60% / 0.18),
+    transparent 58%
+  );
+}
+
+.esp__img {
+  position: absolute;
+  inset: 0;
+  z-index: -2;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0.42;
+  /* désaturée, elle laisse la teinte de l'espace dominer au lieu de se
+     battre avec elle */
+  filter: saturate(0.75);
+}
+
+.esp__hit {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+}
+
+/* Le nombre en filigrane : lisible de loin, muet de près. Il dit le
+   volume d'un espace sans qu'on ait à lire une ligne. */
+.esp__filigrane {
+  position: absolute;
+  top: 4px;
+  right: 12px;
+  z-index: 2;
+  font-size: 52px;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: -0.05em;
+  font-variant-numeric: tabular-nums;
+  color: hsl(var(--sc-h) 68% 42% / 0.16);
+  pointer-events: none;
+  user-select: none;
+}
+:root[data-theme='dark'] .esp__filigrane {
+  color: hsl(var(--sc-h) 80% 72% / 0.16);
+}
+
+.esp__corps {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  pointer-events: none;
+}
+
+.esp__nom {
+  font-size: 15px;
+  font-weight: 570;
+  letter-spacing: -0.012em;
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.esp__compte {
+  font-size: 12.5px;
+  color: var(--text-2);
+}
+
+.esp__regler {
+  position: absolute;
+  top: 9px;
+  left: 9px;
+  z-index: 3;
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  color: var(--text-2);
+  background: var(--surface-solid);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-sm);
+  opacity: 0;
+  transition:
+    opacity var(--fast) var(--ease),
+    color var(--fast) var(--ease);
+}
+.esp__carte:hover .esp__regler,
+.esp__ligne:hover .esp__regler,
+.esp__regler:focus-visible {
+  opacity: 1;
+}
+.esp__regler:hover {
+  color: var(--text);
+}
+
+/* au doigt il n'y a pas de survol : la commande reste offerte */
+@media (hover: none) {
+  .esp__regler {
+    opacity: 1;
+  }
+}
+
+/* ---------- non triés ---------- */
+
+/* Aucune teinte, et c'est le message : rien n'a été rangé ici. Le tas
+   se distingue par sa NEUTRALITÉ, pas par une couleur de plus. */
+.esp__carte--libre,
+.esp__ligne--libre {
+  background: var(--surface-sunken);
+  border: 1px dashed var(--border-strong);
+  box-shadow: none;
+}
+.esp__carte--libre {
+  min-height: 96px;
+  justify-content: space-between;
+}
+.esp__carte--libre .esp__filigrane {
+  color: var(--text-3);
+  opacity: 0.28;
+}
+.esp__carte--libre:hover,
+.esp__ligne--libre:hover {
+  border-color: var(--text-3);
+  background: var(--surface);
+}
+
+.esp__jeton {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 34px;
+  height: 34px;
+  border-radius: 11px;
+  overflow: hidden;
+  font-size: 14px;
+  font-weight: 640;
+  color: #fff;
+  /* Le dégradé du jeton reprend les deux tons de la carte, mais SERRÉS :
+     à pleine saturation, un écart de 26° fait basculer un orange dans le
+     jaune, et l'espace change de couleur au lieu de gagner du relief. */
+  background: linear-gradient(
+    145deg,
+    hsl(var(--sc-h) 86% 61%),
+    hsl(calc(var(--sc-h) + 15) 78% 45%)
+  );
+  box-shadow: 0 4px 14px hsl(var(--sc-h) 80% 50% / 0.32);
+}
+.esp__jeton img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.esp__jeton--vide {
+  background: none;
+  box-shadow: none;
+  color: var(--text-3);
+  border: 1px solid var(--border-strong);
+}
+
+/* ---------- la ligne ---------- */
+
+.esp__ligne {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 9px 11px;
+  border-radius: var(--r-sm);
+  border: 1px solid transparent;
+  text-align: left;
+  transition:
+    background var(--fast) var(--ease),
+    border-color var(--fast) var(--ease);
+}
+.esp__ligne:hover {
+  background: hsl(var(--sc-h) 80% 55% / 0.08);
+  border-color: hsl(var(--sc-h) 55% 48% / 0.18);
+}
+.esp__ligne .esp__corps {
+  flex: 1;
+}
+.esp__ligne .esp__regler {
+  position: relative;
+  top: auto;
+  left: auto;
+  background: none;
+  border: 0;
+  box-shadow: none;
+}
+
+/* Les nombres alignés à droite en chiffres de largeur fixe : c'est TOUT
+   l'intérêt de la vue liste — pouvoir comparer d'un coup d'œil ce que la
+   grille oblige à lire carte par carte. */
+.esp__compte--aligne {
+  z-index: 2;
+  min-width: 34px;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  font-size: 13px;
+  color: var(--text-3);
+  pointer-events: none;
+}
+
+/* ---------- créer ---------- */
+
+.esp__carte--neuf,
+.esp__ligne--neuf {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  color: var(--text-3);
+  border: 1px dashed var(--border-strong);
+  background: transparent;
+  font-size: 14px;
+  transition: color var(--fast) var(--ease), border-color var(--fast) var(--ease);
+}
+.esp__carte--neuf {
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+}
+.esp__carte--neuf:hover,
+.esp__ligne--neuf:hover {
+  color: var(--text-2);
+  border-color: var(--text-3);
+}
+.esp__ligne--neuf {
+  padding: 12px;
+  border-radius: var(--r-sm);
+}
+
+/* ---------- l'aperçu, dans la feuille de réglage ---------- */
+
+.esp__apercu {
+  margin-bottom: 18px;
+  min-height: 104px;
+  cursor: default;
+}
+.esp__apercu:active {
+  transform: none;
+}
+
+/* ---------- notes ---------- */
+
+.esp__note {
+  padding: 18px 16px 8px;
+  font-size: 12.5px;
+  line-height: 1.6;
+  color: var(--text-3);
+}
+
+.esp__vide {
+  padding: 22px 16px;
+  font-size: 13px;
+  color: var(--text-3);
+  text-align: center;
+}
+
+/* la pastille du filtre, quand il porte sur « non triés » */
+.filtre__dot--vide {
+  background: none;
+  border: 1.5px dashed var(--text-3);
+}
+
+@media (max-width: 560px) {
+  .esp__grille {
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 10px;
+  }
+  .esp__filigrane {
+    font-size: 44px;
+  }
+}

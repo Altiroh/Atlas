@@ -2310,6 +2310,45 @@
   100%      { transform: translateY(0); }
 }
 
+/* --- EN CONVERSATION ---
+
+   Un seul œil anime la conversation : celui de la bulle, en bas à
+   droite. La fenêtre s'ouvre AU-DESSUS de lui — il lève donc les yeux
+   vers elle, les redescend vers toi, et recommence. Deux points en
+   alternance, pas un balayage : un regard qui écoute se pose, il ne
+   vagabonde pas.
+
+   Le balayage de veille, lui, est celui de quelqu'un qui attend. Les
+   deux ne peuvent pas coexister, c'est ce qui rend l'ouverture de la
+   fenêtre lisible du coin de l'œil.
+
+   Il cligne aussi plus souvent — contre-intuitif, et pourtant c'est
+   ce qui le rend attentif : un œil qui ne cligne presque plus fixe,
+   et un regard fixe met mal à l'aise. */
+
+.oeil--cause .oeil__regard {
+  animation: regard-cause 5.4s cubic-bezier(0.5, 0, 0.15, 1) infinite;
+}
+
+@keyframes regard-cause {
+  /* il lève les yeux vers la fenêtre, en haut à gauche */
+  0%, 36%   { transform: translate(-4px, -7px); }
+  /* puis il te regarde, toi */
+  47%, 86%  { transform: translate(1px, 2px); }
+  /* et il y retourne */
+  96%, 100% { transform: translate(-4px, -7px); }
+}
+
+.oeil--cause .oeil__paupiere {
+  animation-duration: 4.6s;
+}
+
+/* la lueur s'accélère du même pas, sinon le regard et le reflet
+   se désolidarisent au point qu'on voit la mécanique */
+.oeil--cause .oeil__lueur {
+  animation-duration: 5.4s;
+}
+
 /* --- posé sur la bordure haute de la carte --- */
 
 .connexion__carte { overflow: visible; }
@@ -2689,20 +2728,9 @@
 }
 .seg__item--plus:hover { color: var(--text); }
 
-.confirme { max-width: 380px; }
-
-.confirme__detail {
-  font-size: 13.5px;
-  line-height: 1.55;
-  color: var(--text-2);
-}
-
-.confirme__actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 8px;
-  margin-top: 20px;
-}
+/* Le style de la confirmation vit désormais dans styles/confirmation.css :
+   elle a cessé d'être un simple panneau de feuille, et deux définitions
+   concurrentes du même bloc finissent toujours par diverger. */
 
 /* le bouton dangereux se voit, sans hurler */
 .btn--detruire {
@@ -3294,3 +3322,24 @@
 
 :root[data-theme='dark'] .quota[data-etat='proche'] .quota__note { color: hsl(36 90% 64%); }
 :root[data-theme='dark'] .quota[data-etat='plein'] .quota__note { color: hsl(2 90% 70%); }
+
+/* ========================================================
+   50. La version
+   ======================================================== */
+
+.version {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+}
+
+.version__num {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 13px;
+  font-weight: 560;
+  letter-spacing: 0.02em;
+  color: var(--text);
+}
+
+.version__date { font-size: 12px; color: var(--text-3); }

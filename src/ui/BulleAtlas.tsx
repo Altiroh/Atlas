@@ -72,13 +72,12 @@ export function BulleAtlas() {
         data-ouverte={ouverte}
         onClick={() => setOuverte(!ouverte)}
       >
-        <OeilAtlas size={40} />
+        <OeilAtlas size={40} mode={ouverte ? 'cause' : 'veille'} />
       </button>
 
       {ouverte && (
-        <div className="causerie glass rise" role="dialog" aria-label="Atlas">
+        <div className="causerie rise" role="dialog" aria-label="Atlas">
           <div className="causerie__tete">
-            <OeilAtlas size={26} />
             <span className="causerie__nom">Atlas</span>
             <span className="causerie__etat">V0 — sans intelligence</span>
             <button

@@ -1,0 +1,106 @@
+/* ========================================================
+   Les feuilles montantes.
+
+   RÈGLE UNIQUE, VALABLE POUR TOUTE BOÎTE DE DIALOGUE : sur un
+   écran étroit, elle ne se pose pas au milieu — elle MONTE DU
+   BAS, sur toute la largeur.
+
+   Trois raisons, et aucune n'est décorative :
+   · le pouce est en bas, et une boîte centrée oblige à traverser
+     l'écran pour répondre à une question qu'on n'a pas posée ;
+   · le clavier arrive par le bas ; un panneau centré se fait
+     couper en deux dès qu'un champ prend le focus ;
+   · le geste devient le même partout — supprimer, choisir une
+     forme, classer, choisir un bloc. On l'apprend une fois.
+
+   Les composants ne savent rien de tout ça : ils posent `.sheet`
+   et leur panneau, la bascule se fait ici.
+   ======================================================== */
+
+@keyframes feuille-monte {
+  from {
+    transform: translate3d(0, 100%, 0);
+  }
+  to {
+    transform: none;
+  }
+}
+
+@media (max-width: 560px) {
+  .sheet {
+    /* collée en bas, étirée sur toute la largeur */
+    place-items: end stretch;
+    padding: 0;
+  }
+
+  .sheet__panel,
+  .confirme {
+    max-width: none;
+    width: 100%;
+    max-height: 88vh;
+    border-radius: var(--r-xl) var(--r-xl) 0 0;
+    border-bottom: 0;
+    /* la barre d'accueil iOS ne doit jamais recouvrir un bouton */
+    padding-bottom: calc(18px + var(--safe-bottom));
+    animation: feuille-monte var(--mid) var(--ease) both;
+  }
+
+  /* Un panneau qui vient du bas n'a plus besoin de monter d'un cran
+     en plus : deux animations sur le même élément se contrarient. */
+  .sheet__panel.rise,
+  .confirme.rise {
+    animation: feuille-monte var(--mid) var(--ease) both;
+  }
+
+  /* La barrette de préhension, posée par le pseudo-élément plutôt que
+     par chaque composant : c'est une propriété de la feuille, pas du
+     contenu qu'elle porte. */
+  .sheet__panel::before,
+  .confirme::before {
+    content: '';
+    display: block;
+    width: 38px;
+    height: 4px;
+    margin: -4px auto 14px;
+    border-radius: 99px;
+    background: var(--border-strong);
+  }
+
+  /* les boutons d'une feuille se touchent : ils s'agrandissent */
+  .confirme__btn {
+    height: 46px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sheet__panel,
+  .confirme {
+    animation: none;
+  }
+}
+
+/* ---------- la conversation avec Atlas ---------- */
+
+/* Elle suit la même règle que les autres : sur un écran étroit elle
+   prend TOUTE LA LARGEUR et monte du bas. Une fenêtre de 370 px
+   flottant au-dessus d'un téléphone laisse deux bandes inutiles sur
+   les côtés, et le clavier la coupe dès qu'on y écrit. */
+
+@media (max-width: 560px) {
+  .causerie {
+    left: 0;
+    right: 0;
+    bottom: 0;
+    width: auto;
+    max-height: 78vh;
+    border-radius: var(--r-xl) var(--r-xl) 0 0;
+    padding-bottom: var(--safe-bottom);
+    animation: feuille-monte var(--mid) var(--ease) both;
+  }
+
+  /* la bulle reste visible au-dessus de la feuille : c'est elle qui
+     ferme, et c'est d'elle que part le regard */
+  .bulle[data-ouverte='true'] {
+    z-index: 57;
+  }
+}

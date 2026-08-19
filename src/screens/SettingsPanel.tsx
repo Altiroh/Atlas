@@ -2,6 +2,7 @@ import { useState, type CSSProperties } from 'react'
 import { useAtlas } from '../store/atlas'
 import { dernierExport, exporter, type Bilan } from '../store/exporter'
 import { lisible, QUOTA_IMAGES, QUOTA_POSTS, usage } from '../store/quota'
+import { dateConstruction, versionCourte } from '../store/version'
 import { DAY_END, DAY_START, resoudreMatiere, useTheme, type Matiere, type ThemeMode } from '../theme/theme'
 import { IconArchive, IconAuto, IconMoon, IconRestore, IconSun } from '../ui/Icon'
 
@@ -127,6 +128,28 @@ function Stockage() {
             portent. Le texte, lui, continue de passer.
           </p>
         )}
+      </div>
+    </section>
+  )
+}
+
+/* La version tourne-t-elle bien ? C'est la seule question à laquelle
+   ce bloc répond — mais elle est irremplaçable : un service worker qui
+   a gardé une vieille version est indétectable autrement. */
+function Version() {
+  return (
+    <section className="setting glass">
+      <div className="setting__label">Version</div>
+      <div className="setting__body">
+        <div className="version">
+          <span className="version__num">{versionCourte()}</span>
+          <span className="version__date">mise en ligne du {dateConstruction()}</span>
+        </div>
+        <p className="quota__note" style={{ marginTop: 10 }}>
+          Le repère vient du dépôt au moment de la construction : dernier tag, distance parcourue
+          depuis, empreinte du commit. Un suffixe <code>-dirty</code> signalerait une mise en ligne
+          faite sur un dossier non commité.
+        </p>
       </div>
     </section>
   )
@@ -290,6 +313,7 @@ export function SettingsPanel() {
         <Apparence />
         <Stockage />
         <Sauvegarde />
+        <Version />
       </div>
     </div>
   )

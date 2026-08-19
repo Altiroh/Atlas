@@ -6,6 +6,7 @@ import { IconBolt, IconImage, IconTrash } from '../ui/Icon'
 import { useImageUrl } from '../ui/useImageUrl'
 import { MindMap, carteInitiale } from './MindMap'
 import { Dessin } from './Dessin'
+import { Editeur } from './Editeur'
 import { Confirmation } from '../ui/Confirmation'
 import { IconCarte, IconPencil, IconPlus, IconTexte } from '../ui/Icon'
 
@@ -216,11 +217,7 @@ export function PostEditor() {
               aria-label="Titre du post"
             />
 
-            <AutoTextarea
-              value={post.texte}
-              onChange={(v) => majPost(post.id, { texte: v })}
-              placeholder="Écris ici. Ça s'enregistre tout seul."
-            />
+            <Editeur post={post} />
 
             <div className="editor__section">
               <div className="eyebrow">Espace</div>
@@ -253,7 +250,7 @@ export function PostEditor() {
 
       {choixForme && (
         <div className="sheet" role="dialog" onClick={() => setChoixForme(false)}>
-          <div className="sheet__panel glass rise" onClick={(e) => e.stopPropagation()}>
+          <div className="sheet__panel rise" onClick={(e) => e.stopPropagation()}>
             <div className="menu__section">Ajouter une forme</div>
             <div className="menu">
               {absentes.map((f) => (
@@ -297,34 +294,3 @@ export function PostEditor() {
   )
 }
 
-/* Zone de texte qui grandit avec son contenu : dans un éditeur, une
-   barre de défilement interne coupe la lecture en deux. */
-function AutoTextarea({
-  value,
-  onChange,
-  placeholder,
-}: {
-  value: string
-  onChange: (v: string) => void
-  placeholder: string
-}) {
-  const ref = useRef<HTMLTextAreaElement>(null)
-
-  useEffect(() => {
-    const el = ref.current
-    if (!el) return
-    el.style.height = 'auto'
-    el.style.height = `${el.scrollHeight}px`
-  }, [value])
-
-  return (
-    <textarea
-      ref={ref}
-      className="editor__texte"
-      value={value}
-      placeholder={placeholder}
-      onChange={(e) => onChange(e.target.value)}
-      aria-label="Contenu du post"
-    />
-  )
-}

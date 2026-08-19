@@ -1,0 +1,140 @@
+/* ========================================================
+   Au doigt — la taille des commandes.
+
+   Un pointeur de souris vise au pixel ; un doigt couvre à peu
+   près 9 mm, soit une quarantaine de points. Toutes les
+   commandes d'Atlas étaient dessinées pour la souris : 38 px de
+   haut, des pastilles de 30, des onglets de 26. C'est joli, et
+   c'est raté sur un téléphone — on vise deux fois.
+
+   Cette feuille ne redessine rien : elle ne fait que RELEVER
+   LES TAILLES, sous `pointer: coarse` (le doigt, le stylet) ou
+   sur un écran étroit. La souris, elle, garde sa densité.
+
+   Chargée en dernier, comme feuille.css, pour la même raison :
+   une règle sous `@media` ne gagne aucune spécificité.
+   ======================================================== */
+
+@media (pointer: coarse), (max-width: 560px) {
+  /* 44 px : le minimum au-dessous duquel on rate sa cible une fois
+     sur cinq. Ce n'est pas une préférence, c'est mesuré. */
+  .btn {
+    height: 44px;
+    padding: 0 18px;
+    font-size: 15px;
+    border-radius: var(--r-sm);
+  }
+
+  .btn--icon {
+    width: 44px;
+    height: 44px;
+    padding: 0;
+  }
+
+  .btn--large {
+    height: 52px;
+    font-size: 16px;
+  }
+
+  /* Les segments : ils portent la navigation entre formes d'une note,
+     et entre connexion et création de compte. Rater ces deux-là coûte
+     cher. */
+  .seg {
+    padding: 4px;
+  }
+  .seg__item {
+    padding: 10px 16px;
+    font-size: 14px;
+  }
+  .seg__item--plus {
+    padding: 10px 13px;
+  }
+
+  /* Les pastilles d'espace, dans l'éditeur : on les touche pour classer. */
+  .chip {
+    height: 38px;
+    padding: 0 15px;
+    font-size: 13.5px;
+  }
+  .chips {
+    gap: 8px;
+  }
+
+  /* La croix d'une étiquette est la plus petite cible de l'app : on
+     l'agrandit sans agrandir la pastille, en débordant sur ses marges. */
+  .ed__etiquette {
+    padding: 5px 6px 5px 11px;
+    font-size: 13.5px;
+  }
+  .ed__etiquette button {
+    width: 24px;
+    height: 24px;
+    margin: -4px -2px -4px 0;
+  }
+
+  /* Les cases à cocher d'une liste : 17 px, c'était un pixel de mire. */
+  .ed__case {
+    width: 22px;
+    height: 22px;
+    margin-top: 4px;
+    border-radius: 6px;
+  }
+  .ed__coche {
+    gap: 11px;
+  }
+  .ed__marque {
+    width: 22px;
+    font-size: 16px;
+  }
+
+  /* Les petits boutons de tableau et de colonnes. */
+  .ed__tableauActions button,
+  .ed__colonnesBarre button,
+  .ed__ajoutColonne {
+    padding: 9px 13px;
+    font-size: 12.5px;
+  }
+  .ed__cellule {
+    padding: 11px 10px;
+    font-size: 14px;
+  }
+
+  /* Les poignées de redimensionnement d'image : invisibles à la souris,
+     elles doivent être franches au doigt — et toujours offertes, faute
+     de survol pour les révéler. */
+  .ed__poignetteImg {
+    width: 34px;
+    opacity: 1;
+  }
+  .ed__poignetteImg--g {
+    left: -17px;
+  }
+  .ed__poignetteImg--d {
+    right: -17px;
+  }
+  .ed__poignetteImg::after {
+    width: 6px;
+  }
+
+  /* Le champ de la conversation et celui de la recherche : sous 16 px,
+     iOS zoome de lui-même à la mise au point et ne redézoome jamais. */
+  .causerie__champ,
+  .searchbar input,
+  .field__input,
+  .ed__etiquetteSaisie,
+  .profil__nom {
+    font-size: 16px;
+  }
+  .field__input {
+    height: 46px;
+  }
+
+  /* Les entrées de menu, dans une feuille montante. */
+  .menu__item {
+    padding: 12px 12px;
+  }
+  .menu__item--court {
+    padding: 13px 12px;
+    font-size: 15px;
+  }
+}

@@ -1,5 +1,6 @@
 import { db } from './db'
 import type { Espace, Noeud, Post } from './atlas'
+import { imagesDe, versMarkdown } from './blocs'
 
 /* ---------------------------------------------------------------
    Export — l'assurance-vie du projet (D2).
@@ -124,7 +125,14 @@ function postEnMarkdown(post: Post, extensions: Map<string, string>) {
   if (post.coverId) {
     bouts.push(`![](images/${post.coverId}.${extensions.get(post.coverId) ?? 'bin'})`)
   }
-  if (post.texte.trim()) bouts.push(post.texte.trim())
+  // les blocs donnent un vrai markdown — titres, listes, tableaux ;
+  // le champ `texte` ne sert de repli que pour les notes d'avant
+  if (post.blocs?.length) {
+    const md = versMarkdown(post.blocs, extensions)
+    if (md.trim()) bouts.push(md)
+  } else if (post.texte.trim()) {
+    bouts.push(post.texte.trim())
+  }
   if (post.dessin?.length) {
     bouts.push(`*(dessin — ${post.dessin.length} traits, conservés dans atlas.json)*`)
   }
@@ -148,6 +156,8 @@ export async function construireArchive(posts: Post[], espaces: Espace[]): Promi
   // ne méritent pas de place dans la sauvegarde.
   const ids = [
     ...posts.map((p) => p.coverId),
+    // les images posées DANS le texte comptent autant que la couverture
+    ...posts.flatMap((p) => (p.blocs ? imagesDe(p.blocs) : [])),
     ...espaces.map((e) => e.imageId),
   ].filter((v): v is string => Boolean(v))
 

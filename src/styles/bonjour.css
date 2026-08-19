@@ -1,0 +1,98 @@
+/* ========================================================
+   Le bonjour du Flux.
+
+   Écriture manuscrite, et prise DANS LES POLICES DU SYSTÈME :
+   Snell Roundhand est présente sur tous les Mac, iPad et iPhone —
+   c'est celle qu'Apple emploie elle-même quand elle veut une main.
+   Aucun fichier à télécharger, donc rien qui casse le démarrage
+   hors ligne (jalon 4) ; ailleurs, la pile retombe sur la cursive
+   du système.
+
+   Snell est dessinée fine et petite : sans une graisse forte et une
+   taille relevée, elle s'efface à côté d'Inter.
+   ======================================================== */
+
+.bonjour {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+}
+
+.bonjour__mot {
+  font-family: 'Snell Roundhand', 'Segoe Script', 'Bradley Hand', 'Brush Script MT', cursive;
+  font-weight: 700;
+  font-size: 24px;
+  line-height: 1.15;
+  letter-spacing: 0.005em;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  background: none;
+  border: 0;
+  padding: 0;
+  /* la main se pose, une seule fois, à l'arrivée sur le Flux */
+  animation: bonjour-pose 620ms var(--ease) both;
+}
+
+/* Sans compte, le bonjour invite à en créer un — mais garde exactement
+   la même allure : c'est une phrase, pas un bouton déguisé. */
+.bonjour__mot--invite {
+  cursor: pointer;
+  color: var(--text-2);
+  transition: color var(--fast) var(--ease);
+}
+.bonjour__mot--invite:hover {
+  color: var(--text);
+}
+
+@keyframes bonjour-pose {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* ---------- dans le panneau (tablette, bureau) ---------- */
+
+/* Le titre cesse de pousser : c'est le bonjour qui prend le milieu,
+   et le bouton « + » revient se coller à droite. */
+.panel-head--salut .panel-head__title {
+  flex: none;
+}
+
+.bonjour--panneau {
+  flex: 1;
+  min-width: 0;
+}
+.bonjour--panneau .bonjour__mot {
+  font-size: 25px;
+}
+
+/* ---------- à la place de la pastille (mobile) ---------- */
+
+.bonjour--encoche {
+  position: absolute;
+  z-index: 30;
+  top: calc(max(var(--safe-top), 10px) + 2px);
+  left: 16px;
+  right: 16px;
+  height: 30px;
+  /* la bande n'attrape pas le doigt ; seul le mot, s'il invite */
+  pointer-events: none;
+}
+.bonjour--encoche .bonjour__mot {
+  font-size: 22px;
+  pointer-events: auto;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bonjour__mot {
+    animation: none;
+  }
+}

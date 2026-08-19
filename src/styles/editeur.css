@@ -1,0 +1,773 @@
+/* ========================================================
+   L'éditeur de blocs.
+
+   Une règle gouverne toute la feuille : LA GOUTTIÈRE EST HORS DU
+   FLUX. Les boutons « + » et la poignée sont posés en absolu à
+   gauche du bloc, jamais dans sa largeur — sinon le texte se
+   décalerait au survol, et l'œil perdrait sa ligne.
+
+   Deuxième règle, héritée du reste du projet : on n'anime ni un
+   flou, ni une grille, ni une largeur. Ici, seulement `opacity`
+   et `transform`.
+   ======================================================== */
+
+.ed {
+  position: relative;
+  margin-top: 2px;
+}
+
+.ed__bloc {
+  position: relative;
+  padding: 1px 0;
+}
+
+.ed__gouttiere {
+  position: absolute;
+  left: -52px;
+  top: 1px;
+  display: flex;
+  gap: 1px;
+  opacity: 0;
+  transition: opacity var(--fast) var(--ease);
+  /* invisible, elle ne doit pas non plus intercepter le clic */
+  pointer-events: none;
+}
+
+.ed__bloc:hover > .ed__gouttiere,
+.ed__bloc:focus-within > .ed__gouttiere {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.ed__bouton {
+  display: grid;
+  place-items: center;
+  width: 23px;
+  height: 25px;
+  border-radius: var(--r-xs);
+  color: var(--text-3);
+  transition:
+    background var(--fast) var(--ease),
+    color var(--fast) var(--ease);
+}
+.ed__bouton:hover {
+  background: var(--surface-sunken);
+  color: var(--text);
+}
+.ed__poignee {
+  cursor: grab;
+  touch-action: none;
+}
+.ed--glisse .ed__poignee {
+  cursor: grabbing;
+}
+
+/* Pendant le glissement, le bloc pris est le seul à bouger — et il ne
+   bouge qu'en `transform` : aucune remise en page n'est déclenchée. */
+.ed__bloc--pris {
+  z-index: 3;
+  opacity: 0.9;
+  box-shadow: var(--shadow);
+  border-radius: var(--r-sm);
+  background: var(--surface);
+}
+
+.ed__trait {
+  position: absolute;
+  left: -8px;
+  right: -8px;
+  top: 0;
+  height: 2px;
+  border-radius: 2px;
+  background: var(--accent);
+  pointer-events: none;
+  z-index: 2;
+}
+
+/* La zone morte sous le dernier bloc : cliquer dedans écrit. */
+.ed__fin {
+  display: block;
+  width: 100%;
+  height: 34px;
+  cursor: text;
+}
+
+/* ---------- la saisie, commune à tous les blocs textuels ---------- */
+
+.ed__saisie {
+  display: block;
+  width: 100%;
+  resize: none;
+  overflow: hidden;
+  border: 0;
+  padding: 3px 0;
+  background: none;
+  color: var(--text);
+  font: inherit;
+  font-size: 15px;
+  line-height: 1.62;
+  letter-spacing: -0.003em;
+}
+.ed__saisie::placeholder {
+  color: var(--text-3);
+}
+.ed__saisie:focus {
+  outline: none;
+}
+
+.ed__titre {
+  font-weight: 620;
+  letter-spacing: -0.022em;
+  line-height: 1.28;
+}
+.ed__titre--1 {
+  font-size: 25px;
+  padding-top: 16px;
+}
+.ed__titre--2 {
+  font-size: 20px;
+  padding-top: 12px;
+}
+.ed__titre--3 {
+  font-size: 16.5px;
+  padding-top: 8px;
+}
+/* un titre qui ouvre la note n'a rien à faire respirer au-dessus */
+.ed__bloc:first-child .ed__titre {
+  padding-top: 2px;
+}
+
+/* ---------- listes ---------- */
+
+.ed__coche {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+}
+
+.ed__marque {
+  flex: none;
+  width: 18px;
+  padding-top: 3px;
+  font-size: 15px;
+  line-height: 1.62;
+  color: var(--text-3);
+  text-align: center;
+  user-select: none;
+}
+.ed__marque--num {
+  font-variant-numeric: tabular-nums;
+  font-size: 14px;
+  color: var(--text-2);
+}
+
+.ed__case {
+  flex: none;
+  width: 17px;
+  height: 17px;
+  margin-top: 6px;
+  display: grid;
+  place-items: center;
+  border: 1.5px solid var(--border-strong);
+  border-radius: 5px;
+  color: #fff;
+  transition:
+    background var(--fast) var(--ease),
+    border-color var(--fast) var(--ease);
+}
+.ed__case[aria-checked='true'] {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+.ed__case[aria-checked='true'] ~ .ed__saisie {
+  color: var(--text-3);
+  text-decoration: line-through;
+  text-decoration-color: var(--border-strong);
+}
+
+/* ---------- citation, anecdote, séparation ---------- */
+
+.ed__bloc--citation .ed__corps {
+  border-left: 2.5px solid var(--accent);
+  padding-left: 14px;
+}
+.ed__bloc--citation .ed__saisie {
+  font-size: 16px;
+  font-style: italic;
+  color: var(--text-2);
+}
+
+.ed__bloc--anecdote .ed__corps {
+  /* teintée par l'accent, comme tout le reste de l'interface */
+  background: hsl(var(--accent-h) var(--accent-s) var(--accent-l) / 0.07);
+  border: 1px solid hsl(var(--accent-h) var(--accent-s) var(--accent-l) / 0.16);
+  border-radius: var(--r-sm);
+  padding: 10px 13px;
+  margin: 5px 0;
+}
+.ed__bloc--anecdote .ed__saisie {
+  font-size: 14px;
+  color: var(--text-2);
+}
+
+.ed__separateur {
+  border: 0;
+  border-top: 1px solid var(--border);
+  margin: 14px 0;
+}
+
+/* ---------- étiquettes ---------- */
+
+.ed__etiquettes {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 0;
+}
+
+.ed__etiquette {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 5px 3px 9px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--surface-sunken);
+  font-size: 12.5px;
+  font-weight: 520;
+  color: var(--text-2);
+}
+.ed__etiquette button {
+  display: grid;
+  place-items: center;
+  width: 16px;
+  height: 16px;
+  border-radius: 999px;
+  color: var(--text-3);
+}
+.ed__etiquette button:hover {
+  background: var(--border);
+  color: var(--text);
+}
+
+.ed__etiquetteSaisie {
+  flex: 1;
+  min-width: 110px;
+  border: 0;
+  background: none;
+  color: var(--text);
+  font: inherit;
+  font-size: 13px;
+  padding: 4px 2px;
+}
+.ed__etiquetteSaisie::placeholder {
+  color: var(--text-3);
+}
+.ed__etiquetteSaisie:focus {
+  outline: none;
+}
+
+/* ---------- image ---------- */
+
+.ed__image {
+  padding: 6px 0;
+}
+
+/* Le cadre porte la largeur choisie ; il reste centré quelle qu'elle
+   soit, pour que réduire une image ne la décolle pas d'un bord. */
+.ed__cadre {
+  position: relative;
+  margin: 0 auto;
+  /* la largeur est portée en style en ligne : elle vient du bloc */
+}
+.ed__cadre--regle {
+  /* pendant le geste, plus aucune transition ne doit traîner derrière
+     le doigt — la largeur suit le pointeur, image par image */
+  user-select: none;
+}
+.ed__cadre--regle img {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* Les poignées : hautes, fines, et en dehors de l'image — on les
+   attrape sans jamais cliquer dedans par erreur. */
+.ed__poignetteImg {
+  position: absolute;
+  top: 50%;
+  width: 22px;
+  height: 46px;
+  max-height: 60%;
+  transform: translateY(-50%);
+  cursor: ew-resize;
+  touch-action: none;
+  opacity: 0;
+  transition: opacity var(--fast) var(--ease);
+}
+.ed__poignetteImg::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 5px;
+  height: 100%;
+  transform: translate(-50%, -50%);
+  border-radius: 99px;
+  background: var(--surface);
+  border: 1px solid var(--border-strong);
+  box-shadow: var(--shadow-sm);
+}
+.ed__poignetteImg--g {
+  left: -11px;
+}
+.ed__poignetteImg--d {
+  right: -11px;
+}
+.ed__cadre:hover .ed__poignetteImg,
+.ed__cadre:focus-within .ed__poignetteImg,
+.ed__cadre--regle .ed__poignetteImg {
+  opacity: 1;
+}
+.ed__cadre--regle .ed__poignetteImg::after {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+/* la mesure ne s'affiche que pendant le geste : le reste du temps,
+   c'est un chiffre de plus à ignorer */
+.ed__mesure {
+  position: absolute;
+  top: 8px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 3px 9px;
+  border-radius: 99px;
+  background: var(--accent);
+  color: var(--accent-ink);
+  font-size: 11px;
+  font-weight: 620;
+  font-variant-numeric: tabular-nums;
+  pointer-events: none;
+}
+
+.ed__image img {
+  display: block;
+  width: 100%;
+  max-height: 460px;
+  object-fit: cover;
+  border-radius: var(--r-sm);
+  border: 1px solid var(--border);
+}
+
+.ed__imageActions {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  display: flex;
+  gap: 6px;
+  opacity: 0;
+  transition: opacity var(--fast) var(--ease);
+}
+.ed__cadre:hover .ed__imageActions,
+.ed__cadre:focus-within .ed__imageActions {
+  opacity: 1;
+}
+
+.ed__image figcaption input {
+  width: 100%;
+  border: 0;
+  background: none;
+  color: var(--text-3);
+  font: inherit;
+  font-size: 12.5px;
+  text-align: center;
+  padding: 7px 2px 2px;
+}
+.ed__image figcaption input:focus {
+  outline: none;
+  color: var(--text-2);
+}
+
+.ed__depot {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  width: 100%;
+  padding: 22px;
+  border: 1px dashed var(--border-strong);
+  border-radius: var(--r-sm);
+  color: var(--text-3);
+  font-size: 13.5px;
+  transition:
+    background var(--fast) var(--ease),
+    color var(--fast) var(--ease);
+}
+.ed__depot:hover {
+  background: var(--surface-sunken);
+  color: var(--text-2);
+}
+
+/* ---------- tableau ---------- */
+
+.ed__tableau {
+  padding: 6px 0;
+}
+
+.ed__grille {
+  display: grid;
+  /* un seul trait partagé : le fond passe par les interstices d'un
+     pixel entre les cellules, et c'est ça qui dessine la grille */
+  gap: 1px;
+  background: var(--border);
+  border: 1px solid var(--border);
+  border-radius: var(--r-sm);
+  overflow: hidden;
+}
+
+.ed__cellule {
+  border: 0;
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  font-size: 13.5px;
+  padding: 8px 10px;
+  min-width: 0;
+}
+.ed__cellule:focus {
+  outline: none;
+  background: hsl(var(--accent-h) var(--accent-s) var(--accent-l) / 0.07);
+}
+.ed__cellule--entete {
+  background: var(--surface-sunken);
+  font-weight: 600;
+  color: var(--text-2);
+}
+
+/* ---------- barres d'outils de bloc ---------- */
+
+.ed__tableauActions,
+.ed__colonnesBarre {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-top: 7px;
+  opacity: 0;
+  transition: opacity var(--fast) var(--ease);
+}
+.ed__bloc:hover > .ed__corps .ed__tableauActions,
+.ed__bloc:focus-within > .ed__corps .ed__tableauActions,
+.ed__bloc:hover > .ed__corps > .ed__colonnes > .ed__colonnesBarre,
+.ed__bloc:focus-within > .ed__corps > .ed__colonnes > .ed__colonnesBarre {
+  opacity: 1;
+}
+
+.ed__tableauActions button,
+.ed__colonnesBarre button,
+.ed__ajoutColonne {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 9px;
+  border-radius: var(--r-xs);
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text-3);
+  font-size: 11.5px;
+  font-weight: 520;
+}
+.ed__tableauActions button:hover,
+.ed__colonnesBarre button:hover,
+.ed__ajoutColonne:hover {
+  color: var(--text);
+  border-color: var(--border-strong);
+}
+.ed__tableauActions button.est-actif {
+  color: var(--accent-text);
+  border-color: hsl(var(--accent-h) var(--accent-s) var(--accent-l) / 0.4);
+}
+
+/* ---------- colonnes ---------- */
+
+.ed__colonnes {
+  display: grid;
+  gap: 18px;
+  padding: 4px 0;
+  position: relative;
+}
+
+.ed__colonne {
+  min-width: 0;
+}
+
+/* dans une colonne, la gouttière n'a plus la place de déborder :
+   elle se replie contre le bloc */
+.ed__colonne .ed__gouttiere {
+  left: -26px;
+}
+
+.ed__ajoutColonne {
+  width: 100%;
+  justify-content: center;
+  margin-top: 4px;
+  opacity: 0;
+  transition: opacity var(--fast) var(--ease);
+}
+.ed__colonne:hover .ed__ajoutColonne,
+.ed__colonne:focus-within .ed__ajoutColonne {
+  opacity: 1;
+}
+
+.ed__colonnesBarre {
+  grid-column: 1 / -1;
+}
+
+/* Sous 700 px les colonnes se remettent les unes sous les autres :
+   côte à côte, elles ne tiendraient plus une phrase par ligne. */
+@media (max-width: 700px) {
+  .ed__colonnes {
+    grid-template-columns: 1fr !important;
+    gap: 10px;
+  }
+  .ed__colonne .ed__gouttiere {
+    left: -24px;
+  }
+}
+
+/* ---------- le catalogue et le menu de bloc ---------- */
+
+.ed__voile {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+}
+
+.ed__catalogue,
+.ed__menu {
+  position: fixed;
+  z-index: 61;
+  width: 290px;
+  padding: 6px;
+  border-radius: var(--r-md);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow);
+  display: flex;
+  flex-direction: column;
+}
+
+.ed__menu {
+  width: 205px;
+}
+
+.ed__recherche {
+  width: 100%;
+  flex: none;
+  border: 0;
+  border-bottom: 1px solid var(--border);
+  border-radius: 0;
+  background: none;
+  color: var(--text);
+  font: inherit;
+  font-size: 13.5px;
+  padding: 7px 8px 9px;
+  margin-bottom: 4px;
+}
+.ed__recherche::placeholder {
+  color: var(--text-3);
+}
+.ed__recherche:focus {
+  outline: none;
+}
+
+.ed__catalogueListe {
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
+.ed__catalogue .menu__item[data-actif='true'] {
+  background: var(--surface-sunken);
+}
+.ed__catalogue .menu__icone {
+  width: 28px;
+  height: 28px;
+}
+
+.ed__iconTitre {
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.menu__item--court {
+  padding: 7px 10px;
+  font-size: 13.5px;
+  font-weight: 520;
+}
+.menu__item--court:disabled {
+  opacity: 0.35;
+}
+.menu__item--danger {
+  color: hsl(2 72% 48%);
+}
+:root[data-theme='dark'] .menu__item--danger {
+  color: hsl(2 90% 70%);
+}
+
+.ed__vide {
+  padding: 14px 10px;
+  font-size: 12.5px;
+  color: var(--text-3);
+}
+
+/* ========================================================
+   Au doigt.
+
+   Le survol n'existe pas : la gouttière ne peut donc pas se
+   révéler au passage de la souris, elle apparaît QUAND ON SE
+   POSE DANS LE BLOC. Et comme il n'y a pas de marge à gauche
+   où déborder sur un téléphone, elle passe à DROITE, dans une
+   bande qu'on lui réserve pour de bon — réservée en permanence,
+   jamais ouverte à la volée : une colonne qui se rétrécit au
+   moment où l'on pose le curseur ferait sauter tout le texte.
+   ======================================================== */
+
+@media (pointer: coarse), (max-width: 560px) {
+  .ed {
+    padding-right: 42px;
+  }
+
+  .ed__gouttiere {
+    left: auto;
+    right: -42px;
+    top: 0;
+    /* le « + » d'abord, le plus loin dans la marge : c'est le geste
+       principal, et le pouce arrive par le bord */
+    flex-direction: row-reverse;
+    gap: 2px;
+  }
+
+  /* pas de survol : seul le bloc où l'on écrit montre ses outils */
+  .ed__bloc:hover > .ed__gouttiere {
+    opacity: 0;
+    pointer-events: none;
+  }
+  .ed__bloc:focus-within > .ed__gouttiere {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  .ed__bouton {
+    width: 34px;
+    height: 34px;
+  }
+
+  /* Le « + » se voit vraiment : plein, teinté de l'accent, rond.
+     C'est la seule affordance d'ajout au doigt — la discrétion, ici,
+     reviendrait à la cacher. */
+  .ed__gouttiere > .ed__bouton:first-child {
+    background: var(--accent);
+    color: var(--accent-ink);
+    border-radius: 50%;
+    box-shadow: var(--shadow-sm);
+  }
+  .ed__gouttiere > .ed__bouton:first-child:hover {
+    background: var(--accent);
+    color: var(--accent-ink);
+  }
+
+  .ed__poignee {
+    opacity: 0.55;
+  }
+
+  /* dans une colonne, la bande de droite n'existe pas : on revient à
+     gauche, contre le bloc */
+  .ed__colonne .ed__gouttiere {
+    right: auto;
+    left: -24px;
+    flex-direction: column;
+  }
+  .ed__colonne .ed__bouton {
+    width: 24px;
+    height: 26px;
+  }
+  .ed__colonne .ed__gouttiere > .ed__bouton:first-child {
+    border-radius: var(--r-xs);
+    background: none;
+    color: var(--text-3);
+    box-shadow: none;
+  }
+}
+
+/* ---------- les panneaux, en feuille montante ----------
+
+   Sous 560 px, le catalogue et le menu de bloc ne s'accrochent plus au
+   bloc : ils MONTENT DU BAS, sur toute la largeur. C'est là que sont
+   les pouces, c'est là qu'est le clavier, et un panneau ancré à une
+   ligne de texte finit toujours coincé contre un bord ou dessous.
+
+   Le positionnement en ligne est supprimé côté React quand ce mode
+   s'applique — pas écrasé ici à coups de `!important` : une feuille de
+   style qui se bat contre son composant finit toujours par perdre. */
+
+.ed__catalogue--feuille {
+  left: 0;
+  right: 0;
+  bottom: 0;
+  top: auto;
+  width: auto;
+  max-height: min(66vh, 460px);
+  padding: 0 8px calc(10px + var(--safe-bottom));
+  border-radius: var(--r-lg) var(--r-lg) 0 0;
+  border-bottom: 0;
+  animation: feuille-monte var(--mid) var(--ease) both;
+}
+
+/* la barrette : elle dit « ça vient du bas, et ça repart par le bas » */
+.ed__poignetteFeuille {
+  display: block;
+  width: 38px;
+  height: 4px;
+  margin: 9px auto 4px;
+  border-radius: 99px;
+  background: var(--border-strong);
+  flex: none;
+}
+
+.ed__catalogue--feuille .ed__catalogueListe {
+  padding-bottom: 4px;
+}
+
+/* Une feuille cache l'écran : elle a besoin d'un fond, sinon on ne sait
+   plus ce qui est actif. Un panneau ancré, lui, n'en a pas besoin. */
+.ed__voile--sombre {
+  background: rgb(0 0 0 / 0.32);
+  animation: voile-parait var(--mid) var(--ease) both;
+}
+
+@keyframes voile-parait {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@media (max-width: 560px) {
+  /* au doigt, les entrées du catalogue se touchent : elles s'aèrent */
+  .ed__catalogue--feuille .menu__item {
+    padding: 11px 10px;
+  }
+  .ed__catalogue--feuille .ed__recherche {
+    font-size: 16px; /* sous 16 px, iOS zoome tout seul à la mise au point */
+    padding: 9px 8px 11px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ed__catalogue--feuille,
+  .ed__voile--sombre {
+    animation: none;
+  }
+}

@@ -1,0 +1,105 @@
+/* ========================================================
+   La confirmation avant l'irréversible.
+
+   Elle s'ouvre par-dessus n'importe quoi — une photo, un texte
+   dense, une carte. D'où la seule règle qui compte ici :
+   AUCUNE TRANSPARENCE. Le verre est la matière de l'app, mais
+   une question à laquelle il faut répondre ne se pose pas sur
+   un fond qui bouge.
+   ======================================================== */
+
+.confirme {
+  width: 100%;
+  max-width: 340px;
+  padding: 22px 22px 18px;
+  border-radius: var(--r-xl);
+  border: 1px solid var(--border);
+  background: var(--surface-solid);
+  box-shadow: var(--shadow);
+  text-align: center;
+}
+
+/* Le sceau : la couleur du danger annoncée avant la phrase. Un halo
+   plutôt qu'un aplat — l'icône doit avertir, pas crier. */
+.confirme__sceau {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  margin: 0 auto 14px;
+  border-radius: 50%;
+  color: hsl(2 74% 50%);
+  background: hsl(2 74% 50% / 0.11);
+  box-shadow: 0 0 0 6px hsl(2 74% 50% / 0.06);
+}
+
+.confirme__titre {
+  font-size: 17px;
+  font-weight: 640;
+  letter-spacing: -0.017em;
+  color: var(--text);
+}
+
+.confirme__detail {
+  margin-top: 8px;
+  font-size: 13px;
+  line-height: 1.58;
+  color: var(--text-2);
+  /* on ne coupe pas les mots à la main : le texte nomme ce qu'on
+     supprime, il doit rester lisible d'un trait */
+  text-wrap: pretty;
+}
+.confirme__detail strong {
+  color: var(--text);
+  font-weight: 600;
+}
+
+/* Deux boutons de même largeur : personne n'a à viser, et le geste
+   destructeur n'est pas plus facile à atteindre que l'autre. */
+.confirme__actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-top: 20px;
+}
+
+.confirme__btn {
+  justify-content: center;
+  height: 40px;
+  font-size: 14px;
+  font-weight: 560;
+}
+
+:root[data-theme='dark'] .confirme__sceau {
+  color: hsl(2 92% 70%);
+  background: hsl(2 92% 60% / 0.15);
+  box-shadow: 0 0 0 6px hsl(2 92% 60% / 0.07);
+}
+
+@media (max-width: 380px) {
+  .confirme {
+    padding: 20px 16px 16px;
+  }
+}
+
+/* ---------- les dialogues ne sont JAMAIS en verre ---------- */
+
+/* Le verre est la matière de l'app, mais il suppose qu'on puisse
+   ignorer ce qu'il y a derrière. Un dialogue, non : il pose une
+   question, et ce qu'on lit dessus doit être net. Par-dessus une
+   photo ou une grille de cartes colorées, le verre rend une bouillie
+   où plus rien ne se détache — et c'est exactement là qu'on ouvre un
+   dialogue.
+
+   D'où le fond PLEIN. C'est le voile sombre derrière qui fait le
+   reste du travail : détacher, et dire que le fond est suspendu. */
+
+.sheet__panel,
+.causerie,
+.ed__catalogue,
+.ed__menu {
+  background: var(--surface-solid);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  border: 1px solid var(--border);
+}

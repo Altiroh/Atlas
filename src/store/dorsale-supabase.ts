@@ -1,4 +1,5 @@
 import type { Espace, Noeud, Papier, Post, Trait } from './atlas'
+import type { Bloc } from './blocs'
 import type { Dorsale, Lot } from './dorsale'
 import { SEAU_IMAGES, supabase } from './supabase'
 
@@ -27,6 +28,7 @@ type LignePost = {
   id: string
   titre: string
   texte: string
+  blocs: Bloc[] | null
   espace_id: string | null
   cover_id: string | null
   carte: Noeud[] | null
@@ -52,6 +54,7 @@ const versPost = (l: LignePost): Post => ({
   id: l.id,
   titre: l.titre ?? '',
   texte: l.texte ?? '',
+  blocs: l.blocs ?? null,
   espaceId: l.espace_id,
   coverId: l.cover_id,
   carte: l.carte,
@@ -68,6 +71,7 @@ const versLignePost = (p: Post): LignePost => ({
   id: p.id,
   titre: p.titre,
   texte: p.texte,
+  blocs: p.blocs,
   espace_id: p.espaceId,
   cover_id: p.coverId,
   carte: p.carte,

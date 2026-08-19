@@ -1,5 +1,6 @@
 import { create } from 'zustand'
 import { db, oublierImage } from './db'
+import { versTexte, type Bloc } from './blocs'
 
 /* ---------------------------------------------------------------
    État applicatif — persisté (jalon 2) et synchronisable (jalon 3).
@@ -70,7 +71,15 @@ export type Noeud = {
 
 export type Post = Synchronisable & {
   titre: string
+  /**
+   * La projection en texte brut du contenu. DÉRIVÉE, jamais saisie :
+   * c'est `blocs` qui fait foi. Elle existe pour que la recherche,
+   * l'extrait du flux et le titre par défaut continuent de lire une
+   * simple chaîne, sans rien connaître des blocs.
+   */
   texte: string
+  /** le contenu réel — null pour une note écrite avant les blocs */
+  blocs: Bloc[] | null
   espaceId: string | null
   coverId: string | null
   /** null tant que le post n'a pas de carte */
@@ -101,6 +110,7 @@ function normaliserPost(p: Partial<Post> & { id: string }): Post {
     id: p.id,
     titre: p.titre ?? '',
     texte: p.texte ?? '',
+    blocs: p.blocs ?? null,
     espaceId: p.espaceId ?? null,
     coverId: p.coverId ?? null,
     carte: p.carte ?? null,
@@ -383,6 +393,13 @@ export const useAtlas = create<AtlasStore>((set, get) => ({
       posts: s.posts.map((p) => {
         if (p.id !== idPost) return p
         modifie = { ...p, ...patch, updatedAt: Date.now(), sale: true }
+        /* Le texte brut se REFAIT ICI, à chaque écriture des blocs, et
+           nulle part ailleurs. C'est le seul endroit qu'on ne peut pas
+           contourner — et une copie qu'on pense à rafraîchir est une
+           copie qui finit par mentir. */
+        if (patch.blocs !== undefined && patch.texte === undefined) {
+          modifie.texte = patch.blocs ? versTexte(patch.blocs) : ''
+        }
         if (patch.espaceId !== undefined && p.etat !== 'archivee') {
           modifie.etat = patch.espaceId ? 'classee' : 'libre'
         }
@@ -550,12 +567,30 @@ export function espaceOf(espaces: Espace[], idEspace: string | null) {
   return idEspace ? (espaces.find((e) => e.id === idEspace) ?? null) : null
 }
 
+/**
+ * Le pseudo-espace « Non triés ».
+ *
+ * Ce n'est pas un espace, et il ne doit surtout pas en devenir un : il
+ * n'existe pas en base, rien ne s'y range, on ne peut ni le renommer ni
+ * le supprimer. C'est une VUE — celle des notes qui n'ont pas d'espace,
+ * qui sont la majorité et le resteront (docs/02 § 4.1).
+ *
+ * Un identifiant réservé plutôt qu'un troisième argument partout : le
+ * filtre reste une seule valeur, et la barre du flux n'a qu'un cas de
+ * plus à afficher.
+ */
+export const SANS_ESPACE = '~sans-espace'
+
 export function filtrer(posts: Post[], query: string, espaceId: string | null, archives = false) {
   const q = query.trim().toLowerCase()
   return posts.filter((p) => {
     // les archivées ne se montrent que quand on les demande
     if ((p.etat === 'archivee') !== archives) return false
-    if (espaceId && p.espaceId !== espaceId) return false
+    if (espaceId === SANS_ESPACE) {
+      if (p.espaceId) return false
+    } else if (espaceId && p.espaceId !== espaceId) {
+      return false
+    }
     if (!q) return true
     return `${p.titre} ${p.texte}`.toLowerCase().includes(q)
   })

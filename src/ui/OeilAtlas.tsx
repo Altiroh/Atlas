@@ -39,10 +39,24 @@ const STRIES = Array.from({ length: 22 }, (_, i) => {
   }
 })
 
-export const OeilAtlas = memo(function OeilAtlas({ size = 74 }: { size?: number }) {
+/**
+ * `veille` — le balayage lent, celui de quelqu'un qui attend.
+ * `cause`  — en conversation : il lit le fil, relève les yeux vers toi,
+ *            retourne au fil. Et il cligne plus souvent, parce qu'un
+ *            regard qui écoute n'est pas un regard qui rêve.
+ */
+export type ModeRegard = 'veille' | 'cause'
+
+export const OeilAtlas = memo(function OeilAtlas({
+  size = 74,
+  mode = 'veille',
+}: {
+  size?: number
+  mode?: ModeRegard
+}) {
   return (
     <svg
-      className="oeil"
+      className={`oeil${mode === 'cause' ? ' oeil--cause' : ''}`}
       width={size}
       height={size}
       viewBox="0 0 100 100"

@@ -1,0 +1,100 @@
+/* ========================================================
+   L'annonce de mise à jour.
+
+   Une bande légère, en haut, cinq secondes. Elle passe SOUS
+   l'encoche iOS et au-dessus de tout le reste, et elle ne
+   pousse rien : elle est en `fixed`, donc l'app ne bouge pas
+   d'un pixel pendant qu'elle vit sa vie.
+
+   La bande entière est le bouton — une cible de trois cents
+   pixels plutôt qu'une croix de douze.
+   ======================================================== */
+
+.maj {
+  position: fixed;
+  z-index: 70;
+  top: calc(max(var(--safe-top), 10px) + 8px);
+  left: 50%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  max-width: min(320px, calc(100vw - 32px));
+  padding: 8px 16px 8px 10px;
+  border-radius: 99px;
+  border: 1px solid var(--border);
+  background: var(--surface-solid);
+  box-shadow: var(--shadow);
+  text-align: left;
+  cursor: pointer;
+  /* le translate en X est porté par l'animation, pas par une règle
+     séparée : deux `transform` sur le même élément s'annulent */
+  animation: maj-entre var(--mid) var(--ease) both;
+}
+
+.maj[data-sort='true'] {
+  animation: maj-sort 280ms var(--ease) both;
+}
+
+@keyframes maj-entre {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -14px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, 0) scale(1);
+  }
+}
+
+@keyframes maj-sort {
+  from {
+    opacity: 1;
+    transform: translate(-50%, 0) scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: translate(-50%, -12px) scale(0.97);
+  }
+}
+
+.maj__corps {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.maj__mot {
+  font-size: 13.5px;
+  font-weight: 560;
+  letter-spacing: -0.008em;
+  color: var(--text);
+  white-space: nowrap;
+}
+
+/* Le repère est là pour être lu quand quelque chose cloche, pas pour
+   être remarqué : monospace, petit, effacé. */
+.maj__version {
+  font-family: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace;
+  font-size: 10.5px;
+  letter-spacing: 0.01em;
+  color: var(--text-3);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* L'œil garde son cerne clair : posé sur une surface pleine, il a
+   besoin de ce liseré pour ne pas se fondre dedans. */
+.maj .oeil {
+  flex: none;
+  border-radius: 50%;
+  box-shadow: 0 2px 8px hsl(var(--accent-h) var(--accent-s) 45% / 0.25);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .maj,
+  .maj[data-sort='true'] {
+    animation: none;
+    transform: translateX(-50%);
+  }
+}

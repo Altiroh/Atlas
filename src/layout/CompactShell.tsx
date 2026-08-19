@@ -6,6 +6,7 @@ import { PostEditor } from '../screens/PostEditor'
 import { EspacesPanel } from '../screens/EspacesPanel'
 import { FluxPanel } from '../screens/FluxPanel'
 import { SettingsPanel } from '../screens/SettingsPanel'
+import { Bonjour } from '../ui/Bonjour'
 import { useEtatProfil } from '../ui/BoutonProfil'
 import {
   IconBack,
@@ -58,7 +59,15 @@ export function CompactShell() {
       {/* Une ligne entière de barre de titre pour un mot, c'est de la place
           perdue. Le titre devient une pastille posée dans la zone de
           l'encoche : le contenu remonte, et le nom reste lisible. */}
-      <h1 className="encoche glass">{enDetail ? 'Capture' : TITRES[nav]}</h1>
+      {/* Sur le Flux, le bonjour PREND LA PLACE de la pastille au lieu
+          de s'ajouter à elle : dire « Le Flux » à quelqu'un qu'on vient
+          de saluer par son prénom, sur la même ligne, c'est une
+          étiquette de trop. Partout ailleurs, la pastille reste. */}
+      {nav === 'flux' && !enDetail ? (
+        <Bonjour variante="encoche" />
+      ) : (
+        <h1 className="encoche glass">{enDetail ? 'Capture' : TITRES[nav]}</h1>
+      )}
 
       {enDetail && (
         <button className="retour glass" onClick={() => select(null)} aria-label="Retour">

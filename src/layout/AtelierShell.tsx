@@ -6,6 +6,7 @@ import { FluxPanel } from '../screens/FluxPanel'
 import { CompteScreen } from '../screens/CompteScreen'
 import { SettingsPanel } from '../screens/SettingsPanel'
 import { IconFocus, IconPlus } from '../ui/Icon'
+import { Bonjour } from '../ui/Bonjour'
 import { Rail } from './Rail'
 
 /* ---------------------------------------------------------------
@@ -33,9 +34,10 @@ export function AtelierShell() {
       <Rail mode="hover" />
 
       <aside className="pane panel panel--list glass">
-        <div className="panel-head">
+        <div className={`panel-head${liste === 'flux' ? ' panel-head--salut' : ''}`}>
           <span className="panel-head__ref">{refs[liste]}</span>
           <h2 className="panel-head__title">{titres[liste]}</h2>
+          {liste === 'flux' && <Bonjour variante="panneau" />}
           {liste === 'flux' && (
             <button
               className="btn btn--icon"

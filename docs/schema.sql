@@ -34,6 +34,7 @@ create table if not exists posts (
   id           text primary key,
   titre        text    not null default '',
   texte        text    not null default '',
+  blocs        jsonb,          -- le contenu réel : la suite de blocs
   espace_id    text,
   cover_id     text,
   carte        jsonb,          -- les nœuds de la mind map
@@ -45,6 +46,14 @@ create table if not exists posts (
   supprime     boolean not null default false,     -- la pierre tombale
   proprietaire uuid    not null default auth.uid() references auth.users (id) on delete cascade
 );
+
+-- `create table if not exists` ne touche pas à une table déjà là :
+-- pour qui a passé le script avant les blocs, c'est CETTE ligne qui
+-- ajoute la colonne. Elle ne coûte rien si elle existe déjà.
+alter table posts add column if not exists blocs jsonb;
+
+-- `texte` reste rempli, en projection de `blocs` : c'est lui que lit
+-- la recherche. Le client s'en charge, le serveur ne calcule rien.
 
 -- La synchro ne demande QUE ce qui a changé depuis un instant donné :
 -- sans ces index, chaque tour relirait toute la table.

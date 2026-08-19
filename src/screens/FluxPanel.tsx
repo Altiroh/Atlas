@@ -4,6 +4,7 @@ import {
   filtrer,
   grouperParJour,
   libelleHeure,
+  SANS_ESPACE,
   titreDe,
   useAtlas,
   type Post,
@@ -65,12 +66,23 @@ export function FluxPanel({ onPick }: { onPick?: (id: string) => void }) {
         />
       </div>
 
-      {espace && (
+      {/* « Non triés » n'est pas un espace : il n'a pas de couleur, et sa
+          pastille reste neutre. C'est ce qui empêche de le confondre avec
+          un rangement qu'on aurait fait. */}
+      {espaceActif === SANS_ESPACE ? (
         <button className="filtre" onClick={() => setEspaceActif(null)}>
-          <span className="filtre__dot" style={{ background: `hsl(${espace.hue} 80% 56%)` }} />
-          {espace.nom}
+          <span className="filtre__dot filtre__dot--vide" />
+          Non triés
           <IconClose size={14} />
         </button>
+      ) : (
+        espace && (
+          <button className="filtre" onClick={() => setEspaceActif(null)}>
+            <span className="filtre__dot" style={{ background: `hsl(${espace.hue} 80% 56%)` }} />
+            {espace.nom}
+            <IconClose size={14} />
+          </button>
+        )
       )}
 
       <div className="scroll">
@@ -210,7 +222,7 @@ function ChoixEspace({ id, onFermer }: { id: string; onFermer: () => void }) {
 
   return (
     <div className="sheet" role="dialog" aria-label="Classer dans un espace" onClick={onFermer}>
-      <div className="sheet__panel glass rise" onClick={(e) => e.stopPropagation()}>
+      <div className="sheet__panel rise" onClick={(e) => e.stopPropagation()}>
         <div className="sheet__head">
           <h3 className="sheet__titre">Classer</h3>
           <button className="btn btn--icon" onClick={onFermer} aria-label="Fermer">

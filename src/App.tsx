@@ -15,6 +15,7 @@ import { useSync } from './store/sync'
 import { applyTheme, useTheme } from './theme/theme'
 import { Aurora } from './ui/Aurora'
 import { BulleAtlas } from './ui/BulleAtlas'
+import { Nouveaute } from './ui/Nouveaute'
 
 export default function App() {
   const shell = useShell()
@@ -122,6 +123,7 @@ export default function App() {
         {shell === 'duo' && <DuoShell />}
         {shell === 'atelier' && <AtelierShell />}
         <BulleAtlas />
+        <Nouveaute />
       </div>
       )}
     </>

@@ -1,5 +1,5 @@
 import { useEffect, useRef, type ReactNode } from 'react'
-import { IconClose } from './Icon'
+import { IconTrash } from './Icon'
 
 /* ---------------------------------------------------------------
    La confirmation avant l'irréversible.
@@ -40,26 +40,26 @@ export function Confirmation({
     return () => document.removeEventListener('keydown', surTouche)
   }, [onAnnuler])
 
+  /* Pas de verre ici, et c'est un choix : une confirmation s'ouvre
+     souvent par-dessus une image ou un texte dense, et le verre y rend
+     une bouillie où plus rien ne se lit. Une surface pleine, un médaillon
+     qui dit la couleur du danger, et deux boutons de même largeur —
+     personne ne doit viser. */
   return (
     <div className="sheet" role="dialog" aria-modal="true" onClick={onAnnuler}>
-      <div
-        className="sheet__panel confirme glass rise"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="sheet__head">
-          <h3 className="sheet__titre">{titre}</h3>
-          <button className="btn btn--icon" onClick={onAnnuler} aria-label="Annuler">
-            <IconClose size={18} />
-          </button>
-        </div>
+      <div className="confirme rise" onClick={(e) => e.stopPropagation()}>
+        <span className="confirme__sceau" aria-hidden="true">
+          <IconTrash size={20} />
+        </span>
 
-        {detail && <div className="confirme__detail">{detail}</div>}
+        <h3 className="confirme__titre">{titre}</h3>
+        {detail && <p className="confirme__detail">{detail}</p>}
 
         <div className="confirme__actions">
-          <button ref={annuler} className="btn" onClick={onAnnuler}>
+          <button ref={annuler} className="btn confirme__btn" onClick={onAnnuler}>
             Annuler
           </button>
-          <button className="btn btn--detruire" onClick={onConfirmer}>
+          <button className="btn btn--detruire confirme__btn" onClick={onConfirmer}>
             {action}
           </button>
         </div>
