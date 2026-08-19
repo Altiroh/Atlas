@@ -182,16 +182,65 @@ create trigger posts_perime   before update on posts   for each row execute func
 create trigger espaces_perime before update on espaces for each row execute function refuser_perime();
 ```
 
-Plus un **bucket de stockage privé** `images` pour les fichiers.
+### Le stockage des images
+
+Créer un bucket **privé** nommé `images`, puis poser ses règles — **elles manquaient au document
+précédent**, et sans elles le bucket est soit totalement inaccessible, soit ouvert à tous.
+
+```sql
+-- Le bucket est privé. Chacun ne touche qu'à SON dossier, dont le nom est
+-- son identifiant : c'est exactement le chemin qu'écrit le client,
+-- `{proprietaire}/{image}`.
+create policy "images — lire les miennes"
+  on storage.objects for select
+  using (bucket_id = 'images' and (storage.foldername(name))[1] = auth.uid()::text);
+
+create policy "images — déposer les miennes"
+  on storage.objects for insert
+  with check (bucket_id = 'images' and (storage.foldername(name))[1] = auth.uid()::text);
+
+create policy "images — supprimer les miennes"
+  on storage.objects for delete
+  using (bucket_id = 'images' and (storage.foldername(name))[1] = auth.uid()::text);
+```
+
+---
+
+## 7. Le coût : zéro
+
+Tout le nécessaire tient dans les paliers gratuits, et ce n'est pas une astuce — c'est
+dimensionné très au-delà d'un usage personnel.
+
+| | Palier gratuit | Ce que ça représente ici |
+|---|---|---|
+| **Base Postgres** | 500 Mo | des dizaines de milliers de posts — le texte ne pèse rien |
+| **Stockage fichiers** | 1 Go | ~100 000 images : les nôtres font ~10 Ko après réencodage WebP |
+| **Comptes actifs** | 50 000 / mois | il en faut un |
+| **Hébergement (Vercel)** | 100 Go de trafic | l'app fait 75 Ko compressés |
+
+**Les deux vraies limites, dites franchement :**
+
+1. **Un projet gratuit se met en pause après ~7 jours sans aucune requête.** On le réveille d'un
+   clic, sans rien perdre. Pour une app ouverte tous les jours, ça n'arrivera pas ; après des
+   vacances, il faudra un clic.
+2. **L'envoi d'e-mails est très limité** sur le service intégré (quelques messages par heure).
+   D'où la recommandation ci-dessous.
+
+### La confirmation par e-mail : à désactiver
+
+Dans *Authentication → Providers → Email*, **décocher « Confirm email »**.
+
+Pour une app à un seul utilisateur, la confirmation n'apporte aucune sécurité — tu connais ton
+adresse — mais elle ajoute une dépendance à un service d'envoi bridé, et un compte peut rester
+bloqué si le message n'arrive pas. Le code gère les deux cas ; c'est un choix, pas une contrainte.
 
 ### Ce qu'il me faut de toi
 
 1. L'**URL du projet** Supabase et la **clé anonyme** (`anon`, publique — jamais la clé `service_role`).
 2. Le schéma ci-dessus exécuté dans l'éditeur SQL.
 3. Le bucket `images` créé, en privé.
-4. Dans *Authentication*, activer **e-mail + mot de passe** — et dire si tu veux la
-   **confirmation par e-mail** à l'inscription (l'écran la gère déjà : il affiche
-   « vérifie ta boîte » au lieu d'ouvrir la session).
+4. Dans *Authentication → Providers → Email*, activer **e-mail + mot de passe** et
+   **décocher « Confirm email »** (voir § 7).
 
 5. Les deux valeurs dans un `.env.local` à la racine du projet (modèle : `.env.example`) :
 
