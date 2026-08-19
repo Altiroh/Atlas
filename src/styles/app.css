@@ -3201,3 +3201,48 @@
 .pap-ligne { fill: none; stroke: var(--border); stroke-width: 1; }
 
 .dessin__outils .seg { flex: none; }
+
+/* ========================================================
+   48. Capture — le style se choisit AVANT d'écrire
+   ======================================================== */
+
+.capture__styles {
+  display: flex;
+  gap: 4px;
+  padding-bottom: 14px;
+  margin-bottom: 4px;
+  border-bottom: 1px solid var(--border);
+}
+
+.capture__style {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  height: 32px;
+  padding: 0 12px;
+  border-radius: 99px;
+  border: 1px solid transparent;
+  color: var(--text-3);
+  font-size: 13px;
+  font-weight: 520;
+  transition: color var(--fast) var(--ease), background var(--fast) var(--ease),
+    border-color var(--fast) var(--ease);
+}
+
+.capture__style:hover { color: var(--text-2); background: var(--surface-sunken); }
+
+.capture__style[aria-current='true'] {
+  background: var(--accent-soft);
+  border-color: var(--accent-line);
+  color: var(--accent-text);
+  font-weight: 580;
+}
+
+/* En carte et en dessin, le champ n'est qu'une amorce : il n'a pas
+   besoin de toute la hauteur, qui appellerait à écrire un roman. */
+.capture__field[data-style='carte'],
+.capture__field[data-style='dessin'] {
+  flex: none;
+  min-height: 76px;
+  font-size: 18px;
+}
