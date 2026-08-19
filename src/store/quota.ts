@@ -4,31 +4,53 @@ import { nombreImages, octetsImages } from './db'
 /* ---------------------------------------------------------------
    Le quota par compte.
 
-   Il sert AVANT toute question d'argent : le palier gratuit du
-   serveur a des bornes, et les dépasser ferait échouer la
-   synchronisation sans prévenir — au pire moment, celui où l'on
-   ajoute une idée. Mieux vaut annoncer la limite que la subir.
+   ── D'où viennent les chiffres ────────────────────────────────
 
-   Deux principes, et le second compte plus que le premier :
+   Ils ne sont pas choisis, ils sont DÉDUITS. Un plafond « parce que
+   ça fait bien » ne se défend pas et se négocie mal ; un plafond
+   calculé sur l'usage réel se défend tout seul.
 
-   · LE TEXTE N'EST JAMAIS BLOQUÉ. Capturer une idée est la promesse
-     d'Atlas ; un plafond ne doit jamais l'empêcher. Une note pèse
-     quelques centaines d'octets — cent mille notes tiennent dans le
-     quota. Ce sont les images qui pèsent, ce sont elles qu'on borne.
-   · ON PRÉVIENT AVANT DE REFUSER. À 80 % on le dit, calmement ; à
-     100 % on refuse les nouvelles images, et on explique quoi faire.
+   Mesure d'un usage intense (docs/08 § 3) : 10 000 posts et 2 000
+   images, soit ~5 Mo de texte et ~20 Mo de fichiers — nos images
+   pèsent une dizaine de kilo-octets une fois réencodées en WebP.
+
+   La règle : **on double l'usage intense mesuré**. Quelqu'un de
+   normal ne doit jamais rencontrer le plafond ; seul un usage
+   déraisonnable le touche.
+
+   ── Deux quotas, pas un ───────────────────────────────────────
+
+   Le texte et les images ne coûtent pas la même chose, et les
+   mélanger dans un seul chiffre efface justement ce qui compte.
+
+   · LE TEXTE ne coûte rien. Une note pèse quelques centaines
+     d'octets ; 20 000 notes tiennent dans une dizaine de méga-octets.
+     Le plafond n'est là que pour repérer un emballement, jamais
+     pour freiner quelqu'un qui écrit.
+   · LES IMAGES sont le seul poste réel. C'est sur elles que porte
+     la vraie limite.
+
+   Conséquence tenue partout : **capturer du texte n'est jamais
+   bloqué.** C'est la promesse d'Atlas ; un plafond ne doit jamais
+   l'empêcher.
    --------------------------------------------------------------- */
 
-/** Volontairement sous le palier gratuit du serveur : il faut de la marge. */
-export const QUOTA = 200 * 1024 * 1024
+/** 20 Mo d'usage intense mesuré, doublés. */
+export const QUOTA_IMAGES = 50 * 1024 * 1024
+
+/** 10 000 posts d'usage intense, doublés. */
+export const QUOTA_POSTS = 20_000
+
 const SEUIL_ALERTE = 0.8
 
 export type Usage = {
-  octets: number
-  posts: number
+  octetsImages: number
+  octetsTexte: number
   images: number
-  /** part du quota consommée, de 0 à 1 et au-delà */
-  part: number
+  posts: number
+  /** part du quota d'images consommée, de 0 à 1 et au-delà */
+  partImages: number
+  partPosts: number
   proche: boolean
   plein: boolean
 }
@@ -38,22 +60,25 @@ export function usage(): Usage {
 
   // le texte est mesuré, pas estimé : c'est ce qui partira sur le réseau
   const octetsTexte = new Blob([JSON.stringify({ posts, espaces })]).size
-  const octets = octetsTexte + octetsImages()
-  const part = octets / QUOTA
+  const octets = octetsImages()
+  const partImages = octets / QUOTA_IMAGES
+  const partPosts = posts.length / QUOTA_POSTS
 
   return {
-    octets,
-    posts: posts.length,
+    octetsImages: octets,
+    octetsTexte,
     images: nombreImages(),
-    part,
-    proche: part >= SEUIL_ALERTE,
-    plein: part >= 1,
+    posts: posts.length,
+    partImages,
+    partPosts,
+    proche: partImages >= SEUIL_ALERTE || partPosts >= SEUIL_ALERTE,
+    plein: partImages >= 1,
   }
 }
 
-/** Peut-on encore ajouter ce fichier ? */
+/** Peut-on encore ajouter ce fichier ? Le texte, lui, ne demande jamais. */
 export function peutAjouterImage(taille = 0): boolean {
-  return usage().octets + taille < QUOTA
+  return octetsImages() + taille < QUOTA_IMAGES
 }
 
 export function lisible(octets: number): string {

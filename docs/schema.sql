@@ -135,6 +135,49 @@ create policy "images — supprimer les miennes" on storage.objects
   using (bucket_id = 'images' and (storage.foldername(name))[1] = auth.uid()::text);
 
 
+
+
+-- ─── 5. Le compte lui-même ─────────────────────────────────────
+--
+-- Rien à créer : Supabase possède `auth.users`, la remplit à
+-- l'inscription, et gère mots de passe et jetons. Nos tables s'y
+-- rattachent, c'est tout — et le `on delete cascade` posé plus haut
+-- fait que supprimer un compte emporte ses posts et ses espaces.
+--
+-- Manque une seule chose, et elle sera obligatoire le jour où
+-- quelqu'un d'autre s'inscrit : POUVOIR SUPPRIMER SON PROPRE COMPTE.
+-- Le client, avec la clé publique, n'en a pas le droit — et c'est
+-- heureux. Il faut donc une fonction qui s'exécute avec les droits
+-- du propriétaire, et qui ne peut effacer QUE l'appelant.
+
+create or replace function supprimer_mon_compte() returns void
+language plpgsql
+security definer
+-- `search_path` figé : sans ça, un schéma malveillant pourrait faire
+-- exécuter son propre `delete` avec les droits élevés de la fonction.
+set search_path = public, auth, storage
+as $$
+declare
+  moi uuid := auth.uid();
+begin
+  if moi is null then
+    raise exception 'Aucune session';
+  end if;
+
+  -- les fichiers d'abord : rien ne les emporte automatiquement
+  delete from storage.objects
+   where bucket_id = 'images'
+     and (storage.foldername(name))[1] = moi::text;
+
+  -- puis le compte ; la cascade se charge des posts et des espaces
+  delete from auth.users where id = moi;
+end;
+$$;
+
+revoke all on function supprimer_mon_compte() from public, anon;
+grant execute on function supprimer_mon_compte() to authenticated;
+
+
 -- ═══════════════════════════════════════════════════════════════
 -- Reste à faire à la main, dans le tableau de bord :
 --

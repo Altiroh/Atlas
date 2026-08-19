@@ -4,7 +4,6 @@ import { useBienvenue } from '../store/bienvenue'
 import { useCompte, type Session } from '../store/compte'
 import { DorsaleLocale } from '../store/dorsale-locale'
 import { SUPABASE_CONFIGURE } from '../store/config'
-import { lisible, QUOTA, usage } from '../store/quota'
 import { enAttenteDEnvoi, useSync, type EtatSync } from '../store/sync'
 import { ChampMotDePasse } from '../ui/ChampMotDePasse'
 import { HauteurFluide } from '../ui/HauteurFluide'
@@ -238,39 +237,6 @@ const LIBELLES: Record<EtatSync, string> = {
   'hors-ligne': 'Hors ligne',
 }
 
-/* La place occupée, dite avant qu'elle ne pose problème. */
-function Jauge() {
-  const posts = useAtlas((s) => s.posts)
-  const espaces = useAtlas((s) => s.espaces)
-  // recalculé au fil du contenu — c'est bon marché grâce au registre des tailles
-  void posts
-  void espaces
-  const u = usage()
-  const pourcent = Math.min(100, Math.round(u.part * 100))
-
-  return (
-    <div className="quota" data-etat={u.plein ? 'plein' : u.proche ? 'proche' : 'ok'}>
-      <div className="quota__ligne">
-        <span className="quota__titre">Place occupée</span>
-        <span className="quota__chiffre">
-          {lisible(u.octets)} <span>sur {lisible(QUOTA)}</span>
-        </span>
-      </div>
-      <div className="quota__barre">
-        <span style={{ width: `${Math.max(1.5, pourcent)}%` }} />
-      </div>
-      <p className="quota__note">
-        {u.posts} post{u.posts > 1 ? 's' : ''} · {u.images} image{u.images > 1 ? 's' : ''}
-        {u.plein
-          ? " — plafond atteint. Les nouvelles images sont refusées ; le texte, lui, passe toujours."
-          : u.proche
-            ? ' — tu approches du plafond. Les images pèsent, le texte non.'
-            : ''}
-      </p>
-    </div>
-  )
-}
-
 export function SyncPanel() {
   const posts = useAtlas((s) => s.posts)
   const espaces = useAtlas((s) => s.espaces)
@@ -297,9 +263,7 @@ export function SyncPanel() {
         modifications partent derrière, et rattrapent au retour du signal.
       </div>
       <div className="setting__body">
-        <Jauge />
-
-        <div className="now" style={{ marginTop: 14 }}>
+        <div className="now">
           <span className="sync__pastille" data-etat={etat} aria-hidden="true" />
           {message ?? LIBELLES[etat]}
           {etat === 'ok' && derniereSync ? ` · ${libelleHeure(derniereSync)}` : ''}
