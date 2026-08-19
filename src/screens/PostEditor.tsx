@@ -1,0 +1,302 @@
+import { useEffect, useRef, useState } from 'react'
+import { libelleHeure, libelleJour, titreDe, useAtlas } from '../store/atlas'
+import { oublierImage, stockerImage } from '../store/db'
+import { IconBolt, IconImage, IconTrash } from '../ui/Icon'
+import { useImageUrl } from '../ui/useImageUrl'
+import { MindMap, carteInitiale } from './MindMap'
+import { Dessin } from './Dessin'
+import { Confirmation } from '../ui/Confirmation'
+import { IconPlus } from '../ui/Icon'
+
+/* ---------------------------------------------------------------
+   L'éditeur de post. Deux manières de travailler la même matière :
+   · Texte — titre, corps, image de couverture ;
+   · Carte — la même idée en mind map.
+
+   Ce sont deux vues d'UN SEUL objet, pas deux objets. Un post gagne
+   une carte quand on en a besoin, et la garde.
+
+   Tout s'enregistre au fil de la frappe : il n'y a pas de bouton
+   « Enregistrer », et il n'y en aura jamais.
+   --------------------------------------------------------------- */
+
+type Mode = 'texte' | 'carte' | 'dessin'
+
+/* Un post n'a pas UN type : il a des FORMES, et il peut en cumuler.
+   Le texte est toujours là ; la carte et le dessin s'ajoutent quand
+   on en a besoin, et ne se retirent jamais tout seuls. */
+const FORMES: { id: Mode; libelle: string }[] = [
+  { id: 'texte', libelle: 'Texte' },
+  { id: 'carte', libelle: 'Carte' },
+  { id: 'dessin', libelle: 'Dessin' },
+]
+
+export function PostEditor() {
+  const selectedId = useAtlas((s) => s.selectedId)
+  const posts = useAtlas((s) => s.posts)
+  const espaces = useAtlas((s) => s.espaces)
+  const majPost = useAtlas((s) => s.majPost)
+  const supprimerPost = useAtlas((s) => s.supprimerPost)
+  const creerPost = useAtlas((s) => s.creerPost)
+  const select = useAtlas((s) => s.select)
+
+  const post = posts.find((p) => p.id === selectedId) ?? null
+  const cover = useImageUrl(post?.coverId)
+  const fichier = useRef<HTMLInputElement>(null)
+  const [envoi, setEnvoi] = useState(false)
+  const [mode, setMode] = useState<Mode>('texte')
+  const [aSupprimer, setASupprimer] = useState(false)
+  const [choixForme, setChoixForme] = useState(false)
+
+  // changer de post ramène toujours au texte
+  useEffect(() => setMode('texte'), [post?.id])
+
+  if (!post) {
+    return (
+      <div className="empty">
+        <div className="empty__icon">
+          <IconBolt size={22} />
+        </div>
+        <div className="empty__ref">ATL_00 / VIDE</div>
+        <div className="empty__title">Rien de sélectionné</div>
+        <div className="empty__sub">Choisis un post dans le flux, ou commences-en un nouveau.</div>
+        <button
+          className="btn btn--accent"
+          style={{ marginTop: 14 }}
+          onClick={() => select(creerPost())}
+        >
+          Nouveau post
+        </button>
+      </div>
+    )
+  }
+
+  const importer = async (f: File | undefined) => {
+    if (!f) return
+    setEnvoi(true)
+    try {
+      if (post.coverId) oublierImage(post.coverId)
+      majPost(post.id, { coverId: await stockerImage(f) })
+    } finally {
+      setEnvoi(false)
+    }
+  }
+
+  const presentes = FORMES.filter(
+    (f) => f.id === 'texte' || (f.id === 'carte' ? post.carte : post.dessin),
+  )
+  const absentes = FORMES.filter((f) => !presentes.includes(f))
+
+  const ouvrirForme = (f: Mode) => {
+    // la carte naît du titre du post : on ne repart jamais d'une page blanche
+    if (f === 'carte' && !post.carte?.length) {
+      majPost(post.id, { carte: carteInitiale(titreDe(post)) })
+    }
+    if (f === 'dessin' && !post.dessin) majPost(post.id, { dessin: [] })
+    setMode(f)
+    setChoixForme(false)
+  }
+
+  return (
+    <div className="post">
+      <div className="post__bar">
+        <div className="seg" role="group" aria-label="Forme">
+          {presentes.map((f) => (
+            <button
+              key={f.id}
+              className="seg__item"
+              aria-current={mode === f.id}
+              onClick={() => setMode(f.id)}
+            >
+              {f.libelle}
+            </button>
+          ))}
+          {absentes.length > 0 && (
+            <button
+              className="seg__item seg__item--plus"
+              aria-label="Ajouter une forme"
+              onClick={() => setChoixForme(true)}
+            >
+              <IconPlus size={14} />
+            </button>
+          )}
+        </div>
+
+        {mode === 'carte' && <span className="post__nom">{titreDe(post)}</span>}
+
+        <div style={{ flex: 1 }} />
+
+        {mode === 'texte' && !cover && (
+          <button className="btn btn--ghost" onClick={() => fichier.current?.click()} disabled={envoi}>
+            <IconImage size={16} />
+            {envoi ? 'Import…' : 'Image'}
+          </button>
+        )}
+        <button
+          className="btn btn--icon btn--danger"
+          onClick={() => setASupprimer(true)}
+          aria-label="Supprimer ce post"
+        >
+          <IconTrash size={17} />
+        </button>
+      </div>
+
+      <input
+        ref={fichier}
+        type="file"
+        accept="image/*"
+        hidden
+        onChange={(e) => {
+          void importer(e.target.files?.[0])
+          e.target.value = ''
+        }}
+      />
+
+      {mode === 'carte' ? (
+        <MindMap post={post} />
+      ) : mode === 'dessin' ? (
+        <Dessin post={post} />
+      ) : (
+        <div className="scroll">
+          <article className="editor" key={post.id}>
+            {cover && (
+              <div className="editor__cover">
+                <img src={cover} alt="" />
+                <div className="editor__coverActions">
+                  <button
+                    className="btn btn--icon btn--onImage"
+                    onClick={() => fichier.current?.click()}
+                    aria-label="Remplacer l'image"
+                  >
+                    <IconImage size={17} />
+                  </button>
+                  <button
+                    className="btn btn--icon btn--onImage"
+                    aria-label="Retirer l'image"
+                    onClick={() => {
+                      oublierImage(post.coverId!)
+                      majPost(post.id, { coverId: null })
+                    }}
+                  >
+                    <IconTrash size={17} />
+                  </button>
+                </div>
+              </div>
+            )}
+
+            <input
+              className="editor__titre"
+              value={post.titre}
+              placeholder="Titre"
+              onChange={(e) => majPost(post.id, { titre: e.target.value })}
+              aria-label="Titre du post"
+            />
+
+            <AutoTextarea
+              value={post.texte}
+              onChange={(v) => majPost(post.id, { texte: v })}
+              placeholder="Écris ici. Ça s'enregistre tout seul."
+            />
+
+            <div className="editor__section">
+              <div className="eyebrow">Espace</div>
+              <div className="chips">
+                {espaces.map((e) => (
+                  <button
+                    key={e.id}
+                    className="chip"
+                    aria-pressed={post.espaceId === e.id}
+                    onClick={() =>
+                      majPost(post.id, { espaceId: post.espaceId === e.id ? null : e.id })
+                    }
+                  >
+                    <span className="chip__dot" style={{ color: `hsl(${e.hue} 78% 55%)` }} />
+                    {e.nom}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="editor__meta">
+              Créé {libelleJour(post.createdAt).toLowerCase()} à {libelleHeure(post.createdAt)}
+              {post.updatedAt - post.createdAt > 60_000 &&
+                ` · modifié à ${libelleHeure(post.updatedAt)}`}
+              {post.carte && ` · ${post.carte.length} nœud${post.carte.length > 1 ? 's' : ''}`}
+            </div>
+          </article>
+        </div>
+      )}
+
+      {choixForme && (
+        <div className="sheet" role="dialog" onClick={() => setChoixForme(false)}>
+          <div className="sheet__panel glass rise" onClick={(e) => e.stopPropagation()}>
+            <div className="sheet__head">
+              <h3 className="sheet__titre">Ajouter une forme</h3>
+            </div>
+            <p className="sheet__note" style={{ marginTop: 0, marginBottom: 14 }}>
+              La même idée, travaillée autrement. Rien ne remplace rien : les formes s'ajoutent.
+            </p>
+            <div className="choix">
+              {absentes.map((f) => (
+                <button key={f.id} className="choix__item" onClick={() => ouvrirForme(f.id)}>
+                  <i style={{ background: 'var(--accent)' }} />
+                  {f.libelle}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {aSupprimer && (
+        <Confirmation
+          titre="Supprimer ce post ?"
+          detail={
+            <>
+              <strong>{titreDe(post)}</strong> — le texte, l'image, la carte et le dessin partent
+              avec lui, sur tous tes appareils. C'est le seul geste qu'Atlas ne sait pas défaire.
+            </>
+          }
+          action="Supprimer"
+          onConfirmer={() => {
+            setASupprimer(false)
+            supprimerPost(post.id)
+          }}
+          onAnnuler={() => setASupprimer(false)}
+        />
+      )}
+    </div>
+  )
+}
+
+/* Zone de texte qui grandit avec son contenu : dans un éditeur, une
+   barre de défilement interne coupe la lecture en deux. */
+function AutoTextarea({
+  value,
+  onChange,
+  placeholder,
+}: {
+  value: string
+  onChange: (v: string) => void
+  placeholder: string
+}) {
+  const ref = useRef<HTMLTextAreaElement>(null)
+
+  useEffect(() => {
+    const el = ref.current
+    if (!el) return
+    el.style.height = 'auto'
+    el.style.height = `${el.scrollHeight}px`
+  }, [value])
+
+  return (
+    <textarea
+      ref={ref}
+      className="editor__texte"
+      value={value}
+      placeholder={placeholder}
+      onChange={(e) => onChange(e.target.value)}
+      aria-label="Contenu du post"
+    />
+  )
+}

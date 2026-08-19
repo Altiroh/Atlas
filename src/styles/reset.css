@@ -1,0 +1,106 @@
+/* ---------------------------------------------------------------
+   Reset minimal, orienté iOS
+   --------------------------------------------------------------- */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+html {
+  /* empêche iOS de re-zoomer le texte en paysage */
+  -webkit-text-size-adjust: 100%;
+  /* évite le rebond élastique de toute la page (l'app gère ses propres zones de défilement) */
+  overscroll-behavior: none;
+}
+
+body {
+  /* Inter d'abord ; repli sur la police système (SF sur Apple) le temps
+     que le fichier local soit lu. */
+  font-family: 'Inter Variable', -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI',
+    system-ui, sans-serif;
+  font-size: 15px;
+  font-weight: 400;
+  line-height: 1.5;
+  /* chiffres de même largeur : les heures du flux ne dansent pas d'une ligne à l'autre */
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.006em;
+  color: var(--text);
+  background: var(--bg);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  /* pas de flash gris au tap sur iOS */
+  -webkit-tap-highlight-color: transparent;
+  overscroll-behavior: none;
+}
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
+  color: inherit;
+  background: none;
+  border: none;
+  border-radius: 0;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+button {
+  cursor: pointer;
+  /* supprime le délai de 300 ms au tap */
+  touch-action: manipulation;
+}
+
+/* Sous 16px, iOS zoome automatiquement à la mise au point d'un champ.
+   Tous les champs de saisie restent donc à 16px minimum. */
+input,
+textarea {
+  font-size: 16px;
+}
+
+textarea {
+  resize: none;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+ul,
+ol {
+  list-style: none;
+}
+
+svg {
+  display: block;
+  flex: none;
+}
+
+/* L'anneau de mise au point reste — la navigation au clavier en dépend —
+   mais en trait ADOUCI : l'accent brut cerclant un élément entier est
+   agressif. Les grands champs d'écriture, eux, n'en ont pas du tout :
+   c'est leur cadre qui réagit (voir .capture__body:focus-within). */
+:focus-visible {
+  outline: 2px solid var(--accent-line);
+  outline-offset: 3px;
+  border-radius: 8px;
+}
+
+::selection {
+  background: hsl(var(--accent-h) var(--accent-s) var(--accent-l) / 0.35);
+}

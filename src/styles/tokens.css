@@ -1,0 +1,125 @@
+/* ---------------------------------------------------------------
+   Atlas — jetons de design
+   Une seule source de vérité pour les couleurs, le verre et les rayons.
+
+   L'accent est stocké en CANAUX HSL (--accent-h/s/l) et non en hex :
+   toutes les variantes (halo, bordure, texte lisible, fond animé) s'en
+   déduisent par calcul. Changer une seule valeur reteinte toute l'app.
+   --------------------------------------------------------------- */
+
+:root {
+  /* --- Accent : rouge par défaut, remplacé à chaud par le thème.
+         Doit rester synchronisé avec ACCENTS[0] dans src/theme/theme.ts. --- */
+  --accent-h: 359;
+  --accent-s: 92%;
+  --accent-l: 58%;
+
+  --accent: hsl(var(--accent-h) var(--accent-s) var(--accent-l));
+  --accent-soft: hsl(var(--accent-h) var(--accent-s) var(--accent-l) / 0.16);
+  --accent-line: hsl(var(--accent-h) var(--accent-s) var(--accent-l) / 0.4);
+  --accent-glow: hsl(var(--accent-h) var(--accent-s) var(--accent-l) / 0.28);
+
+  /* Texte POSÉ SUR l'accent. Un jaune vif exige de l'encre sombre ;
+     la formule bascule sur du blanc si l'accent choisi est foncé (violet, bleu…). */
+  --accent-ink: hsl(var(--accent-h) 40% 12%);
+
+  /* --- Rayons : « arrondi léger », jamais de pastille --- */
+  --r-xs: 8px;
+  --r-sm: 11px;
+  --r: 15px;
+  --r-lg: 20px;
+  --r-xl: 26px;
+
+  /* --- Verre --- */
+  --blur: 22px;
+  --blur-strong: 34px;
+
+  /* --- Rythme d'animation : court, jamais rebondissant --- */
+  --ease: cubic-bezier(0.32, 0.72, 0, 1);
+  --fast: 140ms;
+  --mid: 240ms;
+  --slow: 420ms;
+
+  /* --- Zones sûres iOS, exposées une fois pour toutes --- */
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-left: env(safe-area-inset-left, 0px);
+  --safe-right: env(safe-area-inset-right, 0px);
+}
+
+/* ================= THÈME CLAIR ================= */
+:root,
+:root[data-theme='light'] {
+  color-scheme: light;
+
+  --bg: #eceff6;
+  --bg-deep: #e2e7f1;
+
+  --surface: rgba(255, 255, 255, 0.58);
+  --surface-strong: rgba(255, 255, 255, 0.8);
+  --surface-solid: #ffffff;
+  --surface-sunken: rgba(15, 23, 42, 0.035);
+
+  --border: rgba(15, 23, 42, 0.08);
+  --border-strong: rgba(15, 23, 42, 0.14);
+  /* liseré clair sur le bord haut du verre : c'est lui qui « fait » le verre */
+  --sheen: rgba(255, 255, 255, 0.65);
+
+  --text: #10141d;
+  --text-2: #576076;
+  --text-3: #8b93a6;
+
+  --shadow-sm: 0 1px 2px rgba(16, 24, 40, 0.04), 0 4px 14px rgba(16, 24, 40, 0.05);
+  --shadow: 0 2px 6px rgba(16, 24, 40, 0.05), 0 14px 40px rgba(16, 24, 40, 0.09);
+
+  /* En mode clair, l'accent brut est illisible en texte : on l'assombrit. */
+  --accent-text: hsl(var(--accent-h) calc(var(--accent-s) * 0.85) 32%);
+  --aurora-opacity: 0.55;
+}
+
+/* ================= THÈME NUIT ================= */
+:root[data-theme='dark'] {
+  color-scheme: dark;
+
+  --bg: #0b0d12;
+  --bg-deep: #060709;
+
+  --surface: rgba(255, 255, 255, 0.055);
+  --surface-strong: rgba(255, 255, 255, 0.095);
+  --surface-solid: #14171f;
+  --surface-sunken: rgba(255, 255, 255, 0.04);
+
+  --border: rgba(255, 255, 255, 0.09);
+  --border-strong: rgba(255, 255, 255, 0.16);
+  --sheen: rgba(255, 255, 255, 0.14);
+
+  --text: #f0f2f7;
+  --text-2: #a3abbd;
+  --text-3: #6d7488;
+
+  --shadow-sm: 0 2px 10px rgba(0, 0, 0, 0.4);
+  --shadow: 0 8px 40px rgba(0, 0, 0, 0.55);
+
+  /* Sur fond sombre, l'accent brut est parfaitement lisible. */
+  --accent-text: hsl(var(--accent-h) var(--accent-s) calc(var(--accent-l) + 8%));
+  --aurora-opacity: 0.42;
+}
+
+/* Bascule douce entre les deux thèmes : on ne transitionne QUE les couleurs,
+   jamais la géométrie, pour ne pas déclencher de recalcul de mise en page. */
+:root.theme-ready body,
+:root.theme-ready .tint {
+  transition: background-color var(--slow) var(--ease), color var(--slow) var(--ease),
+    border-color var(--slow) var(--ease);
+}
+
+/* Respect du réglage système « Réduire les animations » */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}

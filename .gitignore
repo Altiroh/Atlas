@@ -1,0 +1,18 @@
+# Secrets — ne doivent JAMAIS partir dans l'historique.
+# La clé anon de Supabase est publique, mais le fichier peut en contenir
+# d'autres : on ignore le fichier entier, et .env.example sert de modèle.
+.env
+.env.local
+.env.*.local
+
+# Dépendances et sorties de compilation
+node_modules
+dist
+*.tsbuildinfo
+
+# Hébergement
+.vercel
+
+# Système
+.DS_Store
+Thumbs.db

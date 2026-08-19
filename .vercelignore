@@ -1,0 +1,9 @@
+# Ce qui n'a rien à faire dans l'envoi : Vercel réinstalle et rebâtit
+# lui-même à partir de package.json.
+node_modules
+dist
+.vercel
+
+# Le cadrage et les outils de génération ne servent pas à l'exécution.
+docs
+tools

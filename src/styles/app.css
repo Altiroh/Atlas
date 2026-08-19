@@ -1,0 +1,3003 @@
+/* ---------------------------------------------------------------
+   Atlas — mise en page et composants
+   --------------------------------------------------------------- */
+
+/* ========================================================
+   1. Fond animé (« aurora »)
+   Trois halos très lents, teintés par l'accent.
+   On n'anime QUE transform/opacity : aucun recalcul de mise en
+   page, aucun re-flou par image. C'est ce qui garde l'iPhone fluide.
+   ======================================================== */
+
+.aurora {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+  background: radial-gradient(120% 90% at 50% 0%, var(--bg) 0%, var(--bg-deep) 100%);
+}
+
+.aurora__blob {
+  position: absolute;
+  width: 78vmax;
+  height: 78vmax;
+  border-radius: 50%;
+  opacity: var(--aurora-opacity);
+  will-change: transform;
+  transition: opacity var(--slow) var(--ease);
+}
+
+.aurora__blob--1 {
+  top: -34vmax;
+  left: -18vmax;
+  background: radial-gradient(circle at 50% 50%, hsl(var(--aur-h1) 92% 62% / 0.5), transparent 66%);
+  animation: drift-1 34s var(--ease) infinite alternate;
+}
+
+.aurora__blob--2 {
+  bottom: -40vmax;
+  right: -22vmax;
+  background: radial-gradient(circle at 50% 50%, hsl(var(--aur-h2) 88% 60% / 0.42), transparent 66%);
+  animation: drift-2 46s var(--ease) infinite alternate;
+}
+
+.aurora__blob--3 {
+  top: 18%;
+  right: -30vmax;
+  width: 60vmax;
+  height: 60vmax;
+  background: radial-gradient(circle at 50% 50%, hsl(var(--aur-h3) 85% 58% / 0.34), transparent 68%);
+  animation: drift-3 58s var(--ease) infinite alternate;
+}
+
+@keyframes drift-1 {
+  from { transform: translate3d(0, 0, 0) scale(1); }
+  to   { transform: translate3d(14vmax, 10vmax, 0) scale(1.14); }
+}
+@keyframes drift-2 {
+  from { transform: translate3d(0, 0, 0) scale(1.08); }
+  to   { transform: translate3d(-16vmax, -12vmax, 0) scale(1); }
+}
+@keyframes drift-3 {
+  from { transform: translate3d(0, 0, 0) scale(1); }
+  to   { transform: translate3d(-12vmax, 16vmax, 0) scale(1.2); }
+}
+
+/* ========================================================
+   2. Verre
+   ======================================================== */
+
+.glass {
+  position: relative;
+  background: var(--surface);
+  -webkit-backdrop-filter: blur(var(--blur)) saturate(170%);
+  backdrop-filter: blur(var(--blur)) saturate(170%);
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+}
+
+/* Le liseré lumineux sur l'arête haute : le détail qui fait lire « verre »
+   plutôt que « rectangle translucide ». */
+.glass::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding-top: 1px;
+  background: linear-gradient(to bottom, var(--sheen), transparent 42%);
+  -webkit-mask: linear-gradient(#000, #000) content-box, linear-gradient(#000, #000);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+  opacity: 0.9;
+}
+
+.glass--flat::before { display: none; }
+
+/* ========================================================
+   3. Coquilles
+   ======================================================== */
+
+.app {
+  position: relative;
+  z-index: 1;
+  height: 100dvh;
+  /* repli pour les navigateurs sans dvh */
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* --- Compacte (iPhone) --- */
+.shell-compact {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  height: 100%;
+}
+
+/* --- Duo (iPad) --- */
+.shell-duo {
+  display: grid;
+  grid-template-columns: var(--rail-w) minmax(260px, 348px) minmax(0, 1fr);
+  height: 100%;
+  gap: 12px;
+  padding: 12px;
+  padding-top: calc(12px + var(--safe-top));
+  padding-bottom: calc(12px + var(--safe-bottom));
+  padding-left: calc(12px + var(--safe-left));
+  padding-right: calc(12px + var(--safe-right));
+}
+
+/* --- Atelier (Mac) --- */
+.shell-atelier {
+  display: grid;
+  grid-template-columns: var(--rail-w) minmax(300px, 372px) minmax(0, 1fr);
+  height: 100%;
+  gap: 12px;
+  padding: 12px;
+}
+
+/* Le repli des colonnes est INSTANTANÉ, volontairement.
+   Animer grid-template-columns force un recalcul complet de la mise en page
+   à chaque image — exactement ce qu'on s'interdit (docs/03 § 2.4) — et
+   l'interpolation entre `minmax()` et une longueur fixe n'est de toute façon
+   pas définie. C'est la disparition des volets qui porte le mouvement. */
+.shell-atelier[data-focus='true'] {
+  grid-template-columns: 0 0 minmax(0, 1fr);
+  gap: 0;
+}
+
+.shell-atelier[data-focus='true'] .rail,
+.shell-atelier[data-focus='true'] .panel--list {
+  opacity: 0;
+  pointer-events: none;
+  visibility: hidden;
+}
+
+.pane {
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.panel {
+  border-radius: var(--r-xl);
+  box-shadow: var(--shadow-sm);
+  transition: opacity var(--mid) var(--ease);
+}
+
+/* ========================================================
+   4. Défilement
+   ======================================================== */
+
+.scroll {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  /* le défilement ne « fuit » jamais vers la page : pas de rebond parasite sur iOS */
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-strong) transparent;
+}
+
+.scroll::-webkit-scrollbar { width: 8px; }
+.scroll::-webkit-scrollbar-thumb {
+  background: var(--border-strong);
+  border-radius: 99px;
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+
+/* ========================================================
+   5. En-têtes
+   ======================================================== */
+
+.topbar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 16px;
+  padding-top: calc(10px + var(--safe-top));
+  padding-left: calc(16px + var(--safe-left));
+  padding-right: calc(16px + var(--safe-right));
+}
+
+.topbar__title {
+  font-size: 17px;
+  font-weight: 560;
+  letter-spacing: -0.015em;
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.panel-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 16px 16px 10px;
+}
+
+.panel-head__title {
+  font-size: 19px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  flex: 1;
+}
+
+.eyebrow {
+  font-size: 11px;
+  font-weight: 560;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-3);
+}
+
+/* ========================================================
+   6. Boutons
+   ======================================================== */
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  height: 38px;
+  padding: 0 14px;
+  border-radius: var(--r-sm);
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text);
+  background: var(--surface-strong);
+  border: 1px solid var(--border);
+  transition: transform var(--fast) var(--ease), background var(--fast) var(--ease),
+    border-color var(--fast) var(--ease);
+}
+
+.btn:active { transform: scale(0.97); }
+
+.btn--ghost {
+  background: transparent;
+  border-color: transparent;
+  color: var(--text-2);
+}
+.btn--ghost:hover { background: var(--surface-sunken); color: var(--text); }
+
+.btn--accent {
+  background: var(--accent);
+  color: var(--accent-ink);
+  border-color: transparent;
+  box-shadow: 0 6px 22px var(--accent-glow);
+  font-weight: 550;
+}
+
+.btn--icon {
+  width: 38px;
+  height: 38px;
+  padding: 0;
+  border-radius: 50%;
+  color: var(--text-2);
+}
+.btn--icon:hover { color: var(--text); }
+
+.btn:disabled { opacity: 0.4; cursor: default; }
+.btn:disabled:active { transform: none; }
+
+/* ========================================================
+   7. Barre d'onglets (compacte)
+   ======================================================== */
+
+.tabbar {
+  position: relative;
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 1fr;
+  align-items: center;
+  margin-left: calc(12px + var(--safe-left));
+  margin-right: calc(12px + var(--safe-right));
+  margin-bottom: calc(max(var(--safe-bottom), 10px) + 2px);
+  padding: 6px;
+  border-radius: var(--r-xl);
+}
+
+/* la couche de verre, sous les onglets et sans rogner leur débordement */
+.tabbar__verre {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  border-radius: inherit;
+  box-shadow: var(--shadow);
+  -webkit-backdrop-filter: blur(var(--blur-strong)) saturate(180%);
+  backdrop-filter: blur(var(--blur-strong)) saturate(180%);
+}
+
+.tabbar .tab { z-index: 1; }
+
+.tab {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  padding: 8px 4px 7px;
+  border-radius: var(--r-sm);
+  color: var(--text-3);
+  font-size: 10.5px;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  transition: color var(--fast) var(--ease), background var(--fast) var(--ease);
+}
+
+.tab[aria-current='true'] {
+  color: var(--text);
+  background: var(--surface-sunken);
+}
+
+.tab[aria-current='true'] .tab__dot {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.tab__dot {
+  position: absolute;
+  top: 3px;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--accent);
+  opacity: 0;
+  transform: scale(0.4);
+  transition: opacity var(--mid) var(--ease), transform var(--mid) var(--ease);
+}
+
+/* ========================================================
+   8. Rail — fin par principe
+   La navigation ne prend jamais une colonne pleine : sur Mac elle se
+   déploie au survol PAR-DESSUS le contenu (le reste ne bouge pas),
+   sur iPad elle reste étroite avec le libellé sous l'icône.
+   ======================================================== */
+
+:root {
+  --rail-w: 66px;
+  --rail-open: 214px;
+}
+
+.rail {
+  position: relative;
+  min-width: 0;
+  transition: opacity var(--mid) var(--ease);
+}
+
+.rail__panel {
+  position: absolute;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  width: var(--rail-w);
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 10px 9px;
+  border-radius: var(--r-xl);
+  overflow: hidden;
+  box-shadow: var(--shadow-sm);
+  z-index: 20;
+  transition: width var(--mid) var(--ease), box-shadow var(--mid) var(--ease);
+}
+
+.rail__item {
+  display: flex;
+  align-items: center;
+  border-radius: var(--r-sm);
+  color: var(--text-2);
+  font-weight: 480;
+  transition: background var(--fast) var(--ease), color var(--fast) var(--ease);
+}
+
+.rail__item:hover { background: var(--surface-sunken); color: var(--text); }
+
+.rail__item[aria-current='true'] {
+  background: var(--accent-soft);
+  color: var(--text);
+}
+
+.rail__item[aria-current='true'] svg { color: var(--accent-text); }
+
+.rail__spacer { flex: 1; }
+
+.rail__label { white-space: nowrap; }
+
+/* --- iPad : icône + libellé dessous, toujours visibles (pas de survol au doigt) --- */
+
+.rail--stack .rail__item {
+  flex-direction: column;
+  justify-content: center;
+  gap: 3px;
+  height: 54px;
+  font-size: 10px;
+  letter-spacing: 0.005em;
+}
+
+.rail--stack .rail__item[aria-current='true'] { font-weight: 550; color: var(--text); }
+
+/* --- Mac : icônes seules, déploiement au survol --- */
+
+.rail--hover .rail__item {
+  gap: 13px;
+  height: 40px;
+  /* l'icône reste optiquement centrée dans les 66 px repliés */
+  padding-left: 14px;
+  font-size: 14px;
+}
+
+.rail--hover .rail__label {
+  opacity: 0;
+  transform: translateX(-6px);
+  transition: opacity var(--fast) var(--ease), transform var(--mid) var(--ease);
+}
+
+.rail--hover .rail__brand {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  height: 40px;
+  padding-left: 14px;
+  margin-bottom: 10px;
+  color: var(--accent-text);
+}
+
+.rail--hover .rail__name {
+  font-size: 15px;
+  font-weight: 620;
+  letter-spacing: -0.01em;
+  color: var(--text);
+}
+
+.rail--hover:hover .rail__panel,
+.rail--hover:focus-within .rail__panel {
+  width: var(--rail-open);
+  box-shadow: var(--shadow);
+}
+
+.rail--hover:hover .rail__label,
+.rail--hover:focus-within .rail__label {
+  opacity: 1;
+  transform: none;
+}
+
+/* ========================================================
+   9. Segments (duo)
+   ======================================================== */
+
+.seg {
+  display: inline-flex;
+  gap: 2px;
+  padding: 3px;
+  border-radius: var(--r-sm);
+  background: var(--surface-sunken);
+}
+
+.seg__item {
+  padding: 6px 13px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-2);
+  transition: background var(--fast) var(--ease), color var(--fast) var(--ease);
+}
+
+.seg__item[aria-current='true'] {
+  background: var(--surface-solid);
+  color: var(--text);
+  box-shadow: var(--shadow-sm);
+}
+
+/* ========================================================
+   10. Capture
+   ======================================================== */
+
+.capture {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
+
+.capture__field {
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+  padding: 4px 0;
+  font-size: 20px;
+  line-height: 1.45;
+  letter-spacing: -0.01em;
+  font-weight: 400;
+  color: var(--text);
+}
+
+.capture__field::placeholder {
+  color: var(--text-3);
+  font-weight: 380;
+}
+
+.capture__body {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  padding: 20px;
+  margin: 0 12px 18px;
+  border-radius: var(--r-xl);
+  box-shadow: var(--shadow);
+}
+
+/* dans les coquilles duo/atelier, la carte de capture est déjà dans un volet en verre */
+.panel .capture__body {
+  margin: 0;
+  border: none;
+  box-shadow: none;
+  background: none;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+
+.panel .capture__body::before { display: none; }
+
+.capture__foot {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-top: 14px;
+  margin-top: 14px;
+  border-top: 1px solid var(--border);
+}
+
+.capture__hint {
+  flex: 1;
+  font-size: 12px;
+  color: var(--text-3);
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding-top: 14px;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 30px;
+  padding: 0 11px;
+  border-radius: 99px;
+  border: 1px solid var(--border);
+  background: var(--surface-sunken);
+  color: var(--text-2);
+  font-size: 12.5px;
+  font-weight: 480;
+  transition: all var(--fast) var(--ease);
+}
+
+.chip:active { transform: scale(0.95); }
+
+.chip[aria-pressed='true'] {
+  background: var(--accent-soft);
+  border-color: var(--accent-line);
+  color: var(--text);
+}
+
+.chip__dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: currentColor;
+  opacity: 0.75;
+}
+
+/* ========================================================
+   11. Liste du flux
+   ======================================================== */
+
+.searchbar {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  height: 40px;
+  margin: 0 16px 12px;
+  padding: 0 12px;
+  border-radius: var(--r-sm);
+  background: var(--surface-sunken);
+  border: 1px solid transparent;
+  color: var(--text-3);
+  transition: border-color var(--fast) var(--ease), background var(--fast) var(--ease);
+}
+
+.searchbar:focus-within {
+  border-color: var(--accent-line);
+  background: var(--surface-strong);
+}
+
+.searchbar input {
+  flex: 1;
+  min-width: 0;
+  font-size: 15px;
+  color: var(--text);
+}
+.searchbar input::placeholder { color: var(--text-3); }
+
+.daygroup { padding: 0 10px 6px; }
+
+.daygroup__label {
+  padding: 14px 8px 7px;
+  font-size: 11px;
+  font-weight: 580;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--text-3);
+}
+
+.item {
+  display: block;
+  width: 100%;
+  padding: 11px 12px;
+  border-radius: var(--r);
+  text-align: left;
+  border: 1px solid transparent;
+  transition: background var(--fast) var(--ease), border-color var(--fast) var(--ease);
+}
+
+.item:hover { background: var(--surface-sunken); }
+
+.item[aria-current='true'] {
+  background: var(--surface-strong);
+  border-color: var(--border);
+}
+
+.item__text {
+  font-size: 14.5px;
+  line-height: 1.42;
+  color: var(--text);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.item__meta {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin-top: 6px;
+  font-size: 11.5px;
+  color: var(--text-3);
+}
+
+.item__space {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--text-2);
+  font-weight: 480;
+}
+
+.item__space i {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--accent);
+  display: block;
+}
+
+/* ========================================================
+   12. Espaces
+   ======================================================== */
+
+.spaces {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 10px;
+  padding: 4px 16px 20px;
+}
+
+.space-card {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 14px;
+  min-height: 104px;
+  border-radius: var(--r-lg);
+  text-align: left;
+  box-shadow: var(--shadow-sm);
+  transition: transform var(--fast) var(--ease);
+}
+
+.space-card:active { transform: scale(0.985); }
+
+.space-card__mark {
+  width: 26px;
+  height: 26px;
+  border-radius: 8px;
+  margin-bottom: 8px;
+  background: var(--sc);
+  box-shadow: 0 4px 14px color-mix(in srgb, var(--sc) 40%, transparent);
+}
+
+.space-card__name {
+  font-size: 15px;
+  font-weight: 550;
+  letter-spacing: -0.01em;
+}
+
+.space-card__count {
+  font-size: 12.5px;
+  color: var(--text-3);
+}
+
+/* ========================================================
+   13. État vide & détail
+   ======================================================== */
+
+.empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 100%;
+  padding: 40px 28px;
+  text-align: center;
+}
+
+.empty__icon {
+  display: grid;
+  place-items: center;
+  width: 46px;
+  height: 46px;
+  margin-bottom: 6px;
+  border-radius: var(--r);
+  background: var(--accent-soft);
+  color: var(--accent-text);
+}
+
+.empty__title { font-size: 15px; font-weight: 550; }
+.empty__sub { font-size: 13.5px; color: var(--text-3); max-width: 34ch; line-height: 1.5; }
+
+.detail { padding: 24px 26px 40px; }
+.detail__text { font-size: 17px; line-height: 1.62; letter-spacing: -0.005em; white-space: pre-wrap; }
+.detail__meta { margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--border); font-size: 12.5px; color: var(--text-3); }
+
+/* ========================================================
+   14. Réglages
+   ======================================================== */
+
+.settings { padding: 4px 16px 28px; display: flex; flex-direction: column; gap: 20px; }
+
+.setting {
+  padding: 16px;
+  border-radius: var(--r-lg);
+  box-shadow: var(--shadow-sm);
+}
+
+.setting__label { font-size: 14.5px; font-weight: 550; }
+.setting__hint { margin-top: 3px; font-size: 12.5px; color: var(--text-3); line-height: 1.5; }
+.setting__body { margin-top: 13px; }
+
+.swatches { display: flex; flex-wrap: wrap; gap: 9px; }
+
+.swatch {
+  position: relative;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: var(--sw);
+  box-shadow: 0 3px 12px color-mix(in srgb, var(--sw) 45%, transparent);
+  transition: transform var(--fast) var(--ease);
+}
+
+.swatch:active { transform: scale(0.9); }
+
+.swatch[aria-pressed='true']::after {
+  content: '';
+  position: absolute;
+  inset: -4px;
+  border-radius: 50%;
+  border: 2px solid var(--text);
+  opacity: 0.75;
+}
+
+.hue-row { display: flex; align-items: center; gap: 12px; }
+
+.hue {
+  flex: 1;
+  height: 26px;
+  -webkit-appearance: none;
+  appearance: none;
+  background: linear-gradient(
+    to right,
+    hsl(0 95% 55%), hsl(60 95% 55%), hsl(120 95% 55%),
+    hsl(180 95% 55%), hsl(240 95% 55%), hsl(300 95% 55%), hsl(360 95% 55%)
+  );
+  border-radius: 99px;
+  border: 1px solid var(--border);
+}
+
+.hue::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--accent);
+  border: 2.5px solid #fff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  cursor: grab;
+}
+
+.hue::-moz-range-thumb {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--accent);
+  border: 2.5px solid #fff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  border-color: #fff;
+}
+
+.now {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 11px;
+  padding: 5px 10px;
+  border-radius: 99px;
+  background: var(--surface-sunken);
+  font-size: 12px;
+  color: var(--text-2);
+}
+
+/* ========================================================
+   15. Entrée en scène (discrète, une seule fois par écran)
+   ======================================================== */
+
+@keyframes rise {
+  from { opacity: 0; transform: translate3d(0, 8px, 0); }
+  to   { opacity: 1; transform: none; }
+}
+
+.rise { animation: rise var(--mid) var(--ease) both; }
+
+/* ========================================================
+   16. Bandeau de diagnostic (jalon 1 uniquement)
+   ======================================================== */
+
+.shellbadge {
+  position: fixed;
+  right: calc(12px + var(--safe-right));
+  bottom: calc(12px + var(--safe-bottom));
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 5px 11px;
+  border-radius: 99px;
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  color: var(--text-2);
+  box-shadow: var(--shadow-sm);
+  pointer-events: none;
+}
+
+.shellbadge b { color: var(--accent-text); font-weight: 600; }
+
+/* en compacte, la barre d'onglets occupe déjà le bas de l'écran */
+.app[data-shell='compact'] .shellbadge {
+  bottom: calc(82px + var(--safe-bottom));
+}
+
+/* ========================================================
+   17. Posts — liste enrichie
+   ======================================================== */
+
+.item {
+  display: flex;
+  gap: 11px;
+  align-items: flex-start;
+}
+
+.item__vignette {
+  width: 46px;
+  height: 46px;
+  flex: none;
+  border-radius: var(--r-xs);
+  object-fit: cover;
+  background: var(--surface-sunken);
+}
+
+.item__corps { min-width: 0; flex: 1; }
+
+.item__titre {
+  font-size: 14.5px;
+  font-weight: 550;
+  line-height: 1.35;
+  letter-spacing: -0.008em;
+  color: var(--text);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.item__extrait {
+  margin-top: 2px;
+  font-size: 13px;
+  line-height: 1.42;
+  color: var(--text-2);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.filtre {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  margin: 0 16px 10px;
+  padding: 6px 11px;
+  border-radius: 99px;
+  background: var(--surface-sunken);
+  border: 1px solid var(--border);
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--text-2);
+  align-self: flex-start;
+}
+
+.filtre:hover { color: var(--text); border-color: var(--border-strong); }
+.filtre__dot { width: 8px; height: 8px; border-radius: 50%; }
+
+/* ========================================================
+   18. Éditeur de post
+   ======================================================== */
+
+.editor {
+  display: flex;
+  flex-direction: column;
+  padding: 0 0 44px;
+  max-width: 740px;
+  width: 100%;
+  margin: 0 auto;
+}
+
+.editor__cover {
+  position: relative;
+  margin-bottom: 20px;
+  border-radius: var(--r-lg);
+  overflow: hidden;
+}
+
+.editor__cover img {
+  display: block;
+  width: 100%;
+  max-height: 300px;
+  object-fit: cover;
+}
+
+.editor__coverActions {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  display: flex;
+  gap: 6px;
+}
+
+.btn--onImage {
+  background: rgba(12, 14, 20, 0.55);
+  color: #fff;
+  border-color: rgba(255, 255, 255, 0.18);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+}
+.btn--onImage:hover { background: rgba(12, 14, 20, 0.72); color: #fff; }
+
+.editor__titre {
+  width: 100%;
+  font-size: 27px;
+  font-weight: 600;
+  line-height: 1.22;
+  letter-spacing: -0.028em;
+  color: var(--text);
+  padding: 0 0 6px;
+}
+.editor__titre::placeholder { color: var(--text-3); font-weight: 500; }
+
+.editor__texte {
+  width: 100%;
+  min-height: 120px;
+  overflow: hidden;
+  font-size: 16.5px;
+  line-height: 1.62;
+  letter-spacing: -0.004em;
+  color: var(--text);
+}
+.editor__texte::placeholder { color: var(--text-3); }
+
+.editor__barre {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 18px;
+}
+
+.btn--danger { color: var(--text-3); }
+.btn--danger:hover { color: hsl(2 78% 56%); background: hsl(2 78% 56% / 0.1); }
+
+.editor__section {
+  margin-top: 26px;
+  padding-top: 18px;
+  border-top: 1px solid var(--border);
+}
+.editor__section .chips { padding-top: 10px; }
+
+.editor__meta {
+  margin-top: 22px;
+  font-size: 12.5px;
+  color: var(--text-3);
+}
+
+/* l'éditeur respire dans les volets : marge intérieure portée ici */
+.scroll > .editor { padding-left: 26px; padding-right: 26px; padding-top: 22px; }
+
+/* ========================================================
+   19. Espaces personnalisables
+   ======================================================== */
+
+.space-card { position: relative; overflow: hidden; }
+
+.space-card__img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0.28;
+}
+
+/* zone cliquable qui couvre la carte, sous les commandes */
+.space-card__hit {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+}
+
+.space-card__mark,
+.space-card__name,
+.space-card__count { position: relative; z-index: 2; pointer-events: none; }
+
+.space-card__edit {
+  position: absolute;
+  top: 9px;
+  right: 9px;
+  z-index: 3;
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  color: var(--text-3);
+  background: var(--surface-strong);
+  border: 1px solid var(--border);
+  opacity: 0;
+  transition: opacity var(--fast) var(--ease), color var(--fast) var(--ease);
+}
+
+.space-card:hover .space-card__edit,
+.space-card__edit:focus-visible { opacity: 1; }
+.space-card__edit:hover { color: var(--text); }
+
+/* au doigt il n'y a pas de survol : la commande reste visible */
+@media (hover: none) {
+  .space-card__edit { opacity: 1; }
+}
+
+.space-card--new {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 8px;
+  color: var(--text-3);
+  border: 1px dashed var(--border-strong);
+  background: transparent;
+}
+.space-card--new:hover { color: var(--text-2); border-color: var(--text-3); }
+
+.spaces__note {
+  padding: 2px 24px 26px;
+  font-size: 12.5px;
+  color: var(--text-3);
+  line-height: 1.55;
+}
+
+/* ========================================================
+   20. Feuille de réglage
+   ======================================================== */
+
+.sheet {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  padding-bottom: calc(20px + var(--safe-bottom));
+  background: rgba(8, 10, 14, 0.42);
+  -webkit-backdrop-filter: blur(3px);
+  backdrop-filter: blur(3px);
+}
+
+.sheet__panel {
+  width: 100%;
+  max-width: 420px;
+  max-height: 100%;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 18px;
+  border-radius: var(--r-xl);
+  background: var(--surface-strong);
+  box-shadow: var(--shadow);
+}
+
+.sheet__head {
+  display: flex;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.sheet__titre { flex: 1; font-size: 17px; font-weight: 600; letter-spacing: -0.015em; }
+
+.sheet__pied {
+  margin-top: 22px;
+  padding-top: 14px;
+  border-top: 1px solid var(--border);
+}
+
+.sheet__note { display: block; margin-top: 6px; font-size: 12px; color: var(--text-3); }
+
+.field { display: block; margin-bottom: 18px; }
+
+.field__label {
+  display: block;
+  margin-bottom: 7px;
+  font-size: 12px;
+  font-weight: 550;
+  color: var(--text-2);
+}
+
+.field__input {
+  width: 100%;
+  height: 40px;
+  padding: 0 12px;
+  border-radius: var(--r-sm);
+  background: var(--surface-sunken);
+  border: 1px solid var(--border);
+  color: var(--text);
+  transition: border-color var(--fast) var(--ease);
+}
+.field__input:focus { border-color: var(--accent-line); outline: none; }
+
+.field__preview {
+  display: block;
+  width: 100%;
+  height: 130px;
+  object-fit: cover;
+  border-radius: var(--r-sm);
+}
+
+.hue-row__dot {
+  width: 24px;
+  height: 24px;
+  flex: none;
+  border-radius: 50%;
+  border: 2px solid var(--surface-solid);
+  box-shadow: var(--shadow-sm);
+}
+
+.lien {
+  color: var(--accent-text);
+  font-weight: 550;
+  font-size: 12px;
+  text-align: left;
+}
+.lien:hover { text-decoration: underline; }
+
+/* ========================================================
+   21. Post — barre de mode
+   ======================================================== */
+
+.post {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
+
+.post__bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 16px;
+  padding-top: calc(12px + var(--safe-top));
+  border-bottom: 1px solid var(--border);
+}
+
+.panel .post__bar { padding-top: 12px; }
+
+.post__nom {
+  font-size: 13.5px;
+  font-weight: 550;
+  color: var(--text-2);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 40%;
+}
+
+.post .scroll > .editor { padding-top: 20px; }
+
+/* ========================================================
+   22. Mind map
+   ======================================================== */
+
+.carte {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.carte__surface {
+  position: absolute;
+  inset: 0;
+  cursor: grab;
+  /* le doigt pilote la carte, jamais le défilement de la page */
+  touch-action: none;
+  background-image: radial-gradient(circle at 1px 1px, var(--border-strong) 1px, transparent 0);
+  background-size: 26px 26px;
+}
+
+.carte__surface:active { cursor: grabbing; }
+
+.carte__monde {
+  position: absolute;
+  top: 0;
+  left: 0;
+  transform-origin: 0 0;
+  will-change: transform;
+}
+
+/* le SVG déborde volontairement : il n'a pas de taille propre, il
+   sert de calque de tracé sous les nœuds */
+.carte__liens {
+  position: absolute;
+  top: -6000px;
+  left: -6000px;
+  width: 12000px;
+  height: 12000px;
+  overflow: visible;
+  pointer-events: none;
+}
+
+.carte__liens path {
+  fill: none;
+  stroke: var(--accent-line);
+  stroke-width: 2;
+  transform: translate(6000px, 6000px);
+}
+
+.noeud {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 172px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  padding: 0 13px;
+  border-radius: var(--r);
+  background: var(--surface-solid);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-sm);
+  cursor: grab;
+  touch-action: none;
+  transition: border-color var(--fast) var(--ease), box-shadow var(--fast) var(--ease);
+}
+
+.noeud:active { cursor: grabbing; }
+
+.noeud[data-racine='true'] {
+  background: var(--accent);
+  border-color: transparent;
+  box-shadow: 0 6px 22px var(--accent-glow);
+}
+.noeud[data-racine='true'] .noeud__texte { color: var(--accent-ink); font-weight: 600; }
+
+.noeud[data-actif='true'] {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft), var(--shadow);
+}
+
+.noeud__texte {
+  font-size: 13.5px;
+  line-height: 1.3;
+  font-weight: 500;
+  letter-spacing: -0.008em;
+  color: var(--text);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.noeud__champ {
+  width: 100%;
+  font-size: 13.5px;
+  font-weight: 500;
+  color: var(--text);
+  background: none;
+}
+
+.noeud__outils {
+  position: absolute;
+  top: calc(100% + 7px);
+  left: 0;
+  display: flex;
+  gap: 3px;
+  padding: 3px;
+  border-radius: 99px;
+  background: var(--surface-solid);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow);
+}
+
+.noeud__outils button {
+  display: grid;
+  place-items: center;
+  width: 27px;
+  height: 27px;
+  border-radius: 50%;
+  color: var(--text-2);
+  transition: background var(--fast) var(--ease), color var(--fast) var(--ease);
+}
+.noeud__outils button:hover { background: var(--surface-sunken); color: var(--text); }
+
+.carte__commandes {
+  position: absolute;
+  right: 14px;
+  bottom: calc(14px + var(--safe-bottom));
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 4px;
+  border-radius: 99px;
+  box-shadow: var(--shadow);
+}
+
+.carte__commandes button {
+  display: grid;
+  place-items: center;
+  height: 30px;
+  min-width: 30px;
+  padding: 0 6px;
+  border-radius: 99px;
+  color: var(--text-2);
+  font-size: 12px;
+  font-weight: 500;
+  transition: background var(--fast) var(--ease), color var(--fast) var(--ease);
+}
+.carte__commandes button:hover { background: var(--surface-sunken); color: var(--text); }
+.carte__zoom { min-width: 46px; font-variant-numeric: tabular-nums; }
+
+.carte__aide {
+  position: absolute;
+  left: 16px;
+  bottom: calc(18px + var(--safe-bottom));
+  max-width: 46%;
+  font-size: 11.5px;
+  line-height: 1.45;
+  color: var(--text-3);
+  pointer-events: none;
+}
+
+@media (max-width: 700px) {
+  .carte__aide { display: none; }
+}
+
+/* ========================================================
+   23. Balayage des lignes du flux
+   ======================================================== */
+
+.swipe {
+  position: relative;
+  overflow: hidden;
+  border-radius: var(--r);
+  /* le vertical reste au navigateur (défilement natif),
+     on ne se réserve que l'horizontal */
+  touch-action: pan-y;
+}
+
+/* Le panneau mesure toujours 94 px, mais il ATTEND hors du cadre : au repos
+   il est intégralement à l'extérieur, et `.swipe` (overflow: hidden) le rogne.
+   Rien ne transparaît donc sous la ligne, qui est translucide — et l'entrée
+   en scène est un simple déplacement, sans mise en page à recalculer. */
+.swipe__act {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 94px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  font-size: 11px;
+  font-weight: 550;
+  border-radius: var(--r);
+  will-change: transform;
+  transition: transform var(--mid) var(--ease);
+}
+
+.swipe[data-glisse='true'] .swipe__act { transition: none; }
+
+.swipe__act--g { left: 0; }
+.swipe__act--d { right: 0; }
+
+.flux__archives {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  width: calc(100% - 32px);
+  margin: 10px 16px 22px;
+  padding: 10px;
+  border-radius: var(--r-sm);
+  border: 1px dashed var(--border-strong);
+  color: var(--text-3);
+  font-size: 12.5px;
+  font-weight: 500;
+  transition: color var(--fast) var(--ease), border-color var(--fast) var(--ease);
+}
+.flux__archives:hover { color: var(--text-2); border-color: var(--text-3); }
+
+/* --- choix d'espace --- */
+
+.choix { display: flex; flex-direction: column; gap: 2px; }
+
+.choix__item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: 44px;
+  padding: 0 12px;
+  border-radius: var(--r-sm);
+  font-size: 14.5px;
+  font-weight: 500;
+  color: var(--text);
+  text-align: left;
+  transition: background var(--fast) var(--ease);
+}
+.choix__item:hover { background: var(--surface-sunken); }
+.choix__item[aria-current='true'] { background: var(--accent-soft); font-weight: 580; }
+.choix__item i { width: 10px; height: 10px; border-radius: 50%; flex: none; }
+
+/* ========================================================
+   24. État de synchronisation
+   ======================================================== */
+
+.sync__pastille {
+  width: 8px;
+  height: 8px;
+  flex: none;
+  border-radius: 50%;
+  background: var(--text-3);
+}
+
+.sync__pastille[data-etat='ok'] { background: hsl(152 68% 42%); }
+.sync__pastille[data-etat='erreur'] { background: hsl(2 78% 56%); }
+.sync__pastille[data-etat='hors-ligne'] { background: hsl(36 80% 50%); }
+.sync__pastille[data-etat='en-cours'] {
+  background: var(--accent);
+  animation: pulse 1.1s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+
+/* ========================================================
+   25. Compte
+   ======================================================== */
+
+.field__aide {
+  display: block;
+  margin-top: 6px;
+  font-size: 12px;
+  color: var(--text-3);
+}
+
+.field__erreur {
+  margin: -6px 0 14px;
+  padding: 9px 11px;
+  border-radius: var(--r-sm);
+  background: hsl(2 78% 56% / 0.1);
+  color: hsl(2 72% 46%);
+  font-size: 12.5px;
+  line-height: 1.45;
+}
+
+:root[data-theme='dark'] .field__erreur { color: hsl(2 90% 72%); }
+
+.profil {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+}
+
+.profil__jeton {
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  flex: none;
+  border-radius: 50%;
+  background: var(--accent);
+  color: var(--accent-ink);
+  font-size: 17px;
+  font-weight: 620;
+  box-shadow: 0 4px 16px var(--accent-glow);
+}
+
+.profil__nom {
+  width: 100%;
+  font-size: 15.5px;
+  font-weight: 580;
+  letter-spacing: -0.012em;
+  color: var(--text);
+  padding: 2px 0;
+  border-bottom: 1px solid transparent;
+  transition: border-color var(--fast) var(--ease);
+}
+.profil__nom:hover { border-bottom-color: var(--border); }
+.profil__nom:focus { border-bottom-color: var(--accent-line); outline: none; }
+
+.profil__mail {
+  font-size: 12.5px;
+  color: var(--text-3);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ========================================================
+   26. Indicateur de régime (local / synchronisé)
+   ======================================================== */
+
+.indic {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 26px;
+  padding: 0 10px;
+  border-radius: 99px;
+  border: 1px solid var(--border);
+  background: var(--surface-sunken);
+  color: var(--text-3);
+  font-size: 11.5px;
+  font-weight: 550;
+  white-space: nowrap;
+  transition: color var(--fast) var(--ease), border-color var(--fast) var(--ease);
+}
+
+.indic:hover { color: var(--text-2); border-color: var(--border-strong); }
+
+.indic__pt {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+  opacity: 0.7;
+}
+
+.indic[data-ton='attente'] { color: hsl(36 78% 45%); border-color: hsl(36 78% 45% / 0.3); }
+.indic[data-ton='alerte'] { color: hsl(2 72% 52%); border-color: hsl(2 72% 52% / 0.3); }
+
+:root[data-theme='dark'] .indic[data-ton='attente'] { color: hsl(36 90% 62%); }
+:root[data-theme='dark'] .indic[data-ton='alerte'] { color: hsl(2 90% 70%); }
+
+/* ========================================================
+   27. Profil dans la navigation
+   ======================================================== */
+
+/* pastille d'état, posée sur l'icône elle-même */
+.tab__ic,
+.rail__ic {
+  position: relative;
+  display: grid;
+  place-items: center;
+}
+
+.tab__pt,
+.rail__pt,
+.profil-btn__pt {
+  position: absolute;
+  top: -1px;
+  right: -2px;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: currentColor;
+  box-shadow: 0 0 0 2px var(--surface-solid);
+}
+
+.profil-btn { position: relative; }
+
+.tab[data-ton='attente'],
+.rail__item[data-ton='attente'],
+.profil-btn[data-ton='attente'] { color: hsl(36 78% 45%); }
+
+.tab[data-ton='alerte'],
+.rail__item[data-ton='alerte'],
+.profil-btn[data-ton='alerte'] { color: hsl(2 72% 52%); }
+
+:root[data-theme='dark'] .tab[data-ton='attente'],
+:root[data-theme='dark'] .rail__item[data-ton='attente'],
+:root[data-theme='dark'] .profil-btn[data-ton='attente'] { color: hsl(36 90% 62%); }
+
+:root[data-theme='dark'] .tab[data-ton='alerte'],
+:root[data-theme='dark'] .rail__item[data-ton='alerte'],
+:root[data-theme='dark'] .profil-btn[data-ton='alerte'] { color: hsl(2 90% 70%); }
+
+/* le trait qui sépare le contenu du compte, dans le rail */
+.rail__sep {
+  height: 1px;
+  margin: 7px 6px;
+  background: var(--border);
+}
+
+/* cinq onglets tiennent, mais il faut resserrer */
+.shell-compact .tab {
+  padding-left: 2px;
+  padding-right: 2px;
+  font-size: 10px;
+  letter-spacing: -0.005em;
+}
+
+/* ========================================================
+   28. Encoche — le titre en compacte
+   ======================================================== */
+
+.shell-compact {
+  position: relative;
+  grid-template-rows: minmax(0, 1fr) auto;
+}
+
+.encoche {
+  position: absolute;
+  z-index: 30;
+  top: calc(max(var(--safe-top), 10px) + 5px);
+  left: 50%;
+  transform: translateX(-50%);
+  display: inline-flex;
+  align-items: center;
+  height: 27px;
+  padding: 0 14px;
+  border-radius: 99px;
+  font-size: 12.5px;
+  font-weight: 550;
+  letter-spacing: -0.004em;
+  color: var(--text-2);
+  box-shadow: var(--shadow-sm);
+  pointer-events: none;
+}
+
+.retour {
+  position: absolute;
+  z-index: 30;
+  top: calc(max(var(--safe-top), 10px) + 3px);
+  left: calc(12px + var(--safe-left));
+  display: grid;
+  place-items: center;
+  width: 31px;
+  height: 31px;
+  border-radius: 50%;
+  color: var(--text-2);
+  box-shadow: var(--shadow-sm);
+}
+
+/* on ne réserve que la hauteur de la pastille, pas une ligne de barre */
+.shell-compact .pane {
+  /* le minimum protège du cas où iOS ne renvoie aucune marge sûre —
+     sans lui, le contenu passe sous l'encoche */
+  padding-top: calc(max(var(--safe-top), 10px) + 40px);
+  padding-left: var(--safe-left);
+  padding-right: var(--safe-right);
+}
+
+/* la carte de capture n'a plus besoin de sa marge haute d'origine */
+.shell-compact .capture__body { margin-top: 0; }
+
+/* ========================================================
+   29. Profil en relief dans la barre d'onglets
+   ======================================================== */
+
+/* Sans contenu propre, la case du profil s'effondrerait à quelques pixels
+   et l'avatar resterait prisonnier de la barre : on la force à occuper
+   toute la hauteur, c'est elle qui sert de repère au décalage. */
+.tab--profil {
+  position: relative;
+  align-self: stretch;
+  background: none !important;
+}
+
+.tab__avatar {
+  position: absolute;
+  left: 50%;
+  top: -22px;
+  transform: translateX(-50%);
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: var(--accent-ink);
+  font-size: 18px;
+  font-weight: 620;
+  border: 3px solid var(--surface-solid);
+  box-shadow: 0 6px 20px var(--accent-glow);
+  transition: transform var(--fast) var(--ease);
+}
+
+.tab--profil:active .tab__avatar { transform: translateX(-50%) scale(0.94); }
+
+.tab__avatar[data-connecte='false'] {
+  background: var(--surface-solid);
+  color: var(--text-3);
+  box-shadow: var(--shadow-sm);
+  border-color: var(--border);
+}
+
+.tab--profil[aria-current='true'] .tab__avatar {
+  box-shadow: 0 0 0 3px var(--accent-soft), 0 6px 20px var(--accent-glow);
+}
+
+/* ========================================================
+   30. Écran de connexion (indépendant)
+   ======================================================== */
+
+.connexion {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+  padding: 24px;
+  padding-top: calc(24px + var(--safe-top));
+  padding-bottom: calc(24px + var(--safe-bottom));
+  overflow-y: auto;
+}
+
+.connexion__carte {
+  width: 100%;
+  max-width: 392px;
+  padding: 26px;
+  border-radius: var(--r-xl);
+  box-shadow: var(--shadow);
+}
+
+.connexion__marque {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  margin-bottom: 22px;
+}
+
+.connexion__mark {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  flex: none;
+  border-radius: var(--r);
+  background: var(--accent);
+  color: var(--accent-ink);
+  box-shadow: 0 6px 20px var(--accent-glow);
+}
+
+.connexion__titre {
+  font-size: 21px;
+  font-weight: 640;
+  letter-spacing: -0.025em;
+  line-height: 1.15;
+}
+
+.connexion__sous {
+  margin-top: 2px;
+  font-size: 13px;
+  line-height: 1.4;
+  color: var(--text-3);
+}
+
+.connexion__sortie {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-3);
+  padding: 8px 12px;
+  border-radius: var(--r-sm);
+  transition: color var(--fast) var(--ease), background var(--fast) var(--ease);
+}
+.connexion__sortie:hover { color: var(--text-2); background: var(--surface-sunken); }
+
+/* le segmenté et le bouton principal respirent davantage sur cet écran */
+.seg--large { width: 100%; }
+.seg--large .seg__item { flex: 1; padding: 8px 12px; font-size: 13.5px; }
+
+.btn--large { width: 100%; height: 44px; font-size: 15px; }
+
+/* ========================================================
+   31. Calque technique — la planche de graphiste
+   ======================================================== */
+
+.calque {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+  /* teintes dérivées de l'accent : réglé sur un orange, on retrouve la
+     référence ; sur le bleu, c'est un plan d'architecte */
+  --cal: hsl(var(--accent-h) calc(var(--accent-s) * 0.85) 44%);
+  --cal-faible: 0.1;
+  --cal-moyen: 0.26;
+  --cal-fort: 0.52;
+  color: var(--cal);
+  font-family: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace;
+  font-size: 9.5px;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+}
+
+:root[data-theme='dark'] .calque {
+  --cal: hsl(var(--accent-h) calc(var(--accent-s) * 0.9) 62%);
+  --cal-faible: 0.09;
+  --cal-moyen: 0.19;
+  --cal-fort: 0.42;
+}
+
+.cal-fond {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+/* le trait ne s'épaissit jamais, quel que soit l'étirement du cadre */
+.cal-ligne,
+.cal-cadre,
+.cal-grad,
+.cal-rayon,
+.cal-trait,
+.cal-arc {
+  fill: none;
+  stroke: currentColor;
+  vector-effect: non-scaling-stroke;
+}
+
+.cal-ligne { stroke-width: 1; opacity: var(--cal-moyen); }
+.cal-ligne--fine { stroke-width: 0.6; opacity: var(--cal-faible); }
+.cal-cadre { stroke-width: 1; opacity: var(--cal-fort); }
+.cal-grad { stroke-width: 1; opacity: var(--cal-moyen); }
+.cal-rayon { stroke-width: 1; opacity: var(--cal-fort); }
+.cal-trait { stroke-width: 1; opacity: var(--cal-moyen); }
+.cal-arc { stroke-width: 1.3; opacity: var(--cal-fort); }
+
+/* --- l'éventail d'angles : une boîte CARRÉE, sinon 45° n'est plus 45° --- */
+
+.cal-eventail {
+  position: absolute;
+  left: 20px;
+  bottom: calc(14px + var(--safe-bottom));
+  width: 232px;
+  height: 232px;
+}
+
+.cal-eventail svg { width: 100%; height: 100%; }
+
+.cal-angle {
+  position: absolute;
+  transform: translate(-50%, 50%);
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  opacity: 0.85;
+}
+
+/* --- l'arc --- */
+
+.cal-coin-arc {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  width: 46vmin;
+  height: 46vmin;
+}
+
+.cal-coin-arc svg { width: 100%; height: 100%; }
+
+/* --- les croix, carrées par construction --- */
+
+.cal-croix {
+  position: absolute;
+  width: 11px;
+  height: 11px;
+  transform: translate(-50%, -50%);
+  opacity: var(--cal-fort);
+}
+
+.cal-croix::before,
+.cal-croix::after {
+  content: '';
+  position: absolute;
+  background: currentColor;
+}
+.cal-croix::before { left: 0; right: 0; top: 50%; height: 1px; }
+.cal-croix::after { top: 0; bottom: 0; left: 50%; width: 1px; }
+
+/* --- annotations --- */
+
+.cal-notes__hg {
+  position: absolute;
+  top: calc(22px + var(--safe-top));
+  left: 26px;
+  line-height: 1.7;
+  opacity: 0.78;
+}
+
+.cal-souligne {
+  display: block;
+  width: 74px;
+  height: 1px;
+  margin-top: 7px;
+  background: currentColor;
+  opacity: 0.6;
+}
+
+.cal-encart {
+  position: absolute;
+  top: calc(20px + var(--safe-top));
+  right: 24px;
+  display: grid;
+  place-items: center;
+  width: 17px;
+  height: 17px;
+  border: 1px solid currentColor;
+  font-size: 10px;
+  opacity: 0.72;
+}
+
+.cal-cases {
+  position: absolute;
+  top: calc(88px + var(--safe-top));
+  left: 26px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  opacity: 0.78;
+}
+
+.cal-case {
+  position: relative;
+  width: 13px;
+  height: 13px;
+  border: 1px solid currentColor;
+}
+
+.cal-case[data-coche='true']::before,
+.cal-case[data-coche='true']::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 1px;
+  right: 1px;
+  height: 1px;
+  background: currentColor;
+}
+.cal-case[data-coche='true']::before { transform: rotate(45deg); }
+.cal-case[data-coche='true']::after { transform: rotate(-45deg); }
+
+.cal-cite {
+  position: absolute;
+  right: 26px;
+  bottom: calc(24px + var(--safe-bottom));
+  max-width: 46%;
+  text-align: right;
+  text-transform: none;
+  letter-spacing: 0.01em;
+  font-size: 12px;
+  line-height: 1.65;
+  opacity: 0.88;
+}
+
+.cal-cite::before {
+  content: '“';
+  position: absolute;
+  left: -12px;
+  top: -2px;
+  opacity: 0.55;
+}
+
+/* sur un petit écran, on garde le cadre, l'éventail et la citation */
+@media (max-width: 560px) {
+  .cal-cases,
+  .cal-encart,
+  .cal-croix { display: none; }
+  .cal-eventail { width: 150px; height: 150px; left: 12px; }
+  .cal-angle { font-size: 9px; }
+  .cal-cite { max-width: 60%; font-size: 11px; }
+}
+
+/* la carte passe au-dessus de la planche */
+.connexion { position: relative; }
+.connexion__carte,
+.connexion__sortie { position: relative; z-index: 1; }
+
+/* ========================================================
+   32. Mot de passe — œil et jauge de solidité
+   ======================================================== */
+
+.champ-mdp { position: relative; }
+
+/* on laisse la place au bouton, sinon le texte passe dessous */
+.champ-mdp .field__input { padding-right: 44px; }
+
+.champ-mdp__oeil {
+  position: absolute;
+  right: 5px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  color: var(--text-3);
+  transition: color var(--fast) var(--ease), background var(--fast) var(--ease);
+}
+
+.champ-mdp__oeil:hover { color: var(--text-2); background: var(--surface-sunken); }
+.champ-mdp__oeil[aria-pressed='true'] { color: var(--accent-text); }
+
+.jauge { margin-top: 9px; }
+
+.jauge__barres {
+  display: flex;
+  gap: 4px;
+}
+
+.jauge__seg {
+  flex: 1;
+  height: 4px;
+  border-radius: 99px;
+  background: var(--surface-sunken);
+  transition: background var(--mid) var(--ease);
+}
+
+.jauge__txt {
+  display: block;
+  margin-top: 7px;
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--text-3);
+}
+
+/* La progression suit la charte : le rouge des suppressions, l'ambre
+   des états en attente, le vert des synchros réussies. */
+.jauge[data-niveau='0'] .jauge__seg[data-actif='true'],
+.jauge[data-niveau='1'] .jauge__seg[data-actif='true'] { background: hsl(2 78% 56%); }
+.jauge[data-niveau='2'] .jauge__seg[data-actif='true'] { background: hsl(36 82% 52%); }
+.jauge[data-niveau='3'] .jauge__seg[data-actif='true'] { background: hsl(84 60% 45%); }
+.jauge[data-niveau='4'] .jauge__seg[data-actif='true'] { background: hsl(152 66% 40%); }
+
+.jauge[data-niveau='0'] .jauge__txt,
+.jauge[data-niveau='1'] .jauge__txt { color: hsl(2 70% 48%); }
+.jauge[data-niveau='4'] .jauge__txt { color: hsl(152 60% 34%); }
+
+:root[data-theme='dark'] .jauge[data-niveau='0'] .jauge__txt,
+:root[data-theme='dark'] .jauge[data-niveau='1'] .jauge__txt { color: hsl(2 90% 72%); }
+:root[data-theme='dark'] .jauge[data-niveau='4'] .jauge__txt { color: hsl(152 62% 58%); }
+
+/* ========================================================
+   33. Hauteur fluide — bascule connexion / création
+   ======================================================== */
+
+.fluide {
+  /* le contenu déborde pendant que la hauteur rattrape */
+  overflow: hidden;
+}
+
+.fluide[data-arme='true'] {
+  transition: height 300ms cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+/* ========================================================
+   34. Réglages de couleur — la couleur est celle de l'user
+   ======================================================== */
+
+.reglage { margin-top: 16px; }
+
+.reglage__nom {
+  display: block;
+  margin-bottom: 7px;
+  font-size: 12px;
+  font-weight: 550;
+  color: var(--text-2);
+}
+
+.reglage__valeur {
+  width: 40px;
+  text-align: right;
+  font-size: 12px;
+  color: var(--text-3);
+  font-variant-numeric: tabular-nums;
+}
+
+/* le curseur d'intensité montre ce qu'il fait : du gris à la teinte pleine */
+.hue--satur {
+  background: linear-gradient(to right, var(--t0), var(--t1));
+}
+
+.retour-couleur {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 18px;
+  padding: 7px 12px 7px 8px;
+  border-radius: 99px;
+  border: 1px solid var(--border);
+  background: var(--surface-sunken);
+  color: var(--text-2);
+  font-size: 12.5px;
+  font-weight: 500;
+  transition: color var(--fast) var(--ease), border-color var(--fast) var(--ease);
+}
+
+.retour-couleur:hover { color: var(--text); border-color: var(--border-strong); }
+
+.retour-couleur__pastille {
+  width: 20px;
+  height: 20px;
+  flex: none;
+  border-radius: 50%;
+  border: 2px solid var(--surface-solid);
+  box-shadow: var(--shadow-sm);
+}
+
+/* ========================================================
+   35. Atlas — l'œil
+   ======================================================== */
+
+.oeil {
+  display: block;
+  overflow: visible;
+}
+
+/* Les teintes dérivent de l'accent : sa couleur, plus vive au centre,
+   plus sombre au bord. Changer l'accent change son regard. */
+.oeil {
+  --iris-clair: hsl(var(--accent-h) calc(var(--accent-s) * 0.9) 68%);
+  --iris-vif: hsl(var(--accent-h) var(--accent-s) 52%);
+  --iris-sombre: hsl(var(--accent-h) calc(var(--accent-s) * 0.95) 26%);
+
+  /* la pupille n'est pas noire : elle garde une trace de la couleur */
+  --pupille-coeur: hsl(var(--accent-h) 62% 7%);
+  --pupille-bord: hsl(var(--accent-h) 58% 13%);
+  --pupille-halo: hsl(var(--accent-h) 70% 20%);
+
+  /* et la paupière n'est pas blanche : elle assombrit, elle n'efface pas */
+  --paupiere-haut: #d9dbe2;
+  --paupiere-bas: #eceef3;
+}
+
+:root[data-theme='dark'] .oeil {
+  --paupiere-haut: #c6c9d3;
+  --paupiere-bas: #dcdfe7;
+}
+
+.oeil__blanc { fill: #fbfbfd; }
+:root[data-theme='dark'] .oeil__blanc { fill: #eef0f6; }
+
+.oeil__cerne {
+  fill: none;
+  stroke: rgba(15, 23, 42, 0.16);
+  stroke-width: 2;
+}
+:root[data-theme='dark'] .oeil__cerne { stroke: rgba(255, 255, 255, 0.22); }
+
+.oeil__strie {
+  stroke: var(--pupille-coeur);
+  stroke-width: 1.1;
+  stroke-linecap: round;
+}
+
+.oeil__anneau {
+  fill: none;
+  stroke: var(--iris-sombre);
+  stroke-width: 1.8;
+  opacity: 0.6;
+}
+
+.oeil__lueur { fill: #fff; opacity: 0.9; }
+.oeil__eclat { fill: #fff; opacity: 0.45; }
+
+.oeil__ombre { fill: rgba(20, 24, 34, 0.42); }
+
+.oeil__cil {
+  fill: none;
+  stroke: rgba(20, 24, 34, 0.28);
+  stroke-width: 1.6;
+}
+
+/* --- la séquence --- */
+
+/* Le regard balaye, avec de longs temps d'arrêt : c'est l'immobilité
+   qui rend le mouvement vivant, pas l'inverse. */
+.oeil__regard {
+  animation: regard 14s cubic-bezier(0.6, 0, 0.2, 1) infinite;
+}
+
+@keyframes regard {
+  0%, 16%   { transform: translate(0, 0); }
+  22%, 38%  { transform: translate(7px, -2px); }
+  44%, 58%  { transform: translate(-7px, 1px); }
+  64%, 74%  { transform: translate(2px, 5px); }
+  80%, 100% { transform: translate(0, 0); }
+}
+
+/* La lueur ne suit pas tout à fait le regard : ce décalage est ce qui
+   donne l'impression d'une surface bombée. */
+.oeil__lueur { animation: lueur 9s ease-in-out infinite; }
+
+@keyframes lueur {
+  0%, 100% { transform: translate(0, 0); opacity: 0.9; }
+  35%      { transform: translate(4px, 2px); opacity: 0.62; }
+  70%      { transform: translate(-3px, 3px); opacity: 0.8; }
+}
+
+/* Le clignement : CONTINU, jamais par à-coups. La descente est plus
+   rapide que la remontée — c'est ce que fait une vraie paupière, et
+   c'est ce qui enlève l'effet de saccade. */
+.oeil__paupiere {
+  animation: cligner 7.4s cubic-bezier(0.4, 0, 0.3, 1) infinite;
+}
+
+@keyframes cligner {
+  0%, 90.5% { transform: translateY(0); }
+  93%       { transform: translateY(106px); }
+  93.8%     { transform: translateY(106px); }
+  97.5%     { transform: translateY(0); }
+  100%      { transform: translateY(0); }
+}
+
+/* --- posé sur la bordure haute de la carte --- */
+
+.connexion__carte { overflow: visible; }
+
+.oeil--marque {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  /* le halo qui le décolle de la carte */
+  box-shadow: 0 8px 26px hsl(var(--accent-h) var(--accent-s) 45% / 0.28);
+}
+
+.connexion__marque {
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 4px;
+  margin-top: 44px;
+  margin-bottom: 22px;
+}
+
+/* ========================================================
+   36. Écran de bienvenue
+   ======================================================== */
+
+.bienvenue { max-width: 430px; }
+
+.capacites {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 10px;
+}
+
+.capacite {
+  padding: 12px 13px;
+  border-radius: var(--r);
+  background: var(--surface-sunken);
+  border: 1px solid var(--border);
+}
+
+.capacite__ligne {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.capacite__titre { flex: 1; font-size: 13.5px; font-weight: 570; }
+
+.capacite__etat {
+  padding: 3px 9px;
+  border-radius: 99px;
+  font-size: 10.5px;
+  font-weight: 580;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+}
+
+/* L'état est dit sans détour : rien n'est promis qui n'existe pas. */
+.capacite__etat[data-etat='à installer'] { background: var(--accent-soft); color: var(--accent-text); }
+.capacite__etat[data-etat='bientôt'] { background: hsl(36 82% 52% / 0.16); color: hsl(36 82% 38%); }
+.capacite__etat[data-etat='indisponible'] { background: var(--surface-sunken); color: var(--text-3); }
+
+:root[data-theme='dark'] .capacite__etat[data-etat='bientôt'] { color: hsl(36 90% 64%); }
+
+.capacite__texte { margin-top: 5px; font-size: 12.5px; color: var(--text-2); line-height: 1.45; }
+.capacite__note { margin-top: 5px; font-size: 11.5px; color: var(--text-3); line-height: 1.45; }
+
+.profil__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 14px;
+}
+
+/* ========================================================
+   37. Le raccord — la planche sous l'app
+   ======================================================== */
+
+/* La trame relie l'app à son écran d'entrée. Elle reste sous le seuil
+   de perception consciente : on ne la voit pas, on sent que les volets
+   sont posés sur quelque chose. */
+.trame {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  --trame: hsl(var(--accent-h) 45% 42% / 0.055);
+  --trame-fine: hsl(var(--accent-h) 45% 42% / 0.028);
+  background-image:
+    linear-gradient(to right, var(--trame) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--trame) 1px, transparent 1px),
+    linear-gradient(to right, var(--trame-fine) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--trame-fine) 1px, transparent 1px);
+  background-size: 96px 96px, 96px 96px, 24px 24px, 24px 24px;
+}
+
+:root[data-theme='dark'] .trame {
+  --trame: hsl(var(--accent-h) 60% 70% / 0.05);
+  --trame-fine: hsl(var(--accent-h) 60% 70% / 0.022);
+}
+
+/* le volet doit pouvoir porter ce repère */
+.panel { position: relative; }
+
+/* --- la référence technique, à côté du titre --- */
+
+.panel-head { align-items: baseline; }
+
+.panel-head__ref {
+  font-family: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace;
+  font-size: 9.5px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--text-3);
+  opacity: 0.8;
+  flex: none;
+}
+
+/* --- l'état vide reprend le langage de la planche --- */
+
+.empty__ref {
+  margin-bottom: 12px;
+  font-family: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace;
+  font-size: 9.5px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--text-3);
+  opacity: 0.75;
+}
+
+.empty__ref::before,
+.empty__ref::after {
+  content: '—';
+  opacity: 0.5;
+  margin: 0 8px;
+}
+
+/* ========================================================
+   38. Densité — les volets se touchent
+   ========================================================
+   Des blocs arrondis flottant dans du vide, ça fait des pâtés : le
+   regard compte des cartes au lieu de lire du contenu. Sur les
+   grands écrans les volets deviennent donc JOINTIFS, séparés par un
+   filet d'un pixel — la place gagnée revient au texte.
+
+   La coquille compacte n'est pas concernée : sur un téléphone, la
+   barre flottante et la carte de capture ont besoin de leur marge.
+   ======================================================== */
+
+.shell-duo,
+.shell-atelier {
+  gap: 0;
+  padding: 0;
+}
+
+.shell-duo {
+  padding-top: var(--safe-top);
+  padding-bottom: var(--safe-bottom);
+  padding-left: var(--safe-left);
+  padding-right: var(--safe-right);
+}
+
+/* plus de radeau : le volet occupe sa colonne, bord à bord */
+.shell-duo .panel,
+.shell-atelier .panel {
+  border-radius: 0;
+  box-shadow: none;
+  border: none;
+}
+
+/* le filet remplace l'écart de douze pixels */
+.shell-duo .panel--list,
+.shell-atelier .panel--list {
+  border-right: 1px solid var(--border);
+}
+
+/* le rail aussi vient au bord */
+.shell-duo .rail__panel,
+.shell-atelier .rail--stack .rail__panel {
+  border-radius: 0;
+  border: none;
+  border-right: 1px solid var(--border);
+  box-shadow: none;
+  bottom: 0;
+  padding: 10px 9px calc(10px + var(--safe-bottom));
+}
+
+/* sur Mac, le panneau se déploie par-dessus : il garde son relief à
+   l'ouverture, mais reste au ras du bord au repos */
+.rail--hover .rail__panel {
+  border-radius: 0 var(--r-lg) var(--r-lg) 0;
+  border: none;
+  border-right: 1px solid var(--border);
+  box-shadow: none;
+}
+.rail--hover:hover .rail__panel,
+.rail--hover:focus-within .rail__panel {
+  border-right-color: transparent;
+  box-shadow: var(--shadow);
+}
+
+/* --- le contenu respire moins, et se lit mieux --- */
+
+.shell-duo .panel-head,
+.shell-atelier .panel-head {
+  padding: 13px 14px 8px;
+}
+
+.shell-duo .searchbar,
+.shell-atelier .searchbar {
+  height: 34px;
+  margin: 0 14px 8px;
+}
+
+.shell-duo .daygroup,
+.shell-atelier .daygroup {
+  padding: 0 8px 2px;
+}
+
+.shell-duo .daygroup__label,
+.shell-atelier .daygroup__label {
+  padding: 12px 6px 4px;
+}
+
+.shell-duo .item,
+.shell-atelier .item {
+  padding: 8px 10px;
+  border-radius: var(--r-sm);
+}
+
+.shell-duo .item__meta,
+.shell-atelier .item__meta {
+  margin-top: 4px;
+}
+
+.shell-duo .swipe,
+.shell-atelier .swipe {
+  border-radius: var(--r-sm);
+}
+
+/* --- les cartes intérieures s'alignent sur ce parti pris --- */
+
+.shell-duo .settings,
+.shell-atelier .settings {
+  padding: 4px 14px 22px;
+  gap: 14px;
+}
+
+.shell-duo .setting,
+.shell-atelier .setting {
+  border-radius: var(--r);
+  padding: 14px;
+}
+
+.shell-duo .spaces,
+.shell-atelier .spaces {
+  padding: 2px 14px 18px;
+  gap: 8px;
+}
+
+.shell-duo .space-card,
+.shell-atelier .space-card {
+  border-radius: var(--r);
+  min-height: 92px;
+  padding: 12px;
+}
+
+.shell-duo .post__bar,
+.shell-atelier .post__bar {
+  padding: 10px 14px;
+}
+
+.shell-duo .scroll > .editor,
+.shell-atelier .scroll > .editor {
+  padding-left: 22px;
+  padding-right: 22px;
+  padding-top: 18px;
+}
+
+/* ========================================================
+   39. La grille assumée, et le contenu qui passe dessous
+   ======================================================== */
+
+/* La trame devient perceptible. Elle reste derrière le verre des
+   volets, donc floutée sous eux : lisible dans les marges, effacée
+   sous le texte. */
+.trame {
+  --trame: hsl(var(--accent-h) 48% 40% / 0.1);
+  --trame-fine: hsl(var(--accent-h) 48% 40% / 0.05);
+}
+
+:root[data-theme='dark'] .trame {
+  --trame: hsl(var(--accent-h) 60% 72% / 0.09);
+  --trame-fine: hsl(var(--accent-h) 60% 72% / 0.042);
+}
+
+/* --- le contenu passe SOUS la navigation ---
+   Le rail quitte la grille : il flotte au-dessus. Le volet de liste
+   démarre donc à zéro et son verre court sous lui — on voit le
+   contenu défiler derrière, flouté. Seul le TEXTE est décalé, par
+   une marge intérieure égale à la largeur du rail. */
+
+.shell-duo,
+.shell-atelier {
+  position: relative;
+}
+
+.shell-atelier {
+  grid-template-columns: minmax(300px, calc(372px + var(--rail-w))) minmax(0, 1fr);
+}
+
+.shell-duo {
+  grid-template-columns: minmax(260px, calc(348px + var(--rail-w))) minmax(0, 1fr);
+}
+
+.shell-duo .rail,
+.shell-atelier .rail {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: var(--rail-w);
+  z-index: 20;
+}
+
+.shell-duo .panel--list,
+.shell-atelier .panel--list {
+  padding-left: var(--rail-w);
+}
+
+/* le mode focus n'a plus que deux colonnes à replier */
+.shell-atelier[data-focus='true'] {
+  grid-template-columns: 0 minmax(0, 1fr);
+}
+
+/* le rail flottant n'a plus de fond opaque : c'est du verre posé
+   sur le contenu, et il doit le laisser paraître */
+.shell-duo .rail__panel,
+.shell-atelier .rail__panel {
+  background: var(--surface);
+}
+
+/* ========================================================
+   40. Mise au point — les champs d'écriture
+   ======================================================== */
+
+/* Un cadre rouge autour d'une page entière est agressif, et il n'aide
+   personne : dans un champ de texte, c'est le curseur qui dit où on
+   est. On retire donc l'anneau des grandes zones d'écriture. */
+.capture__field:focus-visible,
+.editor__titre:focus-visible,
+.editor__texte:focus-visible,
+.noeud__champ:focus-visible,
+.field__input:focus-visible,
+.searchbar input:focus-visible,
+.causerie__champ:focus-visible {
+  outline: none;
+}
+
+/* C'est le CADRE qui réagit, et doucement. */
+.capture__body:focus-within {
+  border-color: var(--accent-line);
+  box-shadow: var(--shadow), 0 0 0 3px var(--accent-soft);
+}
+
+/* ========================================================
+   41. Formes multiples, confirmation, dessin
+   ======================================================== */
+
+.seg__item--plus {
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 9px;
+  color: var(--text-3);
+}
+.seg__item--plus:hover { color: var(--text); }
+
+.confirme { max-width: 380px; }
+
+.confirme__detail {
+  font-size: 13.5px;
+  line-height: 1.55;
+  color: var(--text-2);
+}
+
+.confirme__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 20px;
+}
+
+/* le bouton dangereux se voit, sans hurler */
+.btn--detruire {
+  background: hsl(2 78% 54%);
+  color: #fff;
+  border-color: transparent;
+  font-weight: 560;
+}
+.btn--detruire:hover { background: hsl(2 74% 48%); }
+
+/* --- le dessin --- */
+
+.dessin {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
+
+.dessin__outils {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--border);
+}
+
+.dessin__encre span,
+.dessin__ep span {
+  display: block;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.dessin__encre { padding: 6px 8px; }
+.dessin__encre span { width: 13px; height: 13px; }
+.dessin__encre[data-encre='accent'] { color: var(--accent); }
+.dessin__encre[data-encre='encre'] { color: var(--text); }
+.dessin__encre[data-encre='douce'] { color: var(--text-3); }
+
+.dessin__ep { padding: 6px 8px; color: var(--text-2); }
+
+.btn[data-actif='true'] {
+  background: var(--accent-soft);
+  color: var(--accent-text);
+}
+
+.dessin__cadre {
+  flex: 1;
+  min-height: 0;
+  padding: 14px;
+}
+
+.dessin__toile {
+  width: 100%;
+  height: 100%;
+  /* le doigt dessine, il ne fait pas défiler la page */
+  touch-action: none;
+  cursor: crosshair;
+}
+
+.dessin__toile[data-gomme='true'] { cursor: pointer; }
+
+.dessin__fond {
+  fill: var(--surface-sunken);
+  stroke: var(--border);
+  stroke-width: 1;
+}
+
+.dessin__trait {
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  pointer-events: none;
+}
+
+.dessin__toile[data-gomme='true'] .dessin__trait {
+  pointer-events: stroke;
+  cursor: pointer;
+}
+
+.dessin__trait[data-encre='accent'] { stroke: var(--accent); }
+.dessin__trait[data-encre='encre'] { stroke: var(--text); }
+.dessin__trait[data-encre='douce'] { stroke: var(--text-3); }
+
+/* ========================================================
+   42. La bulle Atlas
+   ======================================================== */
+
+.bulle {
+  position: fixed;
+  right: calc(18px + var(--safe-right));
+  bottom: calc(18px + var(--safe-bottom));
+  z-index: 55;
+  display: grid;
+  place-items: center;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: var(--surface-strong);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow), 0 0 0 0 var(--accent-glow);
+  -webkit-backdrop-filter: blur(var(--blur));
+  backdrop-filter: blur(var(--blur));
+  transition: transform var(--fast) var(--ease), box-shadow var(--mid) var(--ease);
+}
+
+.bulle:hover { transform: scale(1.05); box-shadow: var(--shadow), 0 0 0 6px var(--accent-soft); }
+.bulle:active { transform: scale(0.96); }
+.bulle[data-ouverte='true'] { box-shadow: var(--shadow), 0 0 0 4px var(--accent-soft); }
+
+/* en compacte, la barre d'onglets occupe déjà le bas */
+.app[data-shell='compact'] .bulle {
+  bottom: calc(96px + var(--safe-bottom));
+  width: 48px;
+  height: 48px;
+}
+
+.causerie {
+  position: fixed;
+  right: calc(18px + var(--safe-right));
+  bottom: calc(86px + var(--safe-bottom));
+  z-index: 56;
+  display: flex;
+  flex-direction: column;
+  width: min(370px, calc(100vw - 36px));
+  max-height: min(460px, 62vh);
+  border-radius: var(--r-lg);
+  box-shadow: var(--shadow);
+  overflow: hidden;
+}
+
+.app[data-shell='compact'] .causerie { bottom: calc(156px + var(--safe-bottom)); }
+
+.causerie__tete {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 11px 10px 11px 14px;
+  border-bottom: 1px solid var(--border);
+}
+
+.causerie__nom { font-size: 14px; font-weight: 580; letter-spacing: -0.01em; }
+
+.causerie__etat {
+  flex: 1;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 9.5px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-3);
+}
+
+.causerie__fil {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.tour {
+  max-width: 86%;
+  padding: 9px 12px;
+  border-radius: var(--r);
+  font-size: 13.5px;
+  line-height: 1.5;
+}
+
+.tour[data-de='atlas'] {
+  align-self: flex-start;
+  background: var(--surface-sunken);
+  color: var(--text-2);
+  border-bottom-left-radius: 5px;
+}
+
+.tour[data-de='moi'] {
+  align-self: flex-end;
+  background: var(--accent);
+  color: var(--accent-ink);
+  border-bottom-right-radius: 5px;
+}
+
+.causerie__pied {
+  display: flex;
+  gap: 8px;
+  padding: 11px 12px;
+  border-top: 1px solid var(--border);
+}
+
+.causerie__champ {
+  flex: 1;
+  min-width: 0;
+  height: 38px;
+  padding: 0 12px;
+  border-radius: var(--r-sm);
+  background: var(--surface-sunken);
+  border: 1px solid transparent;
+  color: var(--text);
+  transition: border-color var(--fast) var(--ease);
+}
+.causerie__champ:focus { border-color: var(--accent-line); }
+
+/* ========================================================
+   43. La planche respire
+   ========================================================
+   Un fond parfaitement immobile se lit comme une image : l'œil le
+   range dans le décor et l'oublie. Quelques mouvements très lents
+   suffisent à le rendre vivant — à condition qu'aucun ne se voie
+   isolément.
+
+   Tout est en transform et opacity, sauf le pointillé qui défile
+   (stroke-dashoffset) : deux traits, un coût nul.
+   ======================================================== */
+
+/* la grille dérive d'exactement une case, donc la boucle est invisible */
+.cal-nappe {
+  animation: nappe 54s linear infinite;
+}
+
+@keyframes nappe {
+  from { transform: translate(0, 0); }
+  to   { transform: translate(10px, 10px); }
+}
+
+/* le pointillé des lignes de construction avance */
+.cal-trait {
+  animation: fourmis 9s linear infinite;
+}
+
+@keyframes fourmis {
+  from { stroke-dashoffset: 0; }
+  to   { stroke-dashoffset: -6.4; }
+}
+
+/* l'arc pivote très légèrement autour de son centre */
+.cal-arc {
+  transform-box: fill-box;
+  transform-origin: 100% 100%;
+  animation: pivot 46s ease-in-out infinite alternate;
+}
+
+@keyframes pivot {
+  from { transform: rotate(-3.5deg); }
+  to   { transform: rotate(3.5deg); }
+}
+
+/* les rayons pointillés palpitent, décalés les uns des autres */
+.cal-rayon:nth-child(1) { animation: veille 7s ease-in-out infinite; }
+.cal-rayon:nth-child(3) { animation: veille 9s ease-in-out infinite 1.4s; }
+.cal-rayon:nth-child(5) { animation: veille 11s ease-in-out infinite 2.9s; }
+
+@keyframes veille {
+  0%, 100% { opacity: var(--cal-fort); }
+  50%      { opacity: calc(var(--cal-fort) * 0.42); }
+}
+
+/* les croix de calage clignotent à peine, chacune à son rythme */
+.cal-croix { animation: calage 8s ease-in-out infinite; }
+.cal-croix:nth-of-type(2) { animation-duration: 11s; animation-delay: 1.1s; }
+.cal-croix:nth-of-type(3) { animation-duration: 6.5s; animation-delay: 2.7s; }
+.cal-croix:nth-of-type(4) { animation-duration: 13s; animation-delay: 0.6s; }
+.cal-croix:nth-of-type(5) { animation-duration: 9.5s; animation-delay: 3.8s; }
+
+@keyframes calage {
+  0%, 100% { opacity: var(--cal-fort); transform: translate(-50%, -50%) scale(1); }
+  50%      { opacity: calc(var(--cal-fort) * 0.35); transform: translate(-50%, -50%) scale(0.86); }
+}
+
+/* le balayage : un liseré qui descend, et qu'on ne remarque qu'au repos */
+.cal-scan {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: 26vh;
+  pointer-events: none;
+  background: linear-gradient(
+    to bottom,
+    transparent,
+    hsl(var(--accent-h) 60% 55% / 0.05) 55%,
+    hsl(var(--accent-h) 70% 60% / 0.14) 92%,
+    transparent
+  );
+  animation: balayage 19s cubic-bezier(0.5, 0, 0.5, 1) infinite;
+}
+
+@keyframes balayage {
+  0%      { transform: translateY(-30vh); opacity: 0; }
+  12%     { opacity: 1; }
+  88%     { opacity: 1; }
+  100%    { transform: translateY(105vh); opacity: 0; }
+}
+
+/* ========================================================
+   44. Le libellé du profil retrouve sa ligne
+   ========================================================
+   L'avatar étant hors flux, la case du profil ne contient que son
+   libellé. Sans cette règle il se cale en HAUT, 24 px au-dessus des
+   quatre autres — c'est le décalage qu'on voyait dans la barre. */
+
+.tab--profil {
+  justify-content: flex-end;
+  padding-bottom: 7px;
+}

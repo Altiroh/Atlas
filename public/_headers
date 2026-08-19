@@ -1,0 +1,25 @@
+# En-têtes pour Cloudflare Pages et Netlify.
+# Vercel lit vercel.json à la place — garder les deux en accord.
+
+# Le service worker ne doit JAMAIS être servi depuis un cache : c'est lui
+# qui décide de tout le reste. S'il se fige, l'app se fige avec lui.
+/sw.js
+  Cache-Control: no-cache, no-store, must-revalidate
+
+# Le document non plus : il pointe vers les ressources empreintées.
+/
+  Cache-Control: no-cache
+
+/index.html
+  Cache-Control: no-cache
+
+# Les ressources portent une empreinte dans leur nom : leur contenu ne
+# changera jamais. On les met en cache pour un an.
+/assets/*
+  Cache-Control: public, max-age=31536000, immutable
+
+# Rien de tout ça n'a besoin d'être embarqué ailleurs.
+/*
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin
+  X-Frame-Options: DENY
