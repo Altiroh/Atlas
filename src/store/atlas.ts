@@ -137,65 +137,6 @@ function normaliserEspace(e: Partial<Espace> & { id: string }): Espace {
   }
 }
 
-/* --- contenu de départ, posé une seule fois si la base est vide --- */
-
-function graine(): { espaces: Espace[]; posts: Post[] } {
-  const now = Date.now()
-  const espaces: Espace[] = (
-    [
-      ['bouquin', 'Le Bouquin', 32],
-      ['chaine', 'La Chaîne', 350],
-      ['concepts', 'Concepts', 264],
-      ['perso', 'Perso', 196],
-    ] as [string, string, number][]
-  ).map(([idE, nom, hue], ordre) =>
-    normaliserEspace({ id: idE, nom, hue, ordre, updatedAt: now }),
-  )
-
-  const brut: [string, string, string | null, number][] = [
-    [
-      'Le narrateur ment',
-      "Et si le narrateur mentait depuis le début ? Reprendre le chapitre 2 en gardant les mêmes phrases, mais en changeant ce qu'on croit savoir.",
-      'bouquin',
-      2 * 3600_000,
-    ],
-    [
-      '',
-      'Format vidéo : « une idée, une contrainte, dix minutes ». Le montage garde les ratés.',
-      'chaine',
-      5 * 3600_000,
-    ],
-    ['', "Arrêter d'ouvrir quatre apps pour une seule idée.", null, 9 * 3600_000],
-    [
-      'Marc ne dit jamais « je »',
-      "Tenir ça sur tout le livre — c'est le genre de détail qui se voit à la relecture et jamais à l'écriture.",
-      'bouquin',
-      JOUR + 4 * 3600_000,
-    ],
-    ['', 'Lumière du dernier acte : orange sale, néons, contre-jour.', null, JOUR + 8 * 3600_000],
-    [
-      'Angle de la vidéo d’ouverture',
-      '« Le second cerveau ne sert à rien si on ne le relit jamais. »',
-      'concepts',
-      3 * JOUR,
-    ],
-    ['', 'Racheter des piles pour le micro.', 'perso', 4 * JOUR],
-  ]
-
-  const posts = brut.map(([titre, texte, espaceId, age], i) =>
-    normaliserPost({
-      id: `seed${i}`,
-      titre,
-      texte,
-      espaceId,
-      etat: espaceId ? 'classee' : 'libre',
-      createdAt: now - age,
-      updatedAt: now - age,
-    }),
-  )
-  return { espaces, posts }
-}
-
 /* --- écriture différée : on ne va pas frapper la base à chaque touche --- */
 
 const enAttente = new Map<string, number>()
@@ -241,7 +182,7 @@ type AtlasStore = {
   /** forme dans laquelle ouvrir le prochain post sélectionné */
   formeInitiale: 'texte' | 'carte' | 'dessin' | null
 
-  hydrater: (options?: { amorcer?: boolean }) => Promise<void>
+  hydrater: () => Promise<void>
   /** Vide tout le contenu local puis relit. Utilisé au changement de compte. */
   reinitialiser: () => Promise<void>
   /** Remet tout en file d'attente. Utilisé à la toute première connexion. */
@@ -295,39 +236,28 @@ export const useAtlas = create<AtlasStore>((set, get) => ({
   focus: false,
   formeInitiale: null,
 
-  /* Deux garde-fous, appris à la dure :
+  /* NON RÉENTRANTE, et c'est un garde-fou appris à la dure : deux
+     hydratations concurrentes (double montage en développement,
+     remontage rapide) se marchent dessus — la seconde réécrit l'état
+     que la synchronisation venait d'appliquer, et ressuscite ce qui
+     avait été supprimé. On rend donc toujours la même promesse.
 
-     · NON RÉENTRANTE. Deux hydratations concurrentes (double montage
-       en développement, remontage rapide) se marchent dessus : la
-       seconde réécrit l'état que la synchronisation venait d'appliquer,
-       et ressuscite ce qui avait été supprimé. On rend donc toujours
-       la même promesse.
-
-     · ON N'AMORCE PAS QUAND UN SERVEUR EXISTE. Le contenu de
-       démonstration ne doit être planté que lors d'un tout premier
-       usage. Sur un appareil neuf raccroché à un compte existant, il
-       inventerait des posts fantômes… qui partiraient aussitôt dans
-       le vrai nuage. */
-  hydrater: ({ amorcer = true } = {}) => {
+     PLUS AUCUN CONTENU DE DÉMONSTRATION. Atlas s'ouvrait sur sept
+     notes et quatre espaces inventés. C'était commode pour développer,
+     et faux pour tout le reste : ces notes remontaient dans le vrai
+     nuage à la première connexion, elles faussaient la place occupée,
+     et surtout elles cachaient l'écran vide — celui que l'utilisateur
+     voit réellement en arrivant, et qui doit donc être bon. */
+  hydrater: () => {
     if (hydratation) return hydratation
     hydratation = (async () => {
       try {
-        let espaces = (await db.tout<Espace>('espaces')).map(normaliserEspace)
-        let posts = (await db.tout<Post>('posts')).map(normaliserPost)
-        if (amorcer && espaces.length === 0 && posts.length === 0) {
-          const g = graine()
-          espaces = g.espaces
-          posts = g.posts
-          await Promise.all([
-            ...espaces.map((e) => db.poser('espaces', e)),
-            ...posts.map((p) => db.poser('posts', p)),
-          ])
-        }
+        const espaces = (await db.tout<Espace>('espaces')).map(normaliserEspace)
+        const posts = (await db.tout<Post>('posts')).map(normaliserPost)
         set({ ...ranger(posts, espaces), pret: true })
       } catch {
         // navigation privée, quota, base illisible : l'app reste utilisable en mémoire
-        const g = amorcer ? graine() : { posts: [], espaces: [] }
-        set({ ...ranger(g.posts, g.espaces), pret: true })
+        set({ ...ranger([], []), pret: true })
       }
     })()
     return hydratation
@@ -346,7 +276,7 @@ export const useAtlas = create<AtlasStore>((set, get) => ({
       espaceActif: null,
       query: '',
     })
-    await get().hydrater({ amorcer: false })
+    await get().hydrater()
   },
 
   /* À la toute première connexion, ce qui est déjà sur l'appareil doit

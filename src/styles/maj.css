@@ -91,6 +91,56 @@
   box-shadow: 0 2px 8px hsl(var(--accent-h) var(--accent-s) 45% / 0.25);
 }
 
+/* ---------- la version qui attend ---------- */
+
+/* Elle porte une décision : elle est donc plus large, plus haute, et
+   elle ne part pas toute seule. Un rappel qui s'efface pendant qu'on
+   lit ce qu'il propose est un rappel perdu. */
+.maj--prete {
+  max-width: min(420px, calc(100vw - 24px));
+  padding: 8px 8px 8px 12px;
+  border-radius: var(--r-lg);
+  cursor: default;
+  border-color: var(--accent-line);
+}
+
+.maj__action {
+  flex: none;
+  height: 32px;
+  padding: 0 13px;
+  border-radius: var(--r-xs);
+  background: var(--accent);
+  color: var(--accent-ink);
+  font-size: 13px;
+  font-weight: 570;
+  box-shadow: 0 4px 14px var(--accent-glow);
+}
+
+.maj__ecarter {
+  flex: none;
+  height: 32px;
+  padding: 0 9px;
+  border-radius: var(--r-xs);
+  color: var(--text-3);
+  font-size: 12.5px;
+  font-weight: 500;
+  transition: color var(--fast) var(--ease);
+}
+.maj__ecarter:hover {
+  color: var(--text-2);
+}
+
+@media (max-width: 420px) {
+  /* trop étroit pour trois colonnes : « Plus tard » disparaît, la
+     bande reste écartable en la touchant hors du bouton */
+  .maj__ecarter {
+    display: none;
+  }
+  .maj--prete .maj__version {
+    display: none;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .maj,
   .maj[data-sort='true'] {

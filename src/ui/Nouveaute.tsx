@@ -1,58 +1,84 @@
 import { useEffect, useState } from 'react'
-import { versionFraiche } from '../store/miseAJour'
+import { useMaj } from '../store/miseAJour'
 import { OeilAtlas } from './OeilAtlas'
 
 /* ---------------------------------------------------------------
-   L'annonce de mise à jour.
+   La bande de mise à jour, en haut de l'écran.
 
-   Une bande légère en haut de l'écran, l'œil devant, cinq secondes,
-   et elle s'en va. On peut l'écarter d'un appui.
+   UN SEUL ENDROIT, DEUX MOMENTS — et il ne faut pas les confondre :
 
-   Trois refus délibérés :
-   · pas de bouton « Fermer » — la bande ENTIÈRE est le bouton, c'est
-     une cible de 300 px de large plutôt qu'une croix de 12 ;
-   · pas de « Recharger » — quand elle s'affiche, c'est que la nouvelle
-     version tourne DÉJÀ. Proposer de recharger sèmerait le doute ;
-   · pas de liste des nouveautés. Elle répond à une seule question, et
-     c'est celle qu'on se pose vraiment quand quelque chose cloche :
-     est-ce que je tourne bien sur la dernière version ?
+   · PRÊTE — une nouvelle version est installée et attend derrière.
+     Elle ne s'en va pas toute seule : il y a quelque chose à décider,
+     et une bande qui disparaît pendant qu'on lit la décision est une
+     décision perdue. On propose, on attend.
 
-   Le signal est consommé UNE FOIS, au montage — d'où la lecture dans
-   l'initialiseur d'état plutôt que dans un effet, que le double
-   montage du mode strict appellerait deux fois.
+   · FAITE — on tourne déjà dessus. Il n'y a rien à faire, donc rien à
+     décider : cinq secondes, et elle s'efface. Un appui l'écarte plus
+     tôt.
+
+   Ce que la seconde ne propose PAS : recharger. Quand elle s'affiche,
+   la nouvelle version tourne déjà — un bouton « recharger » ne ferait
+   que semer le doute.
    --------------------------------------------------------------- */
 
 const DUREE = 5000
 const SORTIE = 280
 
 export function Nouveaute() {
-  const [version] = useState(versionFraiche)
-  const [sort, setSort] = useState(false)
-  const [fini, setFini] = useState(false)
+  const prete = useMaj((s) => s.prete)
+  const faite = useMaj((s) => s.faite)
+  const appliquer = useMaj((s) => s.appliquer)
+  const ecarter = useMaj((s) => s.ecarter)
 
+  const [sort, setSort] = useState(false)
+
+  // seule l'annonce « c'est fait » s'efface toute seule
   useEffect(() => {
-    if (!version) return
+    if (prete || !faite) return
     const a = setTimeout(() => setSort(true), DUREE)
-    const b = setTimeout(() => setFini(true), DUREE + SORTIE)
+    const b = setTimeout(ecarter, DUREE + SORTIE)
     return () => {
       clearTimeout(a)
       clearTimeout(b)
     }
-  }, [version])
+  }, [prete, faite, ecarter])
 
-  if (!version || fini) return null
+  // une version prête pendant que l'annonce s'efface : elle reprend la main
+  useEffect(() => {
+    if (prete) setSort(false)
+  }, [prete])
 
-  const ecarter = () => {
+  if (!prete && !faite) return null
+
+  const partir = () => {
     setSort(true)
-    setTimeout(() => setFini(true), SORTIE)
+    setTimeout(ecarter, SORTIE)
+  }
+
+  if (prete) {
+    return (
+      <div className="maj maj--prete" role="status">
+        <OeilAtlas size={22} />
+        <span className="maj__corps">
+          <span className="maj__mot">Nouvelle version prête</span>
+          <span className="maj__version">Recharger pour l'utiliser</span>
+        </span>
+        <button className="maj__action" onClick={appliquer}>
+          Mettre à jour
+        </button>
+        <button className="maj__ecarter" onClick={partir} aria-label="Plus tard">
+          Plus tard
+        </button>
+      </div>
+    )
   }
 
   return (
-    <button className="maj" data-sort={sort} onClick={ecarter} aria-live="polite">
+    <button className="maj" data-sort={sort} onClick={partir} aria-live="polite">
       <OeilAtlas size={22} />
       <span className="maj__corps">
         <span className="maj__mot">Atlas est à jour</span>
-        <span className="maj__version">{version}</span>
+        <span className="maj__version">{faite}</span>
       </span>
     </button>
   )

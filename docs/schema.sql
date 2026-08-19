@@ -159,12 +159,27 @@ create policy "images — supprimer les miennes" on storage.objects
 -- heureux. Il faut donc une fonction qui s'exécute avec les droits
 -- du propriétaire, et qui ne peut effacer QUE l'appelant.
 
+-- ⚠ LES FICHIERS NE SE SUPPRIMENT PAS D'ICI.
+--
+-- Une première version de cette fonction effaçait aussi les images,
+-- par un `delete from storage.objects`. Supabase le REFUSE désormais,
+-- et il a raison : supprimer la ligne ne supprime pas le fichier dans
+-- le stockage objet, elle le rend seulement introuvable. On se
+-- retrouverait à payer pour des octets que plus personne ne peut lire.
+--
+--   42501 — « Direct deletion from storage tables is not allowed.
+--             Use the Storage API instead. »
+--
+-- Le client doit donc vider son dossier d'images PAR L'API DE STOCKAGE
+-- avant d'appeler cette fonction. C'est un aller-retour de plus, et
+-- c'est le prix d'une suppression qui supprime vraiment.
+
 create or replace function supprimer_mon_compte() returns void
 language plpgsql
 security definer
 -- `search_path` figé : sans ça, un schéma malveillant pourrait faire
 -- exécuter son propre `delete` avec les droits élevés de la fonction.
-set search_path = public, auth, storage
+set search_path = public, auth
 as $$
 declare
   moi uuid := auth.uid();
@@ -173,12 +188,7 @@ begin
     raise exception 'Aucune session';
   end if;
 
-  -- les fichiers d'abord : rien ne les emporte automatiquement
-  delete from storage.objects
-   where bucket_id = 'images'
-     and (storage.foldername(name))[1] = moi::text;
-
-  -- puis le compte ; la cascade se charge des posts et des espaces
+  -- le compte ; la cascade se charge des posts et des espaces
   delete from auth.users where id = moi;
 end;
 $$;

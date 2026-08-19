@@ -39,14 +39,14 @@ export default function App() {
     let arreter: (() => void) | undefined
     let vivant = true
     void (async () => {
-      // la session d'abord : elle décide s'il faut amorcer du contenu de
-      // démonstration (non, si un compte existe — tout doit venir de lui)
+      // la session d'abord : la synchronisation ne doit pas démarrer
+      // avant de savoir à quel compte le contenu appartient
       if (SUPABASE_CONFIGURE) {
         const { AuthSupabase } = await import('./store/auth-supabase')
         useCompte.setState({ auth: new AuthSupabase() })
       }
       const session = await useCompte.getState().reprendre()
-      await hydrater({ amorcer: !session })
+      await hydrater()
       if (!vivant) return
       if (session) await activerPour(session)
 

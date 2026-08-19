@@ -12,6 +12,7 @@ import {
 } from '../store/atlas'
 import {
   IconArchive,
+  IconBolt,
   IconClose,
   IconFolder,
   IconRestore,
@@ -96,6 +97,7 @@ export function FluxPanel({ onPick }: { onPick?: (id: string) => void }) {
   const select = useAtlas((s) => s.select)
   const archiver = useAtlas((s) => s.archiver)
   const restaurer = useAtlas((s) => s.restaurer)
+  const setNav = useAtlas((s) => s.setNav)
 
   const [archives, setArchives] = useState(false)
   const [ouvertId, setOuvertId] = useState<string | null>(null)
@@ -107,6 +109,15 @@ export function FluxPanel({ onPick }: { onPick?: (id: string) => void }) {
   )
   const espace = espaceOf(espaces, espaceActif)
   const nbArchives = posts.filter((p) => p.etat === 'archivee').length
+
+  /* Le vide propose la seule chose qui ait du sens : écrire. On lève
+     aussi le filtre et la recherche au passage — les garder ferait
+     retomber sur un écran vide juste après avoir capturé. */
+  const ouvrirCapture = () => {
+    setQuery('')
+    setEspaceActif(null)
+    setNav('capture')
+  }
 
   return (
     <>
@@ -160,15 +171,40 @@ export function FluxPanel({ onPick }: { onPick?: (id: string) => void }) {
             ))}
           </div>
         ) : groupes.length === 0 ? (
+          /* Trois vides, trois messages. « Rien qui corresponde » servi à
+             quelqu'un qui n'a simplement rien écrit encore lui répond à
+             côté — et c'est le tout premier écran qu'il voit. */
           <div className="empty">
-            <div className="empty__title">
-              {archives ? 'Aucune archive' : 'Rien qui corresponde'}
-            </div>
-            <div className="empty__sub">
-              {archives
-                ? "Ce qui n'est plus dans le flux atterrit ici, jamais à la poubelle."
-                : 'Essaie un autre mot — la recherche regarde le texte entier, pas seulement les titres.'}
-            </div>
+            {archives ? (
+              <>
+                <div className="empty__title">Aucune archive</div>
+                <div className="empty__sub">
+                  Ce qui n'est plus dans le flux atterrit ici, jamais à la poubelle.
+                </div>
+              </>
+            ) : posts.length === 0 ? (
+              <>
+                <div className="empty__icon">
+                  <IconBolt size={22} />
+                </div>
+                <div className="empty__title">Rien encore</div>
+                <div className="empty__sub">
+                  C'est normal : Atlas commence vide. Capture une idée — même mal formulée, même en
+                  trois mots. Le tri viendra le jour où un projet en aura besoin.
+                </div>
+                <button className="btn btn--accent" style={{ marginTop: 14 }} onClick={ouvrirCapture}>
+                  Capturer une idée
+                </button>
+              </>
+            ) : (
+              <>
+                <div className="empty__title">Rien qui corresponde</div>
+                <div className="empty__sub">
+                  Essaie un autre mot — la recherche regarde le texte entier, pas seulement les
+                  titres.
+                </div>
+              </>
+            )}
           </div>
         ) : (
           groupes.map((g) => (

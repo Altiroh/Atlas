@@ -1,6 +1,8 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import App from './App'
+import { surveillerMaj } from './store/miseAJour'
+import { REPERE } from './store/version'
 import { applyTheme, resolveMode, useTheme } from './theme/theme'
 
 import './styles/fonts.css'
@@ -35,8 +37,21 @@ createRoot(document.getElementById('root')!).render(
    il servirait des versions en cache et masquerait les modifications. */
 if (import.meta.env.PROD && 'serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    void navigator.serviceWorker.register('/sw.js').catch(() => {
-      /* contexte non sécurisé ou refus : l'app marche, sans hors-ligne */
-    })
+    /* LE REPÈRE DANS L'ADRESSE, et ce n'est pas cosmétique : le fichier
+       `sw.js` ne change pas d'un déploiement à l'autre, donc le
+       navigateur ne le réinstallerait jamais. La requête, elle, change
+       à chaque version — d'où réinstallation, d'où nouveau nom de
+       cache, d'où ménage des anciennes icônes et de l'ancien manifeste,
+       qui n'ont pas d'empreinte dans leur nom. */
+    navigator.serviceWorker
+      .register(`/sw.js?v=${encodeURIComponent(REPERE)}`)
+      .then(surveillerMaj)
+      .catch(() => {
+        /* contexte non sécurisé ou refus : l'app marche, sans hors-ligne */
+        surveillerMaj()
+      })
   })
+} else {
+  // en développement, seule la comparaison de repères a un sens
+  surveillerMaj()
 }
