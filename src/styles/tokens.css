@@ -58,6 +58,8 @@
   --surface: rgba(255, 255, 255, 0.58);
   --surface-strong: rgba(255, 255, 255, 0.8);
   --surface-solid: #ffffff;
+  /* la surface UNIE, quand on renonce à la transparence */
+  --surface-uni: #f6f8fc;
   --surface-sunken: rgba(15, 23, 42, 0.035);
 
   --border: rgba(15, 23, 42, 0.08);
@@ -87,6 +89,7 @@
   --surface: rgba(255, 255, 255, 0.055);
   --surface-strong: rgba(255, 255, 255, 0.095);
   --surface-solid: #14171f;
+  --surface-uni: #151821;
   --surface-sunken: rgba(255, 255, 255, 0.04);
 
   --border: rgba(255, 255, 255, 0.09);

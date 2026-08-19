@@ -20,6 +20,7 @@ export default function App() {
   const shell = useShell()
   const resolved = useTheme((s) => s.resolved)
   const accent = useTheme((s) => s.accent)
+  const matiere = useTheme((s) => s.matiere)
   const tick = useTheme((s) => s.tick)
   const setNav = useAtlas((s) => s.setNav)
   const hydrater = useAtlas((s) => s.hydrater)
@@ -67,8 +68,8 @@ export default function App() {
 
   /* --- Thème appliqué au DOM --- */
   useEffect(() => {
-    applyTheme(resolved, accent)
-  }, [resolved, accent])
+    applyTheme(resolved, accent, matiere)
+  }, [resolved, accent, matiere])
 
   /* --- Horloge du mode automatique ---
      Une minute suffit largement pour une bascule à 8 h et 18 h, et on

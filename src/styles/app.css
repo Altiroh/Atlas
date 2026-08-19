@@ -3001,3 +3001,67 @@
   justify-content: flex-end;
   padding-bottom: 7px;
 }
+
+/* ========================================================
+   45. Matière des surfaces — verre ou uni
+   ========================================================
+   Le verre a besoin de CONTRASTE derrière lui pour exister. En mode
+   nuit il en a : des halos vifs sur un fond profond. En mode clair,
+   du blanc translucide sur du blanc ne révèle presque rien — il ne
+   reste qu'un voile laiteux, et l'effet tombe à plat.
+
+   Deux réponses, et il faut les deux :
+   · on RÉGLE le verre en clair — moins de blanc, plus de saturation,
+     pour que la trame et les halos remontent au travers ;
+   · on OFFRE le choix, comme iOS le fait : Verre, Uni, ou Auto —
+     lequel suit le réglage système « Réduire la transparence ».
+   ======================================================== */
+
+/* --- le verre en clair laisse enfin voir ce qu'il y a derrière --- */
+:root[data-theme='light'] .glass {
+  background: rgba(255, 255, 255, 0.44);
+  -webkit-backdrop-filter: blur(var(--blur)) saturate(210%) brightness(1.04);
+  backdrop-filter: blur(var(--blur)) saturate(210%) brightness(1.04);
+  border-color: rgba(15, 23, 42, 0.1);
+}
+
+/* --- la matière unie : plus aucun flou, des surfaces franches --- */
+
+:root[data-matiere='uni'] .glass,
+:root[data-matiere='uni'] .tabbar__verre,
+:root[data-matiere='uni'] .bulle,
+:root[data-matiere='uni'] .sheet {
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+
+:root[data-matiere='uni'] .glass,
+:root[data-matiere='uni'] .bulle {
+  background: var(--surface-uni);
+}
+
+/* le liseré de verre n'a plus de sens sur une surface opaque */
+:root[data-matiere='uni'] .glass::before { display: none; }
+
+/* le fond derrière n'a plus à être vu : on le calme, sans l'éteindre */
+:root[data-matiere='uni'] .aurora__blob { opacity: calc(var(--aurora-opacity) * 0.55); }
+:root[data-matiere='uni'] .trame { opacity: 0.6; }
+
+:root[data-matiere='uni'] .sheet {
+  background: rgba(8, 10, 14, 0.55);
+}
+
+/* les volets gagnent un filet, faute de flou pour les détacher */
+:root[data-matiere='uni'] .shell-duo .panel--list,
+:root[data-matiere='uni'] .shell-atelier .panel--list,
+:root[data-matiere='uni'] .shell-duo .rail__panel,
+:root[data-matiere='uni'] .shell-atelier .rail__panel {
+  border-right-color: var(--border-strong);
+}
+
+.reglage__note {
+  margin-top: 8px;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--text-3);
+}

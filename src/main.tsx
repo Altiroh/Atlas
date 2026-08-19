@@ -10,8 +10,8 @@ import './styles/app.css'
 
 /* Le thème est appliqué AVANT le premier rendu : sans ça, l'app
    s'affiche une image en clair avant de basculer en nuit. */
-const { mode, accent } = useTheme.getState()
-applyTheme(resolveMode(mode), accent)
+const { mode, accent, matiere } = useTheme.getState()
+applyTheme(resolveMode(mode), accent, matiere)
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

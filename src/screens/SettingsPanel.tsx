@@ -1,7 +1,7 @@
 import { useState, type CSSProperties } from 'react'
 import { useAtlas } from '../store/atlas'
 import { dernierExport, exporter, type Bilan } from '../store/exporter'
-import { DAY_END, DAY_START, useTheme, type ThemeMode } from '../theme/theme'
+import { DAY_END, DAY_START, resoudreMatiere, useTheme, type Matiere, type ThemeMode } from '../theme/theme'
 import { IconArchive, IconAuto, IconMoon, IconRestore, IconSun } from '../ui/Icon'
 
 /* ---------------------------------------------------------------
@@ -58,6 +58,12 @@ function Sauvegarde() {
   )
 }
 
+const MATIERES: { id: Matiere; label: string }[] = [
+  { id: 'auto', label: 'Auto' },
+  { id: 'verre', label: 'Verre' },
+  { id: 'uni', label: 'Uni' },
+]
+
 const MODES: { id: ThemeMode; label: string; icon: typeof IconSun }[] = [
   { id: 'auto', label: 'Auto', icon: IconAuto },
   { id: 'light', label: 'Clair', icon: IconSun },
@@ -81,6 +87,8 @@ function Apparence() {
   const precedent = useTheme((s) => s.precedent)
   const setMode = useTheme((s) => s.setMode)
   const setAccent = useTheme((s) => s.setAccent)
+  const matiere = useTheme((s) => s.matiere)
+  const setMatiere = useTheme((s) => s.setMatiere)
   const memoriser = useTheme((s) => s.memoriser)
   const revenir = useTheme((s) => s.revenir)
 
@@ -116,6 +124,29 @@ function Apparence() {
           {resolved === 'light' ? <IconSun size={13} /> : <IconMoon size={13} />}
           Il est {heure} h — Atlas est en mode {resolved === 'light' ? 'clair' : 'nuit'}
           {mode === 'auto' ? '' : ' (forcé)'}
+        </div>
+
+        <div className="reglage">
+          <span className="reglage__nom">Matière des surfaces</span>
+          <div className="seg" role="group" aria-label="Matière">
+            {MATIERES.map((m) => (
+              <button
+                key={m.id}
+                className="seg__item"
+                aria-current={matiere === m.id}
+                onClick={() => setMatiere(m.id)}
+              >
+                {m.label}
+              </button>
+            ))}
+          </div>
+          <p className="reglage__note">
+            Le verre a besoin de contraste derrière lui : il rend mieux en mode nuit.
+            {matiere === 'auto' &&
+              ` Auto suit le réglage système « Réduire la transparence » — actuellement : ${
+                resoudreMatiere('auto') === 'uni' ? 'uni' : 'verre'
+              }.`}
+          </p>
         </div>
 
         <div className="reglage">

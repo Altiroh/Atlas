@@ -7,6 +7,9 @@ import { create } from 'zustand'
    --------------------------------------------------------------- */
 
 export type ThemeMode = 'auto' | 'light' | 'dark'
+
+/** La matière des surfaces : translucide, opaque, ou selon le système. */
+export type Matiere = 'auto' | 'verre' | 'uni'
 export type Resolved = 'light' | 'dark'
 
 export type Accent = { h: number; s: number; l: number }
@@ -31,10 +34,10 @@ export function resolveMode(mode: ThemeMode, now = new Date()): Resolved {
 
 const KEY = 'atlas.ui.v1'
 
-type Persisted = { mode: ThemeMode; accent: Accent; precedent: Accent | null }
+type Persisted = { mode: ThemeMode; accent: Accent; precedent: Accent | null; matiere: Matiere }
 
 function load(): Persisted {
-  const fallback: Persisted = { mode: 'auto', accent: ACCENT_DEFAUT, precedent: null }
+  const fallback: Persisted = { mode: 'auto', accent: ACCENT_DEFAUT, precedent: null, matiere: 'auto' }
   try {
     const raw = localStorage.getItem(KEY)
     if (!raw) return fallback
@@ -46,6 +49,8 @@ function load(): Persisted {
       mode: parsed.mode === 'light' || parsed.mode === 'dark' ? parsed.mode : 'auto',
       accent: { h: a.h, s: a.s ?? 90, l: a.l ?? 55 },
       precedent: p && typeof p.h === 'number' ? { h: p.h, s: p.s ?? 90, l: p.l ?? 55 } : null,
+      matiere:
+        parsed.matiere === 'verre' || parsed.matiere === 'uni' ? parsed.matiere : 'auto',
     }
   } catch {
     return fallback
@@ -66,6 +71,7 @@ type ThemeStore = Persisted & {
   resolved: Resolved
   setMode: (mode: ThemeMode) => void
   setAccent: (accent: Accent) => void
+  setMatiere: (matiere: Matiere) => void
   /** Fige la couleur actuelle comme « précédente », au DÉBUT d'un réglage. */
   memoriser: () => void
   /** Rebascule sur la couleur précédente — et l'actuelle devient la précédente. */
@@ -81,12 +87,12 @@ export const useTheme = create<ThemeStore>((set, get) => ({
   resolved: resolveMode(initial.mode),
 
   setMode: (mode) => {
-    save({ mode, accent: get().accent, precedent: get().precedent })
+    save({ mode, accent: get().accent, precedent: get().precedent, matiere: get().matiere })
     set({ mode, resolved: resolveMode(mode) })
   },
 
   setAccent: (accent) => {
-    save({ mode: get().mode, accent, precedent: get().precedent })
+    save({ mode: get().mode, accent, precedent: get().precedent, matiere: get().matiere })
     set({ accent })
   },
 
@@ -95,7 +101,7 @@ export const useTheme = create<ThemeStore>((set, get) => ({
      permet de revenir nulle part. */
   memoriser: () => {
     const { mode, accent } = get()
-    save({ mode, accent, precedent: accent })
+    save({ mode, accent, precedent: accent, matiere: get().matiere })
     set({ precedent: accent })
   },
 
@@ -104,8 +110,14 @@ export const useTheme = create<ThemeStore>((set, get) => ({
   revenir: () => {
     const { mode, accent, precedent } = get()
     if (!precedent) return
-    save({ mode, accent: precedent, precedent: accent })
+    save({ mode, accent: precedent, precedent: accent, matiere: get().matiere })
     set({ accent: precedent, precedent: accent })
+  },
+
+  setMatiere: (matiere) => {
+    const { mode, accent, precedent } = get()
+    save({ mode, accent, precedent, matiere })
+    set({ matiere })
   },
 
   tick: () => {
@@ -138,9 +150,22 @@ function luminance({ h, s, l }: Accent): number {
   return 0.2126 * r + 0.7152 * g + 0.0722 * b
 }
 
-export function applyTheme(resolved: Resolved, accent: Accent) {
+/* « Auto » suit le réglage système « Réduire la transparence » : c'est le
+   seul signal honnête dont on dispose, et il existe sur iOS comme sur Mac.
+   Sans demande explicite, on garde le verre. */
+export function resoudreMatiere(matiere: Matiere): 'verre' | 'uni' {
+  if (matiere !== 'auto') return matiere
+  try {
+    return window.matchMedia('(prefers-reduced-transparency: reduce)').matches ? 'uni' : 'verre'
+  } catch {
+    return 'verre'
+  }
+}
+
+export function applyTheme(resolved: Resolved, accent: Accent, matiere: Matiere = 'auto') {
   const root = document.documentElement
   root.dataset.theme = resolved
+  root.dataset.matiere = resoudreMatiere(matiere)
 
   root.style.setProperty('--accent-h', String(accent.h))
   root.style.setProperty('--accent-s', `${accent.s}%`)
