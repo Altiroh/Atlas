@@ -15,6 +15,7 @@ import { useSync } from './store/sync'
 import { applyTheme, useTheme } from './theme/theme'
 import { Aurora } from './ui/Aurora'
 import { BulleAtlas } from './ui/BulleAtlas'
+import { Demarrage } from './ui/Demarrage'
 import { Nouveaute } from './ui/Nouveaute'
 
 export default function App() {
@@ -107,6 +108,10 @@ export default function App() {
   return (
     <>
       <Aurora />
+      {/* Au-dessus de TOUT, y compris de la bienvenue et de la connexion :
+          il couvre le temps que la base locale réponde, quel que soit
+          l'écran qui va suivre. */}
+      <Demarrage />
       {/* La connexion remplace l'app entière : pas de barre, pas d'encoche,
           pas de rail — sur les trois formats. */}
       {!bienvenueVue ? (

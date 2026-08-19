@@ -1,0 +1,156 @@
+/* ========================================================
+   L'ouverture, et les attentes.
+
+   Le voile de démarrage couvre tout, se retire en fondu, et ne
+   revient jamais. Les squelettes, eux, remplacent la liste le
+   temps que la base réponde.
+
+   Un principe commun : ON NE MONTRE PAS UNE ROUE QUI TOURNE. Une
+   roue dit « attends » ; un squelette dit « voilà ce qui arrive,
+   et à quoi ça ressemblera ». Le second se lit, le premier se
+   subit.
+   ======================================================== */
+
+.demarrage {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  display: grid;
+  place-items: center;
+  background: var(--bg);
+  transition:
+    opacity var(--slow) var(--ease),
+    visibility var(--slow) var(--ease);
+}
+
+/* Une fois sorti, il ne doit plus rien intercepter — `visibility`
+   autant que `opacity` : un voile transparent reste cliquable. */
+.demarrage[data-sort='true'] {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.demarrage__coeur {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  /* il monte d'un cheveu en apparaissant : c'est ce qui donne
+     l'impression que l'app se déplie plutôt qu'elle ne s'allume */
+  animation: demarrage-pose 520ms var(--ease) both;
+}
+
+@keyframes demarrage-pose {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.demarrage__nom {
+  font-size: 17px;
+  font-weight: 560;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--text-2);
+}
+
+.demarrage__jauge {
+  position: relative;
+  width: 96px;
+  height: 2px;
+  border-radius: 99px;
+  background: var(--border);
+  overflow: hidden;
+}
+.demarrage__jauge::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  width: 40%;
+  border-radius: 99px;
+  background: var(--accent);
+  animation: demarrage-va-et-vient 1.25s var(--ease) infinite;
+}
+
+@keyframes demarrage-va-et-vient {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(250%);
+  }
+}
+
+/* ---------- les squelettes de notes ---------- */
+
+.squelettes {
+  padding: 4px 12px;
+}
+
+.squelette {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 13px 14px;
+  border-radius: var(--r-sm);
+}
+
+.squelette span {
+  display: block;
+  height: 11px;
+  border-radius: 6px;
+  background: var(--surface-sunken);
+  /* la lueur balaie de gauche à droite : c'est elle qui dit que ça
+     charge, sans qu'aucune roue ne tourne */
+  background-image: linear-gradient(
+    90deg,
+    transparent 20%,
+    hsl(var(--accent-h) var(--accent-s) var(--accent-l) / 0.1) 50%,
+    transparent 80%
+  );
+  background-size: 260% 100%;
+  animation: squelette-lueur 1.4s linear infinite;
+}
+.squelette span:first-child {
+  height: 13px;
+  width: 62%;
+}
+.squelette span:last-child {
+  width: 88%;
+  opacity: 0.65;
+}
+
+/* Chaque ligne part un peu après la précédente : sans ce décalage, les
+   trois clignotent ensemble et on croit voir une panne. */
+.squelette:nth-child(2) span {
+  animation-delay: 0.12s;
+}
+.squelette:nth-child(3) span {
+  animation-delay: 0.24s;
+}
+.squelette:nth-child(4) span {
+  animation-delay: 0.36s;
+}
+
+@keyframes squelette-lueur {
+  from {
+    background-position: 160% 0;
+  }
+  to {
+    background-position: -60% 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .demarrage__coeur,
+  .demarrage__jauge::after,
+  .squelette span {
+    animation: none;
+  }
+}

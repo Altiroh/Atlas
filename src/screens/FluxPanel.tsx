@@ -86,6 +86,7 @@ function EnTete({
 
 export function FluxPanel({ onPick }: { onPick?: (id: string) => void }) {
   const posts = useAtlas((s) => s.posts)
+  const pret = useAtlas((s) => s.pret)
   const espaces = useAtlas((s) => s.espaces)
   const selectedId = useAtlas((s) => s.selectedId)
   const query = useAtlas((s) => s.query)
@@ -146,7 +147,19 @@ export function FluxPanel({ onPick }: { onPick?: (id: string) => void }) {
       )}
 
       <div className="scroll">
-        {groupes.length === 0 ? (
+        {!pret ? (
+          /* La base n'a pas encore répondu. On montre la FORME de ce qui
+             arrive plutôt qu'une roue qui tourne : à la milliseconde où
+             les notes arrivent, rien ne bouge de place. */
+          <div className="squelettes">
+            {[0, 1, 2, 3].map((i) => (
+              <div className="squelette" key={i}>
+                <span />
+                <span />
+              </div>
+            ))}
+          </div>
+        ) : groupes.length === 0 ? (
           <div className="empty">
             <div className="empty__title">
               {archives ? 'Aucune archive' : 'Rien qui corresponde'}

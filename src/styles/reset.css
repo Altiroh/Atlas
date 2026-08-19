@@ -26,6 +26,19 @@ html {
   overscroll-behavior: none;
 }
 
+/* LE DOCUMENT NE DÉFILE PAS. Lui seul défilait encore : `height: 100%`
+   se mesure sur le bloc conteneur initial, qui vaut sur iPhone la
+   hauteur barres d'outils MASQUÉES. Le document était donc plus haut
+   que ce qu'on voit, et il pouvait glisser sous la barre d'accueil en
+   emportant la barre d'onglets avec lui.
+
+   L'app tient dans un `100dvh` et gère ses propres zones de
+   défilement : rien ici n'a jamais eu besoin de bouger. */
+html,
+body {
+  overflow: hidden;
+}
+
 body {
   /* Inter d'abord ; repli sur la police système (SF sur Apple) le temps
      que le fichier local soit lu. */

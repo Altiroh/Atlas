@@ -102,9 +102,23 @@
 .app {
   position: relative;
   z-index: 1;
+
+  /* DEUX FOIS `height`, JAMAIS UN `min-height`.
+
+     C'est le repli correct, et l'erreur qu'il corrige valait un bug
+     iOS entier : `min-height: 100vh` posé « en secours » sous un
+     `height: 100dvh` ne fait pas repli — il GAGNE. Sur iPhone, `100vh`
+     vaut la hauteur du viewport barres d'outils masquées, donc plus
+     que `100dvh` : l'app dépassait par le bas, et la barre d'onglets
+     partait sous la barre d'accueil.
+
+     Avec deux déclarations de la même propriété, les navigateurs qui
+     ignorent `dvh` gardent la première et ceux qui la comprennent
+     appliquent la seconde. C'est la cascade qui fait le repli, pas
+     une propriété concurrente. */
+  height: 100vh;
   height: 100dvh;
-  /* repli pour les navigateurs sans dvh */
-  min-height: 100vh;
+
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -1263,6 +1277,11 @@
   flex: 1;
   min-height: 0;
   overflow: hidden;
+  /* SUR TOUT LE CADRE, pas seulement sur le fond. Les nœuds vivent dans
+     un calque enfant, et un pincement commencé sur l'un d'eux repartait
+     au navigateur : c'est la PAGE ENTIÈRE qui zoomait, par-dessus une
+     carte qui essayait de zoomer aussi. */
+  touch-action: none;
 }
 
 .carte__surface {
@@ -1382,7 +1401,10 @@
 
 .carte__commandes {
   position: absolute;
-  right: 14px;
+  /* DÉCALÉE DE LA LARGEUR DE LA BULLE. L'œil d'Atlas est en bas à
+     droite, en `fixed`, et il recouvrait le zoom : deux commandes au
+     même endroit, dont une seule cliquable. On lui laisse son coin. */
+  right: calc(14px + var(--safe-right) + 66px);
   bottom: calc(14px + var(--safe-bottom));
   display: flex;
   align-items: center;
@@ -1390,6 +1412,13 @@
   padding: 4px;
   border-radius: 99px;
   box-shadow: var(--shadow);
+}
+
+.carte__separateur {
+  width: 1px;
+  height: 18px;
+  margin: 0 3px;
+  background: var(--border-strong);
 }
 
 .carte__commandes button {
@@ -1405,7 +1434,18 @@
   transition: background var(--fast) var(--ease), color var(--fast) var(--ease);
 }
 .carte__commandes button:hover { background: var(--surface-sunken); color: var(--text); }
-.carte__zoom { min-width: 46px; font-variant-numeric: tabular-nums; }
+/* Le pourcentage n'est plus un bouton : il n'en avait que l'apparence,
+   et ce qu'il faisait — recentrer — a désormais le sien. */
+.carte__zoom {
+  display: grid;
+  place-items: center;
+  min-width: 46px;
+  height: 30px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-3);
+  font-variant-numeric: tabular-nums;
+}
 
 .carte__aide {
   position: absolute;
@@ -1416,6 +1456,14 @@
   line-height: 1.45;
   color: var(--text-3);
   pointer-events: none;
+}
+
+/* Au doigt, l'aide décrit des gestes de souris et vole la place des
+   commandes : elle ne s'adresse qu'au clavier-souris. */
+@media (max-width: 700px), (pointer: coarse) {
+  .carte__aide {
+    display: none;
+  }
 }
 
 @media (max-width: 700px) {
@@ -2338,12 +2386,12 @@
 }
 
 @keyframes regard-cause {
-  /* il lève les yeux vers la fenêtre, en haut à gauche */
-  0%, 36%   { transform: translate(-4px, -7px); }
-  /* puis il te regarde, toi */
-  47%, 86%  { transform: translate(1px, 2px); }
+  /* il lit le fil, en bas à droite de lui */
+  0%, 36%   { transform: translate(5px, 6px); }
+  /* puis il relève les yeux vers toi */
+  47%, 86%  { transform: translate(0, -1px); }
   /* et il y retourne */
-  96%, 100% { transform: translate(-4px, -7px); }
+  96%, 100% { transform: translate(5px, 6px); }
 }
 
 .oeil--cause .oeil__paupiere {

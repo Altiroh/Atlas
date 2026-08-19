@@ -169,17 +169,6 @@ export function EspacesPanel() {
           ),
         )}
 
-        {!recherche && (
-          <button
-            className={vue === 'grille' ? 'esp__carte esp__carte--neuf' : 'esp__ligne esp__ligne--neuf'}
-            onClick={() => setEdite(creerEspace())}
-          >
-            <span className="esp__plus" aria-hidden="true">
-              <IconPlus size={17} />
-            </span>
-            <span>Nouvel espace</span>
-          </button>
-        )}
       </div>
 
         {recherche && visibles.length === 0 && (
@@ -202,6 +191,19 @@ export function EspacesPanel() {
             </>
           )}
         </p>
+      </div>
+
+      {/* Créer reste SOUS LA MAIN, hors du défilement. Une action
+          disponible seulement quand on a fini de faire défiler la liste
+          est une action qu'on ne trouve pas — et c'est justement la
+          seule de cet écran. */}
+      <div className="esp__pied">
+        <button className="esp__creer" onClick={() => setEdite(creerEspace())}>
+          <span className="esp__plus" aria-hidden="true">
+            <IconPlus size={17} />
+          </span>
+          Nouvel espace
+        </button>
       </div>
 
       {edite && <EspaceEditor id={edite} onFermer={() => setEdite(null)} />}

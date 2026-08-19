@@ -78,6 +78,11 @@ export function BulleAtlas() {
       {ouverte && (
         <div className="causerie rise" role="dialog" aria-label="Atlas">
           <div className="causerie__tete">
+            {/* L'œil revient ICI, en tête à gauche : la fenêtre monte du
+                bas et recouvre la bulle, il fallait donc qu'il reste
+                visible quelque part — et le coin haut gauche est le
+                point de départ de la lecture. */}
+            <OeilAtlas size={26} mode="cause" />
             <span className="causerie__nom">Atlas</span>
             <span className="causerie__etat">V0 — sans intelligence</span>
             <button

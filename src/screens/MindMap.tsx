@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { idNoeud, useAtlas, type Noeud, type Post } from '../store/atlas'
-import { IconClose, IconPencil, IconPlus, IconTrash } from '../ui/Icon'
+import { IconClose, IconFocus, IconPencil, IconPlus, IconTrash } from '../ui/Icon'
 
 /* ---------------------------------------------------------------
    La mind map.
@@ -95,12 +95,32 @@ export function MindMap({ post }: { post: Post }) {
   const ecart = useRef(0)
 
   const fondDown = (e: React.PointerEvent) => {
-    if (e.target !== surface.current) return
-    surface.current.setPointerCapture(e.pointerId)
+    const surLeFond = e.target === surface.current
+
+    /* LE DEUXIÈME DOIGT D'UN PINCEMENT NE TOMBE PAS TOUJOURS SUR LE FOND.
+       Il atterrit très souvent sur un nœud — et l'ancienne version le
+       refusait, faute de quoi le pincement ne démarrait jamais : la
+       carte partait en panoramique erratique pendant qu'on essayait de
+       zoomer. Dès qu'un doigt est posé, le suivant est donc accepté
+       quoi qu'il touche, et il interrompt le déplacement de nœud en
+       cours : on ne peut pas zoomer et traîner un nœud à la fois. */
+    if (!surLeFond && doigts.current.size === 0) return
+    if (!surLeFond) {
+      depart.current = null
+      setGlisse(null)
+    }
+
+    try {
+      surface.current?.setPointerCapture(e.pointerId)
+    } catch {
+      /* capture refusée : le geste marche tant que le doigt reste dedans */
+    }
     doigts.current.set(e.pointerId, { x: e.clientX, y: e.clientY })
     if (doigts.current.size === 2) ecart.current = distance()
-    setSelection(null)
-    setEdition(null)
+    if (surLeFond) {
+      setSelection(null)
+      setEdition(null)
+    }
   }
 
   const fondMove = (e: React.PointerEvent) => {
@@ -321,11 +341,18 @@ export function MindMap({ post }: { post: Post }) {
         <button onClick={() => setVue((v) => zoomCentre(surface.current, v, 1 / 1.25))} aria-label="Dézoomer">
           <IconClose size={15} style={{ transform: 'rotate(45deg)' }} />
         </button>
-        <button className="carte__zoom" onClick={recentrer}>
-          {Math.round(vue.k * 100)} %
-        </button>
+        <span className="carte__zoom">{Math.round(vue.k * 100)} %</span>
         <button onClick={() => setVue((v) => zoomCentre(surface.current, v, 1.25))} aria-label="Zoomer">
           <IconPlus size={15} />
+        </button>
+
+        {/* Recentrer mérite SON bouton. C'était le pourcentage qu'il
+            fallait toucher — personne ne devine qu'un chiffre est une
+            commande, et c'est pourtant le seul moyen de revenir quand
+            on s'est perdu au bout de la carte. */}
+        <span className="carte__separateur" aria-hidden="true" />
+        <button onClick={recentrer} aria-label="Recentrer la carte" title="Recentrer la carte">
+          <IconFocus size={15} />
         </button>
       </div>
 

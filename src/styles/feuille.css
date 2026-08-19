@@ -92,15 +92,24 @@
     right: 0;
     bottom: 0;
     width: auto;
-    max-height: 78vh;
+    /* SIX DIXIÈMES DE L'ÉCRAN — une hauteur fixe, pas un maximum : une
+       fenêtre qui grandit avec le fil ne se pose jamais au même endroit,
+       et on ne sait plus où viser pour la refermer. `dvh` et non `vh`,
+       sinon iOS la mesure barres d'outils masquées et elle déborde. */
+    height: 60vh;
+    height: 60dvh;
+    max-height: none;
     border-radius: var(--r-xl) var(--r-xl) 0 0;
     padding-bottom: var(--safe-bottom);
     animation: feuille-monte var(--mid) var(--ease) both;
+    /* elle passe PAR-DESSUS la bulle : l'œil de l'en-tête prend le
+       relais, il n'y a plus deux Atlas à l'écran */
+    z-index: 58;
   }
 
-  /* la bulle reste visible au-dessus de la feuille : c'est elle qui
-     ferme, et c'est d'elle que part le regard */
-  .bulle[data-ouverte='true'] {
-    z-index: 57;
+  .causerie__fil {
+    /* le fil occupe ce qui reste, et lui seul défile */
+    flex: 1;
+    min-height: 0;
   }
 }

@@ -414,37 +414,40 @@
 
 /* ---------- créer ---------- */
 
-/* Il était gris sur gris, en pointillés, et il disparaissait dans la
+/* HORS DU DÉFILEMENT, en pied d'écran. Le bandeau et le filtre tiennent
+   le haut, la liste défile entre les deux, et la seule action de
+   l'écran reste posée en bas — toujours au même endroit, quelle que
+   soit la longueur de la liste. */
+.esp__pied {
+  flex: none;
+  padding: 10px 16px calc(12px + var(--safe-bottom));
+  border-top: 1px solid var(--border);
+}
+
+/* Il était gris sur gris, en pointillés, et il se perdait dans la
    grille. C'est pourtant la seule action de l'écran : il prend donc la
    couleur de l'app, un médaillon plein, et une graisse de texte qui le
    met au niveau des noms d'espaces. */
-.esp__carte--neuf,
-.esp__ligne--neuf {
+.esp__creer {
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 11px;
+  width: 100%;
+  height: 46px;
+  border-radius: var(--r-sm);
   color: var(--accent-text);
   border: 1px dashed var(--accent-line);
   background: hsl(var(--accent-h) var(--accent-s) var(--accent-l) / 0.07);
-  font-size: 14px;
+  font-size: 14.5px;
   font-weight: 550;
   transition:
     background var(--fast) var(--ease),
     border-color var(--fast) var(--ease);
 }
-.esp__carte--neuf {
-  flex-direction: column;
-  align-items: flex-start;
-  justify-content: center;
-}
-.esp__carte--neuf:hover,
-.esp__ligne--neuf:hover {
+.esp__creer:hover {
   background: hsl(var(--accent-h) var(--accent-s) var(--accent-l) / 0.14);
   border-color: hsl(var(--accent-h) var(--accent-s) var(--accent-l) / 0.6);
-}
-.esp__ligne--neuf {
-  padding: 11px 12px;
-  border-radius: var(--r-sm);
 }
 
 .esp__plus {
