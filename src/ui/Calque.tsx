@@ -1,4 +1,4 @@
-import { memo } from 'react'
+import { memo, useEffect, useState } from 'react'
 
 /* ---------------------------------------------------------------
    Le calque technique — la direction « planche de graphiste ».
@@ -31,7 +31,38 @@ const CROIX = [
   { x: 71, y: 17 },
 ]
 
+/* Les relevés dérivent, très lentement et de très peu : un instrument
+   au repos ne saute pas d'une valeur à l'autre, il oscille autour d'un
+   point. Un pas de 4 s et des variations d'un dixième suffisent — au-delà,
+   ça devient un diaporama, et ça se remarque.
+
+   La marche aléatoire est bornée : la valeur revient toujours vers son
+   centre, sinon elle dériverait jusqu'à l'absurde en quelques minutes. */
+function useReleve(centre: number, amplitude: number, decimales = 0) {
+  const [v, setV] = useState(centre)
+
+  useEffect(() => {
+    // le système peut demander moins d'animation : on se tait alors
+    if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return
+    const id = window.setInterval(() => {
+      setV((avant) => {
+        const rappel = (centre - avant) * 0.28
+        const bruit = (Math.random() - 0.5) * amplitude * 0.9
+        const suivant = avant + rappel + bruit
+        return Math.max(centre - amplitude, Math.min(centre + amplitude, suivant))
+      })
+    }, 4000)
+    return () => window.clearInterval(id)
+  }, [centre, amplitude])
+
+  return v.toFixed(decimales)
+}
+
 export const Calque = memo(function Calque() {
+  const angle = useReleve(120, 4)
+  const focale = useReleve(0.42, 0.06, 2)
+  const derive = useReleve(7.5, 2.5, 1)
+
   return (
     <div className="calque" aria-hidden="true">
       {/* 1. la grille et le cadre : ils épousent la fenêtre */}
@@ -67,6 +98,9 @@ export const Calque = memo(function Calque() {
         <line className="cal-trait" x1="18" y1="86" x2="64" y2="40" strokeDasharray="1.6 1.6" />
         <line className="cal-trait" x1="60" y1="36" x2="95" y2="4" strokeDasharray="1.6 1.6" />
       </svg>
+
+      {/* la tête de lecture parcourt les graduations */}
+      <span className="cal-tete" />
 
       {/* le balayage : une ligne qui descend, très lentement */}
       <span className="cal-scan" />
@@ -124,13 +158,19 @@ export const Calque = memo(function Calque() {
       {/* 5. les annotations */}
       <div className="cal-notes__hg">
         <div>SYS_07 / ATLAS</div>
-        <div>GRID VIEW_120°</div>
+        <div>
+          GRID VIEW_<span className="cal-valeur">{angle}</span>°
+        </div>
+        <div>
+          FOCUS <span className="cal-valeur">{focale}</span> · DÉR{' '}
+          <span className="cal-valeur">{derive}</span>
+        </div>
         <span className="cal-souligne" />
       </div>
 
       <div className="cal-cases">
         {[0, 1, 2, 3, 4].map((i) => (
-          <span className="cal-case" key={i} data-coche={i === 4} />
+          <span className="cal-case" key={i} style={{ animationDelay: `${i * 4}s` }} />
         ))}
       </div>
 
