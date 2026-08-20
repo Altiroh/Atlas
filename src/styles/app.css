@@ -3743,3 +3743,25 @@
 }
 .field__ok strong { font-weight: 600; }
 :root[data-theme='dark'] .field__ok { color: hsl(150 62% 66%); }
+
+/* ---------- changer son mot de passe ---------- */
+
+/* Replié, ce n'est qu'un bouton de plus ; déplié, un vrai petit
+   formulaire séparé du reste par un trait. Le geste est rare — deux
+   fois par an — et n'a pas à occuper l'écran le reste du temps. */
+.mdp {
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid var(--border);
+}
+
+.mdp--ouvert {
+  display: flex;
+  flex-direction: column;
+  animation: mdp-ouvre 200ms var(--ease) both;
+}
+
+@keyframes mdp-ouvre {
+  from { opacity: 0; transform: translateY(-6px); }
+  to { opacity: 1; transform: none; }
+}

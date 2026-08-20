@@ -113,6 +113,37 @@ export class AuthSupabase implements Authentification {
     if (error && /rate limit|too many/i.test(error.message)) throw traduire(error)
   }
 
+  /**
+   * Changer de mot de passe, session ouverte.
+   *
+   * ── ON REVÉRIFIE L'ANCIEN, ET SUPABASE NE LE FAIT PAS
+   *
+   * `updateUser({ password })` accepte n'importe quel nouveau mot de
+   * passe du moment que la session est valide : il ne demande jamais
+   * l'ancien. Or une session dure des semaines. Sans cette
+   * vérification, un téléphone déverrouillé prêté deux minutes suffit
+   * à changer le mot de passe et à mettre le propriétaire dehors.
+   *
+   * On rejoue donc une connexion avec l'ancien mot de passe avant de
+   * poser le nouveau. Elle ne casse pas la session en cours — elle la
+   * renouvelle.
+   */
+  async changerMotDePasse(actuel: string, nouveau: string): Promise<void> {
+    verifierMotDePasse(nouveau)
+    const session = await this.session()
+    if (!session?.email) throw new Error('Aucune session')
+    if (actuel === nouveau) throw new Error('Le nouveau mot de passe est identique à l’ancien')
+
+    const verif = await supabase().auth.signInWithPassword({
+      email: session.email,
+      password: actuel,
+    })
+    if (verif.error) throw new Error('Le mot de passe actuel est incorrect')
+
+    const { error } = await supabase().auth.updateUser({ password: nouveau })
+    if (error) throw traduire(error)
+  }
+
   async majProfil(nom: string): Promise<Session> {
     const { data, error } = await supabase().auth.updateUser({ data: { nom: nom.trim() } })
     if (error) throw traduire(error)

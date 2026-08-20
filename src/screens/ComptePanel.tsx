@@ -276,6 +276,8 @@ function Profil({ session }: { session: Session }) {
           </div>
         </div>
 
+        <MotDePasse />
+
         {avertissement !== null && (
           <p className="field__erreur" role="alert" style={{ marginTop: 14 }}>
             {avertissement} modification{avertissement > 1 ? 's' : ''} n'ont pas pu être envoyées.
@@ -293,6 +295,110 @@ function Profil({ session }: { session: Session }) {
         </div>
       </div>
     </section>
+  )
+}
+
+/**
+ * Changer son mot de passe, session ouverte.
+ *
+ * ── REPLIÉ PAR DÉFAUT
+ *
+ * On change de mot de passe deux fois par an. Déplié en permanence,
+ * ce bloc mettrait trois champs vides sous les yeux à chaque visite
+ * de l'écran de compte, et ferait passer le geste ordinaire — changer
+ * son prénom, poser un portrait — après une paperasse qu'on ne
+ * demandait pas.
+ *
+ * ── LE MOT DE PASSE ACTUEL EST DEMANDÉ
+ *
+ * Le serveur ne l'exige pas : une session ouverte suffit à le
+ * changer. Mais une session dure des semaines, et un téléphone
+ * déverrouillé prêté deux minutes suffirait alors à mettre son
+ * propriétaire dehors de son propre compte. C'est vérifié côté
+ * adaptateur, pas seulement ici — un garde-fou qui ne vit que dans
+ * l'écran n'en est pas un.
+ */
+function MotDePasse() {
+  const changer = useCompte((s) => s.changerMotDePasse)
+  const erreur = useCompte((s) => s.erreur)
+  const occupe = useCompte((s) => s.occupe)
+  const oublierErreur = useCompte((s) => s.oublierErreur)
+
+  const [ouvert, setOuvert] = useState(false)
+  const [actuel, setActuel] = useState('')
+  const [nouveau, setNouveau] = useState('')
+  const [fait, setFait] = useState(false)
+
+  const fermer = () => {
+    setOuvert(false)
+    setActuel('')
+    setNouveau('')
+    oublierErreur()
+  }
+
+  if (!ouvert) {
+    return (
+      <div className="mdp">
+        <button
+          className="btn btn--ghost"
+          onClick={() => {
+            setFait(false)
+            oublierErreur()
+            setOuvert(true)
+          }}
+        >
+          Changer le mot de passe
+        </button>
+        {fait && (
+          <p className="field__ok" role="status" style={{ margin: '12px 0 0' }}>
+            Mot de passe changé. Il servira à ta prochaine connexion.
+          </p>
+        )}
+      </div>
+    )
+  }
+
+  return (
+    <form
+      className="mdp mdp--ouvert"
+      onSubmit={async (e) => {
+        e.preventDefault()
+        const ok = await changer(actuel, nouveau)
+        if (ok) {
+          setFait(true)
+          fermer()
+        }
+      }}
+    >
+      <ChampMotDePasse
+        label="Mot de passe actuel"
+        value={actuel}
+        onChange={setActuel}
+        autoComplete="current-password"
+      />
+      <ChampMotDePasse
+        label="Nouveau mot de passe"
+        value={nouveau}
+        onChange={setNouveau}
+        autoComplete="new-password"
+        avecJauge
+      />
+
+      {erreur && (
+        <p className="field__erreur" role="alert">
+          {erreur}
+        </p>
+      )}
+
+      <div className="profil__actions" style={{ marginTop: 4 }}>
+        <button className="btn btn--accent" type="submit" disabled={occupe || !actuel || !nouveau}>
+          {occupe ? 'Un instant…' : 'Enregistrer'}
+        </button>
+        <button className="btn btn--ghost" type="button" onClick={fermer}>
+          Annuler
+        </button>
+      </div>
+    </form>
   )
 }
 

@@ -53,6 +53,16 @@ export interface Authentification {
    * lien part » — et c'est vrai.
    */
   reinitialiser(email: string): Promise<void>
+  /**
+   * Change le mot de passe d'une session ouverte.
+   *
+   * L'ANCIEN EST EXIGÉ, et ce n'est pas une formalité. Une session
+   * reste ouverte des semaines : un téléphone déverrouillé prêté
+   * deux minutes suffirait sinon à changer le mot de passe et à
+   * mettre le propriétaire dehors de son propre compte. Le vérifier
+   * transforme « avoir l'appareil » en « connaître le secret ».
+   */
+  changerMotDePasse(actuel: string, nouveau: string): Promise<void>
 }
 
 /* ================= le portrait, gardé sur l'appareil =================
@@ -204,6 +214,28 @@ export class AuthLocale implements Authentification {
     }
   }
 
+  async changerMotDePasse(actuel: string, nouveau: string): Promise<void> {
+    const session = await this.session()
+    if (!session) throw new Error('Aucune session')
+    verifierMotDePasse(nouveau)
+
+    const comptes = lireComptes()
+    const compte = comptes.find((c) => c.id === session.id)
+    if (!compte) throw new Error('Compte introuvable')
+    if ((await empreinter(actuel, compte.sel)) !== compte.empreinte) {
+      throw new Error('Le mot de passe actuel est incorrect')
+    }
+    if (actuel === nouveau) throw new Error('Le nouveau mot de passe est identique à l’ancien')
+
+    /* Un NOUVEAU SEL avec le nouveau secret. Garder l'ancien
+       laisserait deux empreintes comparables entre elles ; et on
+       calcule avant d'écrire, pour qu'aucun instant ne voie un compte
+       privé d'empreinte. */
+    const sel = crypto.randomUUID()
+    const empreinte = await empreinter(nouveau, sel)
+    ecrireComptes(comptes.map((c) => (c.id === session.id ? { ...c, sel, empreinte } : c)))
+  }
+
   /* Sans serveur, il n'y a personne pour envoyer un courriel. On le
      dit franchement plutôt que d'afficher un « c'est envoyé » qui
      serait faux — c'est exactement le genre de mensonge poli qui fait
@@ -247,6 +279,8 @@ type CompteStore = {
   renommer: (nom: string) => Promise<void>
   /** rend vrai si la demande est partie — le message est le même dans tous les cas */
   demanderNouveauMotDePasse: (email: string) => Promise<boolean>
+  /** rend vrai si le mot de passe a bien été changé */
+  changerMotDePasse: (actuel: string, nouveau: string) => Promise<boolean>
   /** pose ou retire le portrait — un identifiant d'image locale */
   portraiturer: (imageId: string | null) => void
   oublierErreur: () => void
@@ -293,6 +327,18 @@ export const useCompte = create<CompteStore>((set, get) => ({
       return true
     } catch (e) {
       set({ erreur: e instanceof Error ? e.message : 'Envoi impossible', occupe: false })
+      return false
+    }
+  },
+
+  changerMotDePasse: async (actuel, nouveau) => {
+    set({ occupe: true, erreur: null })
+    try {
+      await get().auth.changerMotDePasse(actuel, nouveau)
+      set({ occupe: false })
+      return true
+    } catch (e) {
+      set({ erreur: e instanceof Error ? e.message : 'Changement impossible', occupe: false })
       return false
     }
   },

@@ -44,18 +44,21 @@ export function ChampMotDePasse({
   onChange,
   autoComplete,
   avecJauge = false,
+  label = 'Mot de passe',
 }: {
   value: string
   onChange: (v: string) => void
   autoComplete: string
   avecJauge?: boolean
+  /** « Mot de passe actuel », « Nouveau mot de passe »… quand il y en a deux à l'écran */
+  label?: string
 }) {
   const [visible, setVisible] = useState(false)
   const force = forceMotDePasse(value)
 
   return (
     <div className="field">
-      <span className="field__label">Mot de passe</span>
+      <span className="field__label">{label}</span>
 
       <div className="champ-mdp">
         <input
