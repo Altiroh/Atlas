@@ -107,6 +107,24 @@
     z-index: 58;
   }
 
+  /* IL FAUT RÉPÉTER LE SÉLECTEUR DE LA COQUE COMPACTE, et c'est le
+     genre de piège qui coûte une soirée.
+
+     `app.css` remonte la fenêtre au-dessus de la barre de capture
+     avec `.app[data-shell='compact'] .causerie { bottom: 156px }`.
+     Cette règle-là pèse trois classes ; le `.causerie` ci-dessus n'en
+     pèse qu'une, et UNE MEDIA QUERY N'AJOUTE AUCUNE SPÉCIFICITÉ. Sur
+     téléphone — exactement le cas où la feuille doit monter du bas —
+     c'était donc l'ancienne valeur qui gagnait, et la conversation
+     s'ouvrait flottante, à 156 px du bord.
+
+     On réécrit donc le même poids. À spécificité égale, c'est le
+     dernier chargé qui l'emporte, et `feuille.css` est chargé après
+     `app.css` précisément pour ça. */
+  .app[data-shell='compact'] .causerie {
+    bottom: 0;
+  }
+
   .causerie__fil {
     /* le fil occupe ce qui reste, et lui seul défile */
     flex: 1;
@@ -121,11 +139,15 @@
   display: grid;
   place-items: center;
   flex: none;
-  width: 34px;
-  height: 34px;
+  /* la taille exacte du dessin, couronne comprise : 22 x 1,8 */
+  width: 40px;
+  height: 40px;
   border-radius: 50%;
   animation: oeil-monte 420ms var(--ease) both;
 }
+/* Les flammes débordent du bouton : rien ne doit les couper, et le
+   survol ne doit pas dessiner un disque au milieu d'elles. */
+.causerie__oeil { overflow: visible; }
 .causerie__oeil:hover {
   background: var(--surface-sunken);
 }

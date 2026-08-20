@@ -198,7 +198,13 @@ export function BulleAtlas() {
               onClick={() => setOuverte(false)}
               aria-label="Fermer Atlas"
             >
-              <OeilAtlas size={26} mode="cause" />
+              {/* AVEC SA COURONNE, comme sur l'écran de connexion et
+                  comme dans la bulle. Elle était coupée d'office en
+                  dessous de 34 px — l'en-tête montrait donc un œil nu,
+                  qu'on ne reconnaissait pas comme le même. Or c'est
+                  précisément ici qu'il doit se reconnaître : c'est
+                  l'œil qu'on vient de soulever du coin de l'écran. */}
+              <OeilAtlas size={22} mode="cause" flux />
             </button>
             <span className="causerie__nom">Atlas</span>
             <span className="causerie__etat">V0 — sans intelligence</span>

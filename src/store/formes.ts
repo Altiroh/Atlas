@@ -1,5 +1,5 @@
 import type { Noeud, Papier, Post, Trait } from './atlas'
-import { imagesDe, versTexte, type Bloc } from './blocs'
+import { depuisTexte, imagesDe, versTexte, type Bloc } from './blocs'
 
 /* ---------------------------------------------------------------
    LES FORMES D'UNE NOTE.
@@ -244,10 +244,26 @@ export function normaliserFormes(formes: Forme[] | null | undefined): Forme[] | 
  * la carte, puis le dessin, dans l'ordre où ils apparaissaient dans
  * l'ancien sélecteur. Une note reprise doit s'ouvrir exactement comme
  * elle se fermait.
+ *
+ * ── LE CAS DE LA CAPTURE, ET IL PERDAIT DU TEXTE
+ *
+ * Une capture éclair n'a PAS de blocs : `creerPost` ne remplit que
+ * `texte`. La fiche se construisait donc vide — et comme le magasin
+ * refait `post.texte` à partir des formes dès qu'on les écrit, la
+ * phrase qu'on venait de capturer disparaissait à la première
+ * ouverture de la note. Silencieusement, et sur le chemin le plus
+ * fréquenté de l'app.
+ *
+ * `depuisTexte` existe exactement pour ça depuis les blocs : elle
+ * reconnaît les paragraphes et les listes déjà tapées à la main. On
+ * ne s'en sert QUE si `blocs` est absent — une note qui a de vrais
+ * blocs ne doit jamais repasser par la projection en texte brut, qui
+ * est une perte d'information.
  */
 export function depuisAncienModele(post: Post): Forme[] {
   const formes: Forme[] = []
-  formes.push({ id: idForme(), t: 'texte', nom: LIBELLES.texte, blocs: post.blocs ?? [] })
+  const blocs = post.blocs ?? (post.texte.trim() ? depuisTexte(post.texte) : [])
+  formes.push({ id: idForme(), t: 'texte', nom: LIBELLES.texte, blocs })
   if (post.carte?.length) {
     formes.push({ id: idForme(), t: 'carte', nom: LIBELLES.carte, carte: post.carte })
   }

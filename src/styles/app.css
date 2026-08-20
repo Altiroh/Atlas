@@ -2891,17 +2891,36 @@
 }
 
 /* Le halo : un disque flou aux deux tiers du cadre, donc sous le globe
-   et pas sous les flammes. C'est lui qui décolle la mascotte du fond. */
+   et pas sous les flammes. C'est lui qui décolle la mascotte du fond.
+
+   IL FAUT LUI DONNER UN RANG EXPLICITE, et c'est tout sauf du détail :
+   ce halo est POSITIONNÉ, l'œil ne l'est pas. Or l'ordre de peinture
+   du CSS place les descendants positionnés APRÈS le contenu en flux —
+   le halo passait donc par-dessus l'œil, et comme il porte un
+   `backdrop-filter`, il ne le cachait pas franchement : il le
+   FLOUTAIT. On voyait une bouillie pâle cerclée de flammes nettes, et
+   rien qui ressemble à un regard.
+
+   Le symptôme est trompeur parce que tout est bien là — le globe, l'iris,
+   la pupille, aux bonnes tailles. C'est le seul empilement qui était
+   faux. */
 .bulle::before {
   content: '';
   position: absolute;
   inset: 17%;
+  z-index: 0;
   border-radius: 50%;
   background: var(--surface-strong);
   box-shadow: var(--shadow);
   -webkit-backdrop-filter: blur(var(--blur));
   backdrop-filter: blur(var(--blur));
   transition: box-shadow var(--mid) var(--ease);
+}
+
+/* L'œil repasse devant son propre halo. */
+.bulle .oeil {
+  position: relative;
+  z-index: 1;
 }
 
 .bulle:hover { transform: scale(1.06); }
