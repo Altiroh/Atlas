@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 import { useAtlas, viderLesAttentes, type Espace, type Post } from './atlas'
-import { db, imagesEnvoyees, marquerEnvoyee } from './db'
+import { db, imagesEnvoyees, marquerEnvoyee, recoderImage } from './db'
 import type { Dorsale } from './dorsale'
 import { imagesDuPost } from './formes'
 
@@ -112,7 +112,7 @@ export const useSync = create<SyncStore>((set, get) => ({
          note déjà propre n'auraient sinon plus aucune occasion de
          partir. */
       const tout = useAtlas.getState()
-      const echecsImages = await televerserImages(dorsale, tout.posts, tout.espaces)
+      const images = await televerserImages(dorsale, tout.posts, tout.espaces)
 
       const lot = useAtlas.getState().aEnvoyer()
       if (lot.posts.length || lot.espaces.length) {
@@ -133,8 +133,10 @@ export const useSync = create<SyncStore>((set, get) => ({
            des images restées au sol ferait croire à un transfert
            complet, et c'est exactement le genre de perte qui ne se voit
            qu'en ouvrant la note ailleurs, devant un cadre vide. */
-        message: echecsImages
-          ? `${echecsImages} image${echecsImages > 1 ? 's' : ''} n’${echecsImages > 1 ? 'ont' : 'a'} pas pu partir`
+        message: images.echecs
+          ? `${images.echecs} image${images.echecs > 1 ? 's' : ''} n’${
+              images.echecs > 1 ? 'ont' : 'a'
+            } pas pu partir. ${images.raison ?? ''}`.trim()
           : null,
       })
     } catch (e) {
@@ -233,6 +235,18 @@ async function rapatrierImages(dorsale: Dorsale) {
 async function televerserImages(dorsale: Dorsale, posts: Post[], espaces: Espace[]) {
   const deja = imagesEnvoyees()
   let echecs = 0
+  /* LA RAISON DU PREMIER REFUS, ET C'EST LE POINT.
+
+     La première version comptait les échecs et jetait l'erreur : le
+     bandeau annonçait « 1 image n'a pas pu partir » sans dire pourquoi,
+     ce qui ne vaut guère mieux que le silence — on sait qu'on a perdu
+     quelque chose, et rien sur la marche à suivre. Or le refus est
+     presque toujours réparable en trente secondes (un format à
+     autoriser, une limite à relever), à condition de savoir lequel.
+
+     La PREMIÈRE seulement : dix images refusées pour le même motif
+     donnent dix fois le même message, et un bandeau illisible. */
+  let raison: string | null = null
   for (const id of new Set(imagesReferencees(posts, espaces))) {
     if (deja.has(id)) continue
     const blob = await db.lire<Blob>('images', id)
@@ -240,7 +254,27 @@ async function televerserImages(dorsale: Dorsale, posts: Post[], espaces: Espace
     try {
       await dorsale.envoyerImage(id, blob)
       marquerEnvoyee(id)
-    } catch {
+      continue
+    } catch (e) {
+      /* UNE SECONDE CHANCE, EN WEBP.
+
+         Le refus le plus fréquent est un refus de FORMAT : un HEIC
+         d'iPhone que l'hébergeur n'accepte pas, et que l'appareil, lui,
+         sait parfaitement relire. Rien ne sert de le signaler à
+         l'utilisateur et d'attendre qu'il aille configurer un seau : on
+         convertit, on renvoie, et on remplace aussi la copie locale —
+         sans quoi le même refus reviendrait au tour suivant, et à tous
+         les suivants. */
+      const recode = await recoderImage(id, blob)
+      if (recode) {
+        try {
+          await dorsale.envoyerImage(id, recode)
+          marquerEnvoyee(id)
+          continue
+        } catch {
+          /* ce n'était pas le format : on tombe dans le compte ci-dessous */
+        }
+      }
       /* UNE IMAGE QUI ÉCHOUE NE DOIT PAS ARRÊTER LE RESTE.
 
          Depuis qu'on parcourt toute la base et non plus le seul lot, un
@@ -250,9 +284,10 @@ async function televerserImages(dorsale: Dorsale, posts: Post[], espaces: Espace
          des notes, qui passe après lui. On compte, on continue, et on
          le dit dans le bandeau. */
       echecs++
+      if (!raison) raison = e instanceof Error ? e.message : String(e)
     }
   }
-  return echecs
+  return { echecs, raison }
 }
 
 /* ================= entretien ================= */

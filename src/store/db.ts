@@ -81,17 +81,32 @@ export const db = {
 const COTE_MAX = 1600
 const QUALITE = 0.82
 
-export async function preparerImage(fichier: File): Promise<Blob> {
-  const bitmap = await createImageBitmap(fichier)
+/**
+ * Les formats qu'on accepte de garder TELS QUELS.
+ *
+ * ── LE RACCOURCI DU « PETIT FICHIER » LAISSAIT PASSER N'IMPORTE QUOI
+ *
+ * Une image assez petite et assez courte était rendue sans y toucher,
+ * pour ne pas la ré-encoder inutilement — bonne intention, et une
+ * fuite : un iPhone livre du HEIC, et le HEIC ressortait intact de la
+ * préparation. Il s'affiche très bien sur l'appareil qui l'a produit,
+ * ce qui rend le problème invisible ; il est refusé par l'hébergeur, et
+ * illisible par la moitié des navigateurs le jour où on le retrouve
+ * ailleurs.
+ *
+ * Trois formats seulement passent sans conversion, parce que tout ce
+ * qui lit une image sait les lire. Le reste — HEIC, HEIF, AVIF, TIFF,
+ * BMP — devient du webp, quelle que soit sa taille.
+ */
+const FORMATS_SURS = ['image/jpeg', 'image/png', 'image/webp']
+
+/** Ré-encode en webp, en réduisant si besoin. */
+async function enWebp(source: Blob, repli: Blob): Promise<Blob> {
+  const bitmap = await createImageBitmap(source)
   const facteur = Math.min(1, COTE_MAX / Math.max(bitmap.width, bitmap.height))
-
-  if (facteur === 1 && fichier.size < 400_000) {
-    bitmap.close()
-    return fichier
-  }
-
   const largeur = Math.round(bitmap.width * facteur)
   const hauteur = Math.round(bitmap.height * facteur)
+
   const canvas = document.createElement('canvas')
   canvas.width = largeur
   canvas.height = hauteur
@@ -99,8 +114,41 @@ export async function preparerImage(fichier: File): Promise<Blob> {
   bitmap.close()
 
   return new Promise((resolve) => {
-    canvas.toBlob((b) => resolve(b ?? fichier), 'image/webp', QUALITE)
+    canvas.toBlob((b) => resolve(b ?? repli), 'image/webp', QUALITE)
   })
+}
+
+export async function preparerImage(fichier: File): Promise<Blob> {
+  if (FORMATS_SURS.includes(fichier.type) && fichier.size < 400_000) {
+    const bitmap = await createImageBitmap(fichier)
+    const assezPetite = Math.max(bitmap.width, bitmap.height) <= COTE_MAX
+    bitmap.close()
+    if (assezPetite) return fichier
+  }
+  return enWebp(fichier, fichier)
+}
+
+/**
+ * Repasse une image DÉJÀ STOCKÉE en webp.
+ *
+ * Corriger `preparerImage` ne répare pas le passé : le HEIC importé
+ * avant vit toujours dans la base locale, et se fera refuser à chaque
+ * tour de synchro, indéfiniment. C'est ce que la synchro appelle quand
+ * un dépôt est refusé — une fois, pour voir si le format était le seul
+ * obstacle.
+ */
+export async function recoderImage(id: string, blob: Blob): Promise<Blob | null> {
+  try {
+    const webp = await enWebp(blob, blob)
+    if (webp === blob) return null
+    await db.poser('images', webp, id)
+    const r = lireRegistre()
+    if (r[id] !== undefined) ecrireRegistre({ ...r, [id]: webp.size })
+    return webp
+  } catch {
+    /* format que même l'appareil ne sait pas relire : rien à tenter */
+    return null
+  }
 }
 
 /* ---------------------------------------------------------------

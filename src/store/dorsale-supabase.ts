@@ -178,16 +178,56 @@ export class DorsaleSupabase implements Dorsale {
 
   private chemin = (id: string) => `${this.proprietaire}/${id}`
 
+  /**
+   * Traduit les refus du SEAU, qui n'ont rien à voir avec ceux des tables.
+   *
+   * Un dépôt d'image échoue pour trois raisons, et une seule dépend de
+   * l'utilisateur : le seau n'accepte pas ce type de fichier, le
+   * fichier dépasse la taille permise, ou les règles de sécurité
+   * manquent. Le message brut de Supabase les dit en anglais et par
+   * allusion — « mime type image/heic is not supported » n'apprend rien
+   * à qui n'a jamais ouvert la configuration d'un seau.
+   *
+   * Le type est nommé dans le message : c'est la seule information qui
+   * permette d'aller le débloquer, et sans elle on cherche à l'aveugle
+   * laquelle des trois photos coince.
+   */
+  private static refusDeSeau(message: string, type: string): Error {
+    const mime = /mime type ([^ ]+) is not supported/i.exec(message)
+    if (mime) {
+      return new Error(
+        `Le seau d'images refuse le format ${mime[1]}. Ajoute-le aux types autorisés du seau « images », dans Storage → Configuration.`,
+      )
+    }
+    if (/maximum allowed size|payload too large|entity too large|413/i.test(message)) {
+      return new Error(
+        `Une image dépasse la taille permise par le seau. Relève la limite du seau « images » dans Storage → Configuration.`,
+      )
+    }
+    if (/row-level security|permission denied|not authorized|violates/i.test(message)) {
+      return new Error(
+        'Le seau d’images refuse le dépôt : les règles de sécurité ne sont pas posées. Passe la section 4 de docs/schema.sql.',
+      )
+    }
+    if (/not found|bucket/i.test(message)) {
+      return new Error('Le seau « images » n’existe pas encore. Crée-le dans Storage, en PRIVÉ.')
+    }
+    return new Error(`${message}${type ? ` (${type})` : ''}`)
+  }
+
   async envoyerImage(id: string, blob: Blob): Promise<void> {
+    const type = blob.type || 'application/octet-stream'
     const { error } = await supabase()
       .storage.from(SEAU_IMAGES)
       .upload(this.chemin(id), blob, {
-        contentType: blob.type || 'application/octet-stream',
+        contentType: type,
         // une image ne change jamais : si elle est là, c'est la bonne
         upsert: false,
       })
     // « déjà présent » est le cas normal d'un renvoi, pas une erreur
-    if (error && !/exists|duplicate/i.test(error.message)) throw new Error(error.message)
+    if (error && !/exists|duplicate/i.test(error.message)) {
+      throw DorsaleSupabase.refusDeSeau(error.message, type)
+    }
   }
 
   async recupererImage(id: string): Promise<Blob | null> {
