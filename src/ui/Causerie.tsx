@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import {
   chercherFamille,
-  chercherScript,
+  chercherScriptEtScore,
   FAMILLES,
   SCRIPTS,
   scriptParId,
@@ -14,11 +14,13 @@ import {
 import {
   civilite,
   incompris,
+  NOMBRE_DE_SUJETS,
+  parQuestion,
   sujet,
-  veutUneExplication,
+  sujetsDe,
+  THEMES,
   type Reponse,
 } from '../store/conversation'
-import { modeActif, useCerveau } from '../store/cerveau'
 import { Confirmation } from './Confirmation'
 import { IconChevron, IconClose, IconCoche, IconRestore } from './Icon'
 import { OeilAtlas } from './OeilAtlas'
@@ -54,6 +56,7 @@ type Tour =
   | { k: 'moi'; texte: string }
   | { k: 'dit'; texte: string; suites?: string[] }
   | { k: 'capacites' }
+  | { k: 'sommaire' }
   | { k: 'famille'; famille: Famille }
   | { k: 'regle'; scriptId: string }
   | { k: 'resultat'; scriptId: string; res: Resultat; pris: string[]; fait?: string }
@@ -65,6 +68,7 @@ const RACCOURCIS = [
   { mot: 'Où j’en suis', envoi: 'briefing' },
   { mot: 'Range', envoi: 'ranger' },
   { mot: 'Nettoie', envoi: 'nettoyer' },
+  { mot: 'De quoi peux-tu parler ?', envoi: 'de quoi peux-tu parler' },
 ]
 
 /* Volontairement ÉTROIT. Il contenait « comment » et « quoi » : toute
@@ -72,19 +76,23 @@ const RACCOURCIS = [
    la liste des capacités, alors que la bibliothèque avait la réponse. */
 const AIDE = /^(\?+\s*$|aide$|help$|que sais.?tu|tes capacit|capacites$)/i
 
+/* Le sommaire des paroles, par opposition à celui des actions. */
+const SOMMAIRE = /de quoi (peux|peut|sais)|quels sujets|sommaire|de quoi parler/i
+
 export function Causerie({ fermer }: { fermer: () => void }) {
   const [tours, setTours] = useState<Tour[]>(() => [
-    { k: 'dit', texte: 'Je ne sais pas encore penser, mais je sais faire. Voilà où tu en es.' },
+    {
+      k: 'dit',
+      texte:
+        'Je n’ai pas d’intelligence — j’ai des règles, et je les connais par cœur. Voilà où tu en es.',
+      suites: ['De quoi peux-tu parler ?'],
+    },
     ...lancer('briefing'),
   ])
   const [texte, setTexte] = useState('')
   const [aConfirmer, setAConfirmer] = useState<{ tour: number; ids: string[] } | null>(null)
   const champ = useRef<HTMLInputElement>(null)
   const fin = useRef<HTMLDivElement>(null)
-
-  const disponible = useCerveau((s) => s.disponible)
-  const basculer = useCerveau((s) => s.basculer)
-  const actif = useCerveau(modeActif)
 
   useEffect(() => champ.current?.focus(), [])
   useEffect(() => {
@@ -117,6 +125,20 @@ export function Causerie({ fermer }: { fermer: () => void }) {
       return defaire(tours.lastIndexOf(dernier))
     }
 
+    /* Le sommaire des sujets — l'équivalent, côté paroles, de la
+       liste des capacités côté actions. Sans lui, la bibliothèque
+       existe mais ne se découvre pas : on ne devine pas qu'Atlas sait
+       expliquer les raccourcis markdown. */
+    if (SOMMAIRE.test(d)) return ajouter({ k: 'sommaire' })
+
+    /* UNE QUESTION DU SOMMAIRE RÉPOND D'ELLE-MÊME. On vient de la
+       proposer mot pour mot : la faire repasser par la recherche
+       floue, c'est rejouer une devinette dont on a déjà la réponse.
+       C'est ce qui envoyait « La synchronisation » sur « Les images
+       manquantes ». */
+    const exacte = parQuestion(d)
+    if (exacte) return ajouter(bulle(exacte))
+
     const politesse = civilite(d)
     if (politesse) return ajouter(bulle(politesse))
 
@@ -126,26 +148,26 @@ export function Causerie({ fermer }: { fermer: () => void }) {
     const famille = chercherFamille(d)
     if (famille) return ajouter({ k: 'famille', famille })
 
-    /* « Comment marche la synchro » contient « synchro » : une logique
-       l'attrapait, et Atlas répondait par la file d'envoi à quelqu'un
-       qui demandait une explication. « Agir avant expliquer » est une
-       bonne règle — sauf quand la phrase dit qu'elle veut une
-       explication. */
-    const explique = veutUneExplication(d)
-    if (explique) {
-      const r = sujet(d)
-      if (r) return ajouter(bulle(r))
-    }
+    /* AGIR PASSE AVANT EXPLIQUER — MAIS À SCORE ÉGAL SEULEMENT.
 
-    const s = chercherScript(d)
-    if (s) return ajouter(...lancer(s.id))
+       Le premier jet lançait la logique dès qu'elle trouvait un seul
+       mot-clé, et la bibliothèque ne passait qu'après. Résultat :
+       « j'ai oublié mon mot de passe » lançait « Ce qui dort » à cause
+       d'« oublié », et « ça marche hors ligne ? » « Les liens brisés »
+       à cause de « ligne ». Un mot commun sur deux ne vaut pas deux
+       mots communs sur deux — on compare donc les deux scores, et
+       l'action ne l'emporte qu'à égalité. */
+    const parole = sujet(d)
+    const action = chercherScriptEtScore(d)
 
-    if (!explique) {
-      const r = sujet(d)
-      if (r) return ajouter(bulle(r))
-    }
+    if (parole && (!action || parole.score > action.score)) return ajouter(bulle(parole.r))
+    if (action) return ajouter(...lancer(action.s.id))
+    if (parole) return ajouter(bulle(parole.r))
 
-    ajouter(bulle(incompris(actif, disponible)), { k: 'capacites' })
+    /* L'aveu porte maintenant des pistes plutôt qu'une liste de
+       capacités : quelqu'un qui a posé une question veut une réponse
+       approchante, pas un catalogue d'actions. */
+    ajouter(bulle(incompris(d)))
   }
 
   /* --- exécuter une proposition --- */
@@ -196,38 +218,22 @@ export function Causerie({ fermer }: { fermer: () => void }) {
         </button>
         <span className="causerie__nom">Atlas</span>
 
-        {/* L'INTERRUPTEUR N'EXISTE QUE S'IL Y A DEUX MODES.
+        {/* PLUS AUCUNE MENTION D'IA À L'ÉCRAN.
 
-            Il était affiché en permanence, le côté IA barré : on
-            pouvait donc appuyer sans que rien ne change. C'est pire
-            qu'un mode caché — on appuie, on attend autre chose, on
-            conclut que l'app est cassée alors qu'elle n'a jamais
-            promis autre chose.
+            Il y avait un interrupteur Règles / IA, puis un état
+            « sans IA » quand rien n'était branché. Les deux
+            promettaient une suite qui n'arrive pas : les paliers
+            gratuits se paient sur le contenu qu'on leur donne, et le
+            contenu ici, c'est un second cerveau.
 
-            Tant que rien n'est branché, l'en-tête se contente de dire
-            ce qui tourne. */}
-        {disponible ? (
-          <div className="modes" role="group" aria-label="Mode de réponse">
-            <button
-              className="modes__item"
-              aria-current={actif === 'classique'}
-              onClick={() => basculer('classique')}
-              title="Des règles. Gratuit, hors ligne, sans invention."
-            >
-              Règles
-            </button>
-            <button
-              className="modes__item"
-              aria-current={actif === 'ia'}
-              onClick={() => basculer('ia')}
-              title="Un modèle répond. Chaque phrase coûte."
-            >
-              IA
-            </button>
-          </div>
-        ) : (
-          <span className="causerie__etat">{SCRIPTS.length} logiques · sans IA</span>
-        )}
+            Annoncer une absence, c'est encore parler de ce qui
+            manque. L'en-tête dit donc ce qu'Atlas SAIT, et rien
+            d'autre. La couture (`store/cerveau.ts`) reste en place,
+            dormante : le jour où un service payant en vaudra la
+            peine, il n'y aura qu'à la brancher. */}
+        <span className="causerie__etat">
+          {SCRIPTS.length} logiques · {NOMBRE_DE_SUJETS} sujets
+        </span>
 
         <button className="btn btn--icon" onClick={fermer} aria-label="Fermer">
           <IconClose size={17} />
@@ -352,8 +358,8 @@ function TourRendu({
         <div className="carte-atlas">
           <div className="carte-atlas__titre">Ce que je sais faire</div>
           <p className="carte-atlas__pourquoi">
-            Rien d’intelligent : {SCRIPTS.length} règles, toutes explicables en une phrase. Appuie
-            sur une famille pour la déplier.
+            {SCRIPTS.length} règles, toutes explicables en une phrase. Appuie sur une famille pour
+            la déplier.
           </p>
           <div className="familles">
             {FAMILLES.map((f) => (
@@ -364,6 +370,39 @@ function TourRendu({
               </button>
             ))}
           </div>
+          <p className="carte-atlas__note">
+            Et je sais aussi <em>parler</em> de l’app — demande-moi de quoi je peux parler.
+          </p>
+        </div>
+      )
+
+    /* LE PENDANT PAROLES DE LA LISTE D'ACTIONS. Une bibliothèque
+       qu'on ne peut pas parcourir n'existe qu'à moitié : personne ne
+       devine qu'Atlas sait expliquer les raccourcis markdown. */
+    case 'sommaire':
+      return (
+        <div className="carte-atlas">
+          <div className="carte-atlas__titre">De quoi je peux parler</div>
+          <p className="carte-atlas__pourquoi">
+            {NOMBRE_DE_SUJETS} sujets, écrits à la main. Je ne dis que ce que je sais — mais ce que
+            je sais, je le sais vraiment.
+          </p>
+          {THEMES.map((t) => (
+            <div className="theme" key={t.id}>
+              <div className="theme__tete">
+                <span className="theme__nom">{t.nom}</span>
+                <span className="theme__quoi">{t.quoi}</span>
+              </div>
+              <div className="suites">
+                {sujetsDe(t.id).map((q) => (
+                  <button key={q} className="causerie__puce" onClick={() => demander(q)}>
+                    <IconChevron size={12} style={{ transform: 'rotate(180deg)' }} />
+                    {q}
+                  </button>
+                ))}
+              </div>
+            </div>
+          ))}
         </div>
       )
 

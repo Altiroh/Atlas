@@ -397,3 +397,32 @@
   .causerie__tete { padding: 10px 8px 10px 12px; }
   .causerie__tete .btn--icon { width: 42px; height: 42px; }
 }
+
+/* ---------- le sommaire des sujets ----------
+
+   Le pendant, côté paroles, de la liste des familles. Les thèmes se
+   suivent à plat plutôt que de se déplier : la bibliothèque tient en
+   un écran de défilement, et un accordéon demanderait six gestes pour
+   voir ce qu'on peut demander. */
+
+.theme {
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
+.theme:first-of-type { margin-top: 12px; }
+
+.theme__tete {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  margin-bottom: 8px;
+}
+.theme__nom {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--accent-text);
+}
+.theme__quoi { font-size: 12px; color: var(--text-3); }

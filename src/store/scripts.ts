@@ -305,7 +305,7 @@ const demenager: Script = {
   quoi: 'Une note rangée qui parle surtout d’un autre espace.',
   regle:
     'Une note classée nomme un autre espace que le sien, et ne nomme pas le sien. Elle est peut-être au mauvais endroit.',
-  cles: 'demenager deplacer mauvais endroit changer espace',
+  cles: 'demenager deplacer mauvais endroit',
   chercher() {
     const { posts, espaces } = etat()
     for (const p of posts) {
@@ -377,7 +377,7 @@ const espaceANaitre: Script = {
   quoi: 'Un mot qui revient assez pour mériter son espace.',
   regle:
     'Au moins cinq notes libres partagent un mot qui n’est le nom d’aucun espace existant. C’est un sujet qui s’est formé tout seul.',
-  cles: 'creer espace nouveau sujet theme naitre',
+  cles: 'creer espace nouveau sujet naitre recurrent',
   chercher() {
     const { posts, espaces } = etat()
     const nomsPris = new Set(espaces.flatMap((e) => motsDe(e.nom)))
@@ -533,7 +533,7 @@ const formesMortes: Script = {
   quoi: 'Des onglets ouverts puis laissés vides.',
   regle:
     'Une note porte une forme entièrement vide — une carte sans branche, un dessin sans trait, une table sans valeur — alors qu’elle en a d’autres.',
-  cles: 'forme vide onglet carte dessin table inutile',
+  cles: 'formes vides mortes abandonnees inutiles',
   chercher() {
     const touchees: { p: Post; f: Forme }[] = []
     for (const p of etat().posts) {
@@ -586,7 +586,7 @@ const liensBrises: Script = {
   quoi: 'Des lignes de table qui pointent vers une note supprimée.',
   regle:
     'Une ligne de table porte l’identifiant d’une note qui n’existe plus. Le lien mène nulle part.',
-  cles: 'lien brise table ligne note supprimee casse',
+  cles: 'lien brise casse rompu pointe supprimee',
   chercher() {
     const posts = etat().posts
     const connus = new Set(posts.map((p) => p.id))
@@ -689,7 +689,7 @@ const ceQuiDort: Script = {
   quoi: 'Les notes libres que tu n’as pas touchées depuis un mois.',
   regle:
     'Une note sans espace n’a pas été modifiée depuis trente jours. L’archiver ne la perd pas — elle reste consultable.',
-  cles: 'dort vieux ancien archiver oublie mois',
+  cles: 'dort dormant vieux ancien archiver sommeil mois',
   chercher() {
     const vieilles = etat()
       .posts.filter((p) => libres(p) && jours(p.updatedAt) >= 30)
@@ -963,7 +963,7 @@ const fileBloquee: Script = {
   famille: 'verifier',
   quoi: 'Ce qui attend de partir dans le nuage.',
   regle: 'Des enregistrements sont marqués modifiés depuis plus d’une heure sans envoi réussi.',
-  cles: 'synchro envoi attente file nuage bloque',
+  cles: 'file attente envoi bloque distant',
   chercher() {
     const { posts, espaces, tombes } = etat()
     const sales = [
@@ -1486,6 +1486,22 @@ function memeMot(a: string, b: string): boolean {
  * et au nom. Ce qui n'a pas été prévu ne matche pas, et c'est le but.
  */
 export function chercherScript(demande: string): Script | null {
+  return chercherScriptEtScore(demande)?.s ?? null
+}
+
+/**
+ * La même recherche, MAIS AVEC SON SCORE.
+ *
+ * C'est ce score que la conversation compare à celui de la
+ * bibliothèque de réponses. Sans lui, les logiques passaient toujours
+ * en premier et raflaient des questions qui ne leur étaient pas
+ * destinées : « j'ai oublié mon mot de passe » tombait sur « Ce qui
+ * dort » à cause du mot « oublié », et « ça marche hors ligne ? » sur
+ * « Les liens brisés » à cause de « ligne ».
+ *
+ * Un mot commun sur deux ne vaut pas deux mots communs sur deux.
+ */
+export function chercherScriptEtScore(demande: string): { s: Script; score: number } | null {
   const mots = motsDe(demande)
   if (!mots.length) return null
 
@@ -1495,7 +1511,7 @@ export function chercherScript(demande: string): Script | null {
     const score = mots.filter((m) => vocabulaire.some((v) => memeMot(m, v))).length
     if (score > 0 && (!meilleur || score > meilleur.score)) meilleur = { s, score }
   }
-  return meilleur?.s ?? null
+  return meilleur
 }
 
 /** La même comparaison, pour reconnaître le nom d'une famille. */
