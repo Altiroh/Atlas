@@ -120,8 +120,8 @@ export class DorsaleSupabase implements Dorsale {
       db.from('posts').select('*').gt('updated_at', depuis),
       db.from('espaces').select('*').gt('updated_at', depuis),
     ])
-    if (rp.error) throw new Error(rp.error.message)
-    if (re.error) throw new Error(re.error.message)
+    if (rp.error) throw DorsaleSupabase.traduire(rp.error.message)
+    if (re.error) throw DorsaleSupabase.traduire(re.error.message)
 
     const posts = (rp.data as LignePost[]).map(versPost)
     const espaces = (re.data as LigneEspace[]).map(versEspace)
@@ -136,16 +136,43 @@ export class DorsaleSupabase implements Dorsale {
     return { posts, espaces, horloge }
   }
 
+  /**
+   * Traduit les pannes de SCHÉMA, qui sont les plus traîtresses.
+   *
+   * Quand une colonne manque côté serveur, Supabase répond « Could not
+   * find the 'formes' column of 'posts' in the schema cache ». Le
+   * message part tel quel dans le bandeau de synchronisation : en
+   * anglais, technique, et surtout SANS DIRE QUOI FAIRE. On le voit,
+   * on ne le comprend pas, et pendant ce temps la file d'envoi
+   * grossit — quatorze modifications bloquées sans que rien ne
+   * paraisse cassé.
+   *
+   * Le message dit maintenant quelle colonne manque et où est le
+   * script qui l'ajoute.
+   */
+  private static traduire(message: string): Error {
+    const colonne = /find the '([^']+)' column/i.exec(message)
+    if (colonne) {
+      return new Error(
+        `La base du serveur n’a pas la colonne « ${colonne[1] } ». Passe docs/schema.sql dans l’éditeur SQL de Supabase — rien ne partira tant qu’elle manque.`,
+      )
+    }
+    if (/row-level security|permission denied/i.test(message)) {
+      return new Error('Le serveur refuse l’écriture : les règles de sécurité ne sont pas posées.')
+    }
+    return new Error(message)
+  }
+
   async pousser(lot: Lot): Promise<void> {
     const db = supabase()
 
     if (lot.posts.length) {
       const { error } = await db.from('posts').upsert(lot.posts.map(versLignePost))
-      if (error) throw new Error(error.message)
+      if (error) throw DorsaleSupabase.traduire(error.message)
     }
     if (lot.espaces.length) {
       const { error } = await db.from('espaces').upsert(lot.espaces.map(versLigneEspace))
-      if (error) throw new Error(error.message)
+      if (error) throw DorsaleSupabase.traduire(error.message)
     }
   }
 

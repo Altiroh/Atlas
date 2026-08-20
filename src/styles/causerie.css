@@ -269,14 +269,6 @@
 .causerie__puce:hover { background: var(--accent); color: var(--accent-ink); }
 .causerie__puce svg { flex: none; opacity: 0.75; }
 
-/* La conversation porte maintenant des cartes : elle a besoin de plus
-   de place que la fenêtre de 370 px d'origine. */
-@media (min-width: 701px) and (pointer: fine) {
-  .causerie {
-    width: min(440px, calc(100vw - 36px));
-    max-height: min(620px, 78vh);
-  }
-}
 
 /* ---------- le mode, toujours à l'écran ---------- */
 
@@ -426,3 +418,67 @@
   color: var(--accent-text);
 }
 .theme__quoi { font-size: 12px; color: var(--text-3); }
+
+/* ========================================================
+   SUR GRAND ÉCRAN, ELLE PREND TOUT LE BORD DROIT.
+
+   C'était une fenêtre flottante de 440 px, posée dans un
+   coin — la forme d'une bulle d'assistance, celle qu'on
+   referme sans lire. Or la conversation porte maintenant des
+   propositions à cocher, des listes de quatre-vingt-dix-sept
+   sujets et des cartes de résultat : elle a besoin de la
+   hauteur, et elle mérite la place d'un vrai panneau.
+
+   Elle devient donc une COLONNE PLEINE HAUTEUR contre le
+   bord droit, comme les panneaux latéraux de l'atelier. Au
+   doigt, rien ne change : elle continue de monter du bas en
+   feuille, parce qu'un téléphone n'a pas de bord droit à
+   consacrer.
+   ======================================================== */
+
+/* Les images-clés vivent au premier niveau : imbriquées dans un
+   @media, elles font tomber tout le bloc à l'analyse — le panneau
+   restait alors une fenêtre de 370 px sans qu'aucune erreur ne
+   paraisse. */
+@keyframes causerie-glisse {
+  from { opacity: 0; transform: translateX(24px); }
+  to { opacity: 1; transform: none; }
+}
+
+@media (min-width: 701px) and (pointer: fine) {
+  .causerie {
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: auto;
+    width: min(460px, 42vw);
+    max-height: none;
+    border-radius: 0;
+    border-left: 1px solid var(--border);
+    /* elle ne flotte plus : pas d'ombre portée, un trait suffit */
+    box-shadow: -18px 0 48px rgba(16, 24, 40, 0.1);
+    animation: causerie-glisse 240ms var(--ease) both;
+  }
+
+  :root[data-theme='dark'] .causerie {
+    box-shadow: -18px 0 48px rgba(0, 0, 0, 0.4);
+  }
+
+  /* Le fil respire : c'est lui qui a gagné la hauteur. */
+  .causerie__fil { padding: 18px 18px 8px; gap: 12px; }
+  .causerie__tete { padding: 14px 12px 14px 16px; }
+  .causerie__raccourcis { padding: 0 16px 4px; }
+  .causerie__pied { padding: 12px 16px 16px; }
+
+  /* LA BULLE S'EFFACE PENDANT QUE LE PANNEAU EST OUVERT.
+
+     La déplacer aurait été plus élégant — sauf qu'une bulle déjà
+     posée à la main porte sa position EN LIGNE, et aucune feuille de
+     style ne passe devant. C'est d'ailleurs juste : la place qu'on
+     lui a donnée doit gagner.
+
+     On la masque donc, exactement comme la feuille le fait sur
+     téléphone : l'œil de l'en-tête prend le relais et ferme au même
+     geste. Il n'y a jamais deux Atlas à l'écran. */
+  .app:has(.causerie) .bulle { opacity: 0; pointer-events: none; }
+}

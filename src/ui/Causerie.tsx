@@ -20,6 +20,7 @@ import {
   sujetsDe,
   THEMES,
   type Reponse,
+  type Theme,
 } from '../store/conversation'
 import { Confirmation } from './Confirmation'
 import { IconChevron, IconClose, IconCoche, IconRestore } from './Icon'
@@ -57,6 +58,7 @@ type Tour =
   | { k: 'dit'; texte: string; suites?: string[] }
   | { k: 'capacites' }
   | { k: 'sommaire' }
+  | { k: 'theme'; theme: Theme | 'tout' }
   | { k: 'famille'; famille: Famille }
   | { k: 'regle'; scriptId: string }
   | { k: 'resultat'; scriptId: string; res: Resultat; pris: string[]; fait?: string }
@@ -246,6 +248,7 @@ export function Causerie({ fermer }: { fermer: () => void }) {
             key={i}
             tour={t}
             demander={repondre}
+            demanderTheme={(theme) => ajouter({ k: 'theme', theme })}
             ouvrir={(id) => ajouter(...lancer(id))}
             regle={(id) => ajouter({ k: 'regle', scriptId: id })}
             cocher={(id) => cocher(i, id)}
@@ -312,6 +315,7 @@ export function Causerie({ fermer }: { fermer: () => void }) {
 function TourRendu({
   tour,
   demander,
+  demanderTheme,
   ouvrir,
   regle,
   cocher,
@@ -320,6 +324,7 @@ function TourRendu({
 }: {
   tour: Tour
   demander: (d: string) => void
+  demanderTheme: (t: Theme | 'tout') => void
   ouvrir: (scriptId: string) => void
   regle: (scriptId: string) => void
   cocher: (id: string) => void
@@ -376,9 +381,16 @@ function TourRendu({
         </div>
       )
 
-    /* LE PENDANT PAROLES DE LA LISTE D'ACTIONS. Une bibliothèque
-       qu'on ne peut pas parcourir n'existe qu'à moitié : personne ne
-       devine qu'Atlas sait expliquer les raccourcis markdown. */
+    /* LE PENDANT PAROLES DE LA LISTE D'ACTIONS.
+
+       THÈME PAR THÈME, PAS TOUT D'UN COUP. Les quatre-vingt-dix-sept
+       questions déversées d'un bloc, c'était un mur : on ne lit pas
+       un mur, on le referme. Six thèmes tiennent dans un regard, et
+       chacun s'ouvre sur ce qu'il contient.
+
+       « Tout afficher » reste là pour qui cherche un mot précis et
+       préfère balayer la liste entière — c'est un choix, pas la
+       porte d'entrée. */
     case 'sommaire':
       return (
         <div className="carte-atlas">
@@ -387,7 +399,32 @@ function TourRendu({
             {NOMBRE_DE_SUJETS} sujets, écrits à la main. Je ne dis que ce que je sais — mais ce que
             je sais, je le sais vraiment.
           </p>
-          {THEMES.map((t) => (
+          <div className="familles">
+            {THEMES.map((t) => (
+              <button key={t.id} className="famille" onClick={() => demanderTheme(t.id)}>
+                <span className="famille__nom">{t.nom}</span>
+                <span className="famille__quoi">{t.quoi}</span>
+                <span className="famille__n">{sujetsDe(t.id).length}</span>
+              </button>
+            ))}
+          </div>
+          <div className="carte-atlas__pied">
+            <button className="lien" onClick={() => demanderTheme('tout')}>
+              tout afficher d’un coup
+            </button>
+          </div>
+        </div>
+      )
+
+    /* Un thème déplié — ou tous, quand on a demandé la liste entière. */
+    case 'theme': {
+      const themes = tour.theme === 'tout' ? THEMES : THEMES.filter((t) => t.id === tour.theme)
+      return (
+        <div className="carte-atlas">
+          <div className="carte-atlas__titre">
+            {tour.theme === 'tout' ? `Tous mes sujets` : themes[0].nom}
+          </div>
+          {themes.map((t) => (
             <div className="theme" key={t.id}>
               <div className="theme__tete">
                 <span className="theme__nom">{t.nom}</span>
@@ -405,6 +442,7 @@ function TourRendu({
           ))}
         </div>
       )
+    }
 
     case 'famille': {
       const f = FAMILLES.find((x) => x.id === tour.famille)!

@@ -24,36 +24,41 @@ import { OeilAtlas } from '../ui/OeilAtlas'
    d'attendre, et une animation qu'on ne peut pas couper devient
    pénible exactement au moment où elle a cessé d'être belle.
 
-   ── 2. CE QUE JE SAURAI FAIRE
+   ── 2. CE QUE JE SAIS FAIRE
 
-   L'écran d'avant, inchangé : il PRÉSENTE, il ne RÉCLAME PAS.
-   Demander micro et notifications d'un bloc au démarrage est le
-   meilleur moyen de se les faire refuser — et sur iOS un refus est
-   quasi définitif. Chaque permission sera donc demandée au moment où
-   elle sert (docs/06 § 2).
+   Trois points sur l'app elle-même. Cet écran listait des
+   AUTORISATIONS et leur état ; il PRÉSENTE maintenant, et il ne
+   réclame toujours rien. Chaque permission reste demandée au moment
+   où elle sert (docs/06 § 2) — jamais ici.
    --------------------------------------------------------------- */
 
-/* UNE LIGNE PAR CAPACITÉ, et pas deux.
-   Chacune portait une phrase de description PUIS une note de détail :
-   trois capacités faisaient six paragraphes, et le bouton
-   « Commencer » se retrouvait très bas — sur un téléphone, hors de
-   l'écran. Le détail qui compte tient dans la même phrase ; le reste
-   n'était que du remplissage poli. */
-const CAPACITES = [
+/* CE QU'ATLAS FAIT, PAS CE QU'IL ATTEND DES PERMISSIONS.
+
+   Cet écran listait trois AUTORISATIONS avec leur état — notifications
+   « à installer », dictée « bientôt », captures d'écran
+   « indisponible ». C'était honnête, et c'était la mauvaise question :
+   quelqu'un qui ouvre Atlas pour la première fois ne demande pas de
+   quoi l'app aura besoin, il demande à quoi elle sert. Deux tiers de
+   la liste parlaient d'ailleurs de choses qui n'existaient pas.
+
+   Trois points, donc, et ce sont les trois vraies promesses : la
+   vitesse de capture, la liberté de forme, et le fait que rien ne
+   t'échappe. */
+const POINTS = [
   {
-    t: 'Notifications',
-    e: 'à installer',
-    d: 'Pour les rappels — dès qu’Atlas est sur ton écran d’accueil.',
+    t: 'Capturer en dix secondes',
+    e: 'le cœur',
+    d: 'Un champ, un curseur, rien à décider. Le rangement viendra le jour où un projet en aura besoin.',
   },
   {
-    t: 'Dictée',
-    e: 'bientôt',
-    d: 'Capturer en marchant. Le micro ne sera demandé qu’au moment voulu.',
+    t: 'Une note, autant de formes',
+    e: 'six',
+    d: 'Fiche, carte mentale, dessin, planche, table, chronologie — en onglets, ajoutés quand tu en as besoin.',
   },
   {
-    t: "Captures d'écran",
-    e: 'indisponible',
-    d: 'Aucun navigateur ne sait les détecter. Il faudrait une vraie app.',
+    t: 'Tout reste à toi',
+    e: 'hors ligne',
+    d: 'Ça marche en avion, ça se synchronise si tu veux, et ça s’exporte entièrement en markdown lisible sans moi.',
   },
 ]
 
@@ -88,11 +93,11 @@ export function BienvenueScreen() {
         </div>
 
         <div className="eyebrow" style={{ marginTop: 4 }}>
-          Ce que je saurai faire
+          Ce que je sais faire
         </div>
 
         <ul className="capacites">
-          {CAPACITES.map((c) => (
+          {POINTS.map((c) => (
             <li className="capacite" key={c.t}>
               <div className="capacite__ligne">
                 <span className="capacite__titre">{c.t}</span>
@@ -106,7 +111,8 @@ export function BienvenueScreen() {
         </ul>
 
         <p className="sheet__note" style={{ marginTop: 12 }}>
-          Je ne demanderai jamais une autorisation avant d'en avoir besoin.
+          Je ne demanderai jamais une autorisation avant d'en avoir besoin, et je dirai toujours
+          ce que je ne sais pas faire.
         </p>
 
         <button className="btn btn--accent btn--large" style={{ marginTop: 14 }} onClick={terminer}>

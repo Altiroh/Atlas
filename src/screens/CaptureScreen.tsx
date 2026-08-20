@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useAtlas } from '../store/atlas'
 import { IconReturn } from '../ui/Icon'
+import { Dictee } from '../ui/Dictee'
 
 /* ---------------------------------------------------------------
    L'ÉCLAIR. Un champ, un curseur, rien à décider.
@@ -43,6 +44,7 @@ export function CaptureScreen({ autoFocus = true }: { autoFocus?: boolean }) {
 
   const [texte, setTexte] = useState('')
   const [espaceId, setEspaceId] = useState<string | null>(null)
+  const [ecoute, setEcoute] = useState({ ecoute: false, hypothese: '' })
   const ref = useRef<HTMLTextAreaElement>(null)
 
   useEffect(() => {
@@ -85,6 +87,13 @@ export function CaptureScreen({ autoFocus = true }: { autoFocus?: boolean }) {
           aria-label="Nouvelle capture"
         />
 
+        {/* L'HYPOTHÈSE EN COURS, en gris, sous le champ. La
+            reconnaissance corrige ce qu'elle croit avoir entendu
+            jusqu'au dernier moment : l'écrire dans le champ ferait
+            bégayer le texte. On la montre à côté, et on n'écrit que
+            ce qui est arrêté. */}
+        {ecoute.hypothese && <p className="capture__hypothese">{ecoute.hypothese}</p>}
+
         <div className="chips">
           {espaces.map((e) => (
             <button
@@ -100,6 +109,16 @@ export function CaptureScreen({ autoFocus = true }: { autoFocus?: boolean }) {
         </div>
 
         <div className="capture__foot">
+          {/* Le micro ne paraît que si le navigateur sait écouter — pas
+              de bouton grisé, pas d'excuse : la dictée du clavier
+              système reste là et fait le même travail. */}
+          <Dictee
+            onTexte={(bout) =>
+              setTexte((avant) => (avant ? `${avant.trimEnd()} ${bout.trim()}` : bout.trim()))
+            }
+            onEtat={setEcoute}
+          />
+
           <span className="capture__hint">
             <IconReturn size={13} style={{ display: 'inline', verticalAlign: '-2px' }} /> enregistre
             · ⇧⏎ nouvelle ligne

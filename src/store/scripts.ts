@@ -641,6 +641,80 @@ const liensBrises: Script = {
   },
 }
 
+/**
+ * LE CONTENU DE DÉMONSTRATION, resté de la toute première version.
+ *
+ * Atlas s'ouvrait sur sept notes et quatre espaces inventés. Le semis
+ * a été retiré du code il y a longtemps — mais RETIRER LE CODE
+ * N'EFFACE PAS CE QU'IL A DÉJÀ ÉCRIT. Ces enregistrements sont
+ * devenus des données comme les autres : ils sont partis dans le
+ * nuage à la première connexion, et ils redescendent depuis sur
+ * chaque appareil qu'on branche. C'est précisément le reproche que
+ * le commentaire d'`atlas.ts` faisait au contenu de démonstration,
+ * et il s'est vérifié.
+ *
+ * L'IDENTIFICATION EST CERTAINE, jamais devinée : le semis posait des
+ * identifiants fixes — `seed0` à `seed6`, et quatre espaces nommés.
+ * On ne cherche donc rien par le titre, et une note qu'on aurait
+ * écrite avec les mêmes mots ne risque rien.
+ *
+ * Les espaces sont proposés DÉCOCHÉS : on a pu adopter « Le Bouquin »
+ * et y ranger de vraies notes depuis. Les supprimer ne perdrait rien
+ * — les notes redeviennent libres — mais ce n'est pas à moi d'en
+ * décider.
+ */
+const NOTES_SEMEES = ['seed0', 'seed1', 'seed2', 'seed3', 'seed4', 'seed5', 'seed6']
+const ESPACES_SEMES = ['bouquin', 'chaine', 'concepts', 'perso']
+
+const demonstration: Script = {
+  id: 'demonstration',
+  nom: 'Le contenu de démonstration',
+  famille: 'nettoyer',
+  quoi: 'Les notes d’exemple des premiers jours d’Atlas.',
+  regle:
+    'Les enregistrements posés par le contenu de démonstration de la toute première version, reconnus à leur identifiant exact — jamais à leur titre.',
+  cles: 'demonstration exemple demo semis depart faux echantillon',
+  chercher() {
+    const { posts, espaces } = etat()
+    const notes = posts.filter((p) => NOTES_SEMEES.includes(p.id))
+    const lieux = espaces.filter((e) => ESPACES_SEMES.includes(e.id))
+    if (!notes.length && !lieux.length) {
+      return { sorte: 'rien', mot: 'Aucun reste de contenu de démonstration.' }
+    }
+
+    const elements: Element[] = [
+      ...notes.map((p) => elementPost(p, 'note d’exemple')),
+      ...lieux.map((e) => {
+        const n = posts.filter((p) => p.espaceId === e.id).length
+        return {
+          id: e.id,
+          libelle: e.nom,
+          detail: n ? `espace d’exemple — ${n} note${n > 1 ? 's' : ''} dedans` : 'espace d’exemple, vide',
+          // décoché : on a pu l'adopter depuis
+          pris: false,
+        }
+      }),
+    ]
+
+    return {
+      sorte: 'proposition',
+      titre: `${elements.length} reste${elements.length > 1 ? 's' : ''} de la démonstration`,
+      pourquoi:
+        'Posés par la toute première version d’Atlas, puis remontés dans ton compte. Retirer le semis du code ne les a pas effacés.',
+      elements,
+      verbe: (n) => `Supprimer ${n > 1 ? `les ${n}` : 'l’élément'}`,
+      danger: true,
+      faire: (ids) => {
+        const idsNotes = ids.filter((i) => NOTES_SEMEES.includes(i))
+        const idsEspaces = ids.filter((i) => ESPACES_SEMES.includes(i))
+        if (idsNotes.length) etat().supprimerPosts(idsNotes)
+        if (idsEspaces.length) etat().supprimerEspaces(idsEspaces)
+        return null
+      },
+    }
+  },
+}
+
 const imagesOrphelines: Script = {
   id: 'images-orphelines',
   nom: 'Les images orphelines',
@@ -1390,6 +1464,7 @@ export const SCRIPTS: Script[] = [
   doublons,
   formesMortes,
   liensBrises,
+  demonstration,
   imagesOrphelines,
 
   ceQuiDort,

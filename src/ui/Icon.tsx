@@ -208,6 +208,23 @@ export const IconReturn = ({ size = 20, className, style }: Props) => (
 
 /* Le cadre et le chevron du logo markdown, réduits à l'essentiel :
    c'est un format, et un format se reconnaît à sa marque. */
+export const IconMicro = ({ size = 20, className, style }: Props) => (
+  <svg {...base(size)} className={className} style={style} aria-hidden="true">
+    <rect x="9" y="2.5" width="6" height="11" rx="3" />
+    <path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21M9 21h6" />
+  </svg>
+)
+
+/* Le micro barré : « j'écoute, appuie pour arrêter ». Un carré rouge
+   dirait « enregistrement » — or rien n'est enregistré. */
+export const IconMicroBarre = ({ size = 20, className, style }: Props) => (
+  <svg {...base(size)} className={className} style={style} aria-hidden="true">
+    <rect x="9" y="2.5" width="6" height="11" rx="3" />
+    <path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21M9 21h6" />
+    <path d="m3.5 3.5 17 17" />
+  </svg>
+)
+
 export const IconMarkdown = ({ size = 20, className, style }: Props) => (
   <svg {...base(size)} className={className} style={style} aria-hidden="true">
     <rect x="2.5" y="5.5" width="19" height="13" rx="2.2" />
