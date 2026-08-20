@@ -285,3 +285,9 @@
   .note__copier span { display: none; }
   .note__copier { padding: 0 9px; }
 }
+
+/* Au doigt, la ligne d'en-tête est une rangée de cibles : aucune ne
+   descend sous 40 px, copier compris. */
+@media (pointer: coarse) {
+  .note__copier { height: 40px; }
+}

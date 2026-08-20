@@ -253,16 +253,21 @@
 
 .causerie__puce {
   flex: none;
-  padding: 6px 11px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 7px 12px 7px 10px;
   border-radius: 99px;
-  border: 1px solid var(--border);
-  background: var(--surface-sunken);
-  color: var(--text-2);
+  border: 1px solid var(--accent-line);
+  background: var(--accent-soft);
+  color: var(--accent-text);
   font-size: 12.5px;
+  font-weight: 540;
   white-space: nowrap;
-  transition: border-color var(--fast) var(--ease), color var(--fast) var(--ease);
+  transition: background var(--fast) var(--ease);
 }
-.causerie__puce:hover { border-color: var(--accent-line); color: var(--accent-text); }
+.causerie__puce:hover { background: var(--accent); color: var(--accent-ink); }
+.causerie__puce svg { flex: none; opacity: 0.75; }
 
 /* La conversation porte maintenant des cartes : elle a besoin de plus
    de place que la fenêtre de 370 px d'origine. */
@@ -337,4 +342,58 @@
   flex-wrap: wrap;
   gap: 5px;
 }
-.suites .causerie__puce { font-size: 12px; padding: 5px 10px; }
+.suites .causerie__puce { font-size: 12px; }
+
+/* ========================================================
+   AU DOIGT — la conversation est faite pour le téléphone
+
+   Rien de ce qu'on vise ne descend sous 44 px, sauf le
+   sélecteur de mode : ses deux moitiés sont collées, et
+   c'est le bloc entier qu'on atteint. Une puce de 26 px se
+   rate une fois sur trois — ce qui, dans une conversation,
+   veut dire qu'on renonce à s'en servir.
+   ======================================================== */
+
+@media (pointer: coarse), (max-width: 700px) {
+  .causerie__puce {
+    min-height: 44px;
+    padding: 0 16px 0 13px;
+    font-size: 13.5px;
+  }
+  .suites .causerie__puce { font-size: 13.5px; }
+
+  .causerie__raccourcis {
+    gap: 8px;
+    padding: 2px 12px 6px;
+  }
+
+  /* Le sélecteur de mode : deux cibles de 22 px côte à côte, dont une
+     rayée — impossible à viser sans regarder deux fois. */
+  .modes__item {
+    min-height: 38px;
+    padding: 0 15px;
+    font-size: 12.5px;
+  }
+
+  /* Le « ? » d'une logique, et sa ligne : la ligne fait toute la
+     largeur, le point d'interrogation mérite autant. */
+  .script__corps { padding: 11px 12px; }
+  .script__regle { width: 44px; font-size: 15px; }
+
+  /* Cocher un élément d'une proposition est LE geste de l'écran :
+     il ne doit jamais demander de viser. */
+  .element { padding: 11px 10px; }
+  .element__case { width: 22px; height: 22px; }
+
+  .famille { padding: 12px 13px; }
+
+  .carte-atlas__pied .btn { height: 44px; font-size: 14px; }
+
+  .causerie__pied { padding: 10px 12px calc(10px + var(--safe-bottom)); }
+  .causerie__champ { height: 44px; }
+  .causerie__pied .btn { height: 44px; }
+
+  /* Fermer, et l'œil qui ferme aussi. */
+  .causerie__tete { padding: 10px 8px 10px 12px; }
+  .causerie__tete .btn--icon { width: 42px; height: 42px; }
+}

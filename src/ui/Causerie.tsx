@@ -250,9 +250,7 @@ export function Causerie({ fermer }: { fermer: () => void }) {
 
       <div className="causerie__raccourcis">
         {RACCOURCIS.map((r) => (
-          <button key={r.mot} className="causerie__puce" onClick={() => repondre(r.envoi)}>
-            {r.mot}
-          </button>
+          <Puce key={r.mot} mot={r.mot} onClick={() => repondre(r.envoi)} />
         ))}
       </div>
 
@@ -338,9 +336,7 @@ function TourRendu({
           {tour.suites?.length ? (
             <div className="suites">
               {tour.suites.map((s) => (
-                <button key={s} className="causerie__puce" onClick={() => demander(s)}>
-                  {s}
-                </button>
+                <Puce key={s} mot={s} onClick={() => demander(s)} />
               ))}
             </div>
           ) : null}
@@ -562,5 +558,28 @@ function bandeauAnnulation(a: Annulation): Tour {
 /** Une réponse de la bibliothèque devient une bulle, avec ses suites. */
 function bulle(r: Reponse): Tour {
   return { k: 'dit', texte: r.texte, suites: r.suites }
+}
+
+/**
+ * Une demande toute prête.
+ *
+ * ELLE PORTE UN CHEVRON, et ce n'est pas une décoration. Posées sous
+ * une bulle d'Atlas, ces puces se lisaient comme la suite de ce qu'il
+ * venait de dire — gris sur gris, alignées à gauche comme sa phrase.
+ * On croyait qu'il annonçait « Le briefing » ; en réalité il proposait
+ * qu'on le lui demande.
+ *
+ * Le chevron pointe vers l'avant : il dit « en appuyant, tu dis ça ».
+ * Avec la teinte d'accent, la puce cesse d'être du texte et redevient
+ * un bouton — et c'est bien de la parole de l'utilisateur qu'il
+ * s'agit, comme ses bulles à lui.
+ */
+function Puce({ mot, onClick }: { mot: string; onClick: () => void }) {
+  return (
+    <button className="causerie__puce" onClick={onClick}>
+      <IconChevron size={12} style={{ transform: 'rotate(180deg)' }} />
+      {mot}
+    </button>
+  )
 }
 
