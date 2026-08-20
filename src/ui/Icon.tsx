@@ -212,6 +212,41 @@ export const IconMoins = ({ size = 20, className, style }: Props) => (
   </svg>
 )
 
+/* ---------- le zoom D'AFFICHAGE, distinct du redimensionnement ----------
+
+   Deux gestes voisins vivent dans la même barre d'outils : changer la
+   taille d'une PIÈCE, et changer la taille de l'AFFICHAGE. Ils portaient
+   la même icône — un plus et un moins — et le dézoom, faute de mieux,
+   une croix pivotée à quarante-cinq degrés. Une croix veut dire
+   « fermer » dans toutes les interfaces du monde ; le bouton existait
+   donc sans que personne ne puisse deviner ce qu'il faisait.
+
+   La loupe tranche : ce qui la porte agit sur la VUE, ce qui porte un
+   plus ou un moins nu agit sur l'OBJET. */
+
+export const IconZoomPlus = ({ size = 20, className, style }: Props) => (
+  <svg {...base(size)} className={className} style={style} aria-hidden="true">
+    <circle cx="11" cy="11" r="6.5" />
+    <path d="m16 16 4 4M8.5 11h5M11 8.5v5" />
+  </svg>
+)
+
+export const IconZoomMoins = ({ size = 20, className, style }: Props) => (
+  <svg {...base(size)} className={className} style={style} aria-hidden="true">
+    <circle cx="11" cy="11" r="6.5" />
+    <path d="m16 16 4 4M8.5 11h5" />
+  </svg>
+)
+
+/* Une flèche qui fait le tour : « pivoter » se dessine, il ne se
+   déduit pas d'une mire de recentrage. */
+export const IconPivoter = ({ size = 20, className, style }: Props) => (
+  <svg {...base(size)} className={className} style={style} aria-hidden="true">
+    <path d="M20 12a8 8 0 1 1-2.6-5.9" />
+    <path d="M20 4.5V10h-5.5" />
+  </svg>
+)
+
 export const IconCoche = ({ size = 20, className, style }: Props) => (
   <svg {...base(size)} strokeWidth={2.6} className={className} style={style} aria-hidden="true">
     <path d="m5 12.5 4.5 4.5L19 7" />

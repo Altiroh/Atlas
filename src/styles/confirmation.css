@@ -8,25 +8,30 @@
    un fond qui bouge.
    ======================================================== */
 
-/* ---------- UN BANDEAU EN HAUT, PAS UNE BOÎTE AU MILIEU ----------
+/* ---------- UNE BANDE EN BAS, PAS UNE BOÎTE AU MILIEU ----------
 
-   Tout ce qui parle de l'app elle-même — la mise à jour, une question
-   à laquelle il faut répondre — descend du haut et occupe toute la
-   largeur. Une seule direction, une seule forme : on reconnaît le
-   registre avant d'avoir lu.
+   DEUX REGISTRES, DEUX DIRECTIONS, et il ne faut pas les confondre :
 
-   La hauteur vaut 15 % de l'écran, mais en MINIMUM et non en valeur
-   fixe. Une confirmation nomme ce qu'elle va détruire ; sur un
-   téléphone, « Supprimer les 12 notes sélectionnées » plus le détail
-   dépassent parfois les cent vingt pixels, et rogner ce texte-là
-   serait rogner précisément ce qui permet de répondre. La bande fait
-   donc 15 % le plus souvent, et davantage quand la phrase l'exige.
+   · CE QUI PRÉVIENT descend du haut — la mise à jour, un état qu'on
+     n'a pas demandé à connaître. Ça ne réclame pas de réponse, donc
+     ça n'a rien à faire sous les pouces ; en haut, c'est vu et c'est
+     hors du chemin.
+   · CE QUI DEMANDE monte du bas — une question à laquelle il faut
+     répondre. Elle se pose là où sont les mains, comme toutes les
+     feuilles d'Atlas. Une question posée en haut d'un téléphone de
+     six pouces oblige à changer de prise pour y répondre.
 
-   Le voile ne prend pas tout l'écran non plus : il reste sous la
-   bande pour attraper le clic d'annulation. */
+   La forme, elle, est la même des deux côtés : toute la largeur,
+   15 % de l'écran. On reconnaît qu'il se passe quelque chose avant
+   d'avoir lu ; la direction dit ensuite s'il faut agir.
+
+   La hauteur est un MINIMUM, jamais un plafond. Une confirmation
+   nomme ce qu'elle va détruire ; rogner ce texte-là, c'est rogner
+   exactement ce qui permet de répondre. */
 
 .sheet--bandeau {
-  display: block;
+  display: flex;
+  align-items: flex-end;
   padding: 0;
 }
 
@@ -37,18 +42,18 @@
   width: 100%;
   min-height: 15dvh;
   padding: 16px 20px;
-  padding-top: calc(16px + var(--safe-top));
-  border-bottom: 1px solid var(--border);
+  padding-bottom: calc(16px + var(--safe-bottom));
+  border-top: 1px solid var(--border);
   background: var(--surface-solid);
   box-shadow: var(--shadow);
   text-align: left;
-  animation: bandeau-descend 300ms var(--ease) both;
+  animation: bandeau-monte 300ms var(--ease) both;
 }
 
-@keyframes bandeau-descend {
+@keyframes bandeau-monte {
   from {
     opacity: 0;
-    transform: translateY(-100%);
+    transform: translateY(100%);
   }
   to {
     opacity: 1;
@@ -135,7 +140,7 @@
 @media (max-width: 380px) {
   .confirme {
     padding: 14px 14px;
-    padding-top: calc(14px + var(--safe-top));
+    padding-bottom: calc(14px + var(--safe-bottom));
   }
 }
 

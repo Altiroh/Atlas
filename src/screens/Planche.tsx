@@ -3,14 +3,16 @@ import { idDans, type Piece } from '../store/formes'
 import { stockerImage, oublierImage } from '../store/db'
 import { lisible, peutAjouterImage, QUOTA_IMAGES } from '../store/quota'
 import {
-  IconClose,
   IconFocus,
   IconImage,
   IconMoins,
+  IconPivoter,
   IconPlanche,
   IconPlus,
   IconTexte,
   IconTrash,
+  IconZoomMoins,
+  IconZoomPlus,
 } from '../ui/Icon'
 import { BarreCanevas, OutilCanevas, SeparateurCanevas } from '../ui/BarreCanevas'
 import { useImageUrl } from '../ui/useImageUrl'
@@ -513,7 +515,7 @@ export function Planche({
               titre="Pivoter"
               onClick={() => maj(choisie.id, { rot: Math.round((choisie.rot + 8) % 360) })}
             >
-              <IconFocus size={17} />
+              <IconPivoter size={17} />
             </OutilCanevas>
             <OutilCanevas titre="Retirer" onClick={() => retirer(choisie)}>
               <IconTrash size={16} />
@@ -523,14 +525,23 @@ export function Planche({
 
         <SeparateurCanevas />
 
-        <OutilCanevas titre="Zoomer" onClick={() => setVue((v) => zoomCentre(surface.current, v, 1.25))}>
-          <IconPlus size={17} />
+        {/* L'AFFICHAGE, pas les pièces. Les deux gestes se ressemblent
+            trop pour partager leurs icônes : la loupe dit « je change ce
+            que je vois », le plus et le moins nus, plus haut, disent
+            « je change la chose ». */}
+        <OutilCanevas
+          titre="Agrandir l’affichage"
+          desactive={vue.k >= ZOOM_MAX}
+          onClick={() => setVue((v) => zoomCentre(surface.current, v, 1.25))}
+        >
+          <IconZoomPlus size={17} />
         </OutilCanevas>
         <OutilCanevas
-          titre="Dézoomer"
+          titre="Réduire l’affichage"
+          desactive={vue.k <= ZOOM_MIN}
           onClick={() => setVue((v) => zoomCentre(surface.current, v, 1 / 1.25))}
         >
-          <IconClose size={17} style={{ transform: 'rotate(45deg)' }} />
+          <IconZoomMoins size={17} />
         </OutilCanevas>
         <OutilCanevas titre="Tout ramener dans le cadre" onClick={recentrer}>
           <IconFocus size={17} />

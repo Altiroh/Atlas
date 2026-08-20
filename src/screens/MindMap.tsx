@@ -1,6 +1,13 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { idNoeud, type Noeud } from '../store/atlas'
-import { IconClose, IconFocus, IconPencil, IconPlus, IconTrash } from '../ui/Icon'
+import {
+  IconFocus,
+  IconPencil,
+  IconPlus,
+  IconTrash,
+  IconZoomMoins,
+  IconZoomPlus,
+} from '../ui/Icon'
 import { BarreCanevas, OutilCanevas, SeparateurCanevas } from '../ui/BarreCanevas'
 
 /* ---------------------------------------------------------------
@@ -373,14 +380,23 @@ export function MindMap({
       </div>
 
       <BarreCanevas>
-        <OutilCanevas titre="Zoomer" onClick={() => setVue((v) => zoomCentre(surface.current, v, 1.25))}>
-          <IconPlus size={17} />
+        {/* La loupe, comme sur la planche. Le dézoom portait une croix
+            pivotée : une croix veut dire « fermer » partout ailleurs,
+            et le bouton restait donc illisible — présent, mais
+            introuvable pour qui ne l'avait pas déjà essayé. */}
+        <OutilCanevas
+          titre="Agrandir l’affichage"
+          desactive={vue.k >= ZOOM_MAX}
+          onClick={() => setVue((v) => zoomCentre(surface.current, v, 1.25))}
+        >
+          <IconZoomPlus size={17} />
         </OutilCanevas>
         <OutilCanevas
-          titre="Dézoomer"
+          titre="Réduire l’affichage"
+          desactive={vue.k <= ZOOM_MIN}
           onClick={() => setVue((v) => zoomCentre(surface.current, v, 1 / 1.25))}
         >
-          <IconClose size={17} style={{ transform: 'rotate(45deg)' }} />
+          <IconZoomMoins size={17} />
         </OutilCanevas>
 
         <SeparateurCanevas />

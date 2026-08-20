@@ -55,7 +55,11 @@ export function Confirmation({
      1280 — en croyant prendre celle de l'écran.
 
      Le symptôme est traître parce que le CSS est juste : c'est le
-     référentiel qui ne l'est pas. */
+     référentiel qui ne l'est pas.
+
+     Elle monte DU BAS : elle pose une question, et une question se
+     pose là où sont les mains. Le haut est réservé à ce qui prévient
+     sans rien demander — la mise à jour. */
   return createPortal(
     <div className="sheet sheet--bandeau" role="dialog" aria-modal="true" onClick={onAnnuler}>
       <div className="confirme" onClick={(e) => e.stopPropagation()}>
