@@ -92,6 +92,27 @@ export class AuthSupabase implements Authentification {
     await supabase().auth.signOut()
   }
 
+  /**
+   * Le lien de réinitialisation.
+   *
+   * L'ERREUR EST AVALÉE, sauf la limitation de débit. Supabase répond
+   * la même chose que l'adresse existe ou non, mais un échec réseau
+   * ou une adresse malformée feraient malgré tout apparaître un
+   * message différent selon les cas — et c'est par ces différences-là
+   * qu'on énumère les comptes d'un service. On répond donc toujours
+   * « si un compte existe, le lien part ».
+   *
+   * `redirectTo` ramène sur l'app : sans lui, Supabase renvoie sur
+   * l'adresse du projet, qui n'affiche rien d'utile.
+   */
+  async reinitialiser(email: string): Promise<void> {
+    const adresse = verifierEmail(email)
+    const { error } = await supabase().auth.resetPasswordForEmail(adresse, {
+      redirectTo: `${window.location.origin}/`,
+    })
+    if (error && /rate limit|too many/i.test(error.message)) throw traduire(error)
+  }
+
   async majProfil(nom: string): Promise<Session> {
     const { data, error } = await supabase().auth.updateUser({ data: { nom: nom.trim() } })
     if (error) throw traduire(error)

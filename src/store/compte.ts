@@ -43,6 +43,16 @@ export interface Authentification {
   connecter(email: string, motDePasse: string): Promise<Demande>
   deconnecter(): Promise<void>
   majProfil(nom: string): Promise<Session>
+  /**
+   * Envoie un lien de réinitialisation.
+   *
+   * NE DIT JAMAIS SI L'ADRESSE EXISTE, et c'est la règle entière de
+   * cet écran : répondre « compte inconnu » offrirait à n'importe qui
+   * un moyen de tester quelles adresses ont un compte ici. On répond
+   * donc la même chose dans les deux cas — « si un compte existe, le
+   * lien part » — et c'est vrai.
+   */
+  reinitialiser(email: string): Promise<void>
 }
 
 /* ================= le portrait, gardé sur l'appareil =================
@@ -194,6 +204,16 @@ export class AuthLocale implements Authentification {
     }
   }
 
+  /* Sans serveur, il n'y a personne pour envoyer un courriel. On le
+     dit franchement plutôt que d'afficher un « c'est envoyé » qui
+     serait faux — c'est exactement le genre de mensonge poli qui fait
+     attendre un message qui n'arrivera jamais. */
+  async reinitialiser(): Promise<void> {
+    throw new Error(
+      'La réinitialisation demande un serveur : elle n’existe pas sur un compte local.',
+    )
+  }
+
   async majProfil(nom: string): Promise<Session> {
     const session = await this.session()
     if (!session) throw new Error('Aucune session')
@@ -225,6 +245,8 @@ type CompteStore = {
   connecter: (email: string, mdp: string) => Promise<Session | null>
   deconnecter: () => Promise<void>
   renommer: (nom: string) => Promise<void>
+  /** rend vrai si la demande est partie — le message est le même dans tous les cas */
+  demanderNouveauMotDePasse: (email: string) => Promise<boolean>
   /** pose ou retire le portrait — un identifiant d'image locale */
   portraiturer: (imageId: string | null) => void
   oublierErreur: () => void
@@ -261,6 +283,18 @@ export const useCompte = create<CompteStore>((set, get) => ({
   renommer: async (nom) => {
     const session = avecPortrait(await get().auth.majProfil(nom))
     set({ session })
+  },
+
+  demanderNouveauMotDePasse: async (email) => {
+    set({ occupe: true, erreur: null })
+    try {
+      await get().auth.reinitialiser(email)
+      set({ occupe: false })
+      return true
+    } catch (e) {
+      set({ erreur: e instanceof Error ? e.message : 'Envoi impossible', occupe: false })
+      return false
+    }
   },
 
   portraiturer: (imageId) => {

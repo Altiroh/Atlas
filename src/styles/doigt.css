@@ -292,6 +292,10 @@
   /* ---------- le profil et le flux ---------- */
 
   .portrait__retirer { padding: 8px 6px; font-size: 12.5px; }
+
+  /* « Mot de passe oublié ? » est un lien, donc une ligne de haut —
+     et c'est la seule porte de sortie quand on est bloqué dehors. */
+  .lien--oubli { padding: 12px 2px; font-size: 13px; }
   .flux__archives { min-height: 46px; }
 }
 
@@ -303,5 +307,20 @@
   .frise {
     --frise-entre: 48px;
     --frise-colonne: 210px;
+  }
+}
+
+/* Le sélecteur « Se connecter / Créer un compte » sur un écran étroit.
+
+   Sa hauteur de cible est conservée — c'est la marge latérale et la
+   taille du texte qui cèdent. « Créer un compte » fait quinze
+   caractères pour cent quatre pixels disponibles sur un 320 : à
+   13,5 px il déborde, à 12,5 px il tient, et il reste lisible. */
+@media (max-width: 400px) {
+  .connexion__carte { padding-left: 16px; padding-right: 16px; }
+  .seg--large .seg__item {
+    padding: 12px 4px;
+    font-size: 12.5px;
+    letter-spacing: -0.012em;
   }
 }

@@ -65,7 +65,7 @@ export async function activerPour(session: Session) {
 
 /* ================= section Compte ================= */
 
-type Mode = 'connexion' | 'creation'
+type Mode = 'connexion' | 'creation' | 'oubli'
 
 export function ComptePanel() {
   const session = useCompte((s) => s.session)
@@ -78,14 +78,32 @@ export function FormulaireCompte() {
   const connecter = useCompte((s) => s.connecter)
   const erreur = useCompte((s) => s.erreur)
   const occupe = useCompte((s) => s.occupe)
+  const oublierErreur = useCompte((s) => s.oublierErreur)
+  const demanderNouveauMotDePasse = useCompte((s) => s.demanderNouveauMotDePasse)
 
-  const [mode, setMode] = useState<Mode>('connexion')
+  const [mode, setModeBrut] = useState<Mode>('connexion')
   const [nom, setNom] = useState('')
   const [email, setEmail] = useState('')
   const [mdp, setMdp] = useState('')
+  /** l'adresse à laquelle le lien vient de partir, s'il est parti */
+  const [envoye, setEnvoye] = useState<string | null>(null)
+
+  /* Changer d'onglet efface l'erreur ET l'accusé d'envoi : les garder
+     ferait lire « le lien est parti » au-dessus d'un formulaire de
+     création de compte, ce qui ne veut plus rien dire. */
+  const setMode = (m: Mode) => {
+    setModeBrut(m)
+    setEnvoye(null)
+    oublierErreur()
+  }
 
   const envoyer = async (e: React.FormEvent) => {
     e.preventDefault()
+    if (mode === 'oubli') {
+      const ok = await demanderNouveauMotDePasse(email)
+      if (ok) setEnvoye(email.trim())
+      return
+    }
     const session =
       mode === 'creation' ? await creer(email, mdp, nom) : await connecter(email, mdp)
     if (session) await activerPour(session)
@@ -98,7 +116,7 @@ export function FormulaireCompte() {
         <div className="seg seg--large" role="group" aria-label="Compte">
           <button
             className="seg__item"
-            aria-current={mode === 'connexion'}
+            aria-current={mode !== 'creation'}
             onClick={() => setMode('connexion')}
           >
             Se connecter
@@ -139,12 +157,28 @@ export function FormulaireCompte() {
             />
           </label>
 
-          <ChampMotDePasse
-            value={mdp}
-            onChange={setMdp}
-            autoComplete={mode === 'creation' ? 'new-password' : 'current-password'}
-            avecJauge={mode === 'creation'}
-          />
+          {mode !== 'oubli' && (
+            <ChampMotDePasse
+              value={mdp}
+              onChange={setMdp}
+              autoComplete={mode === 'creation' ? 'new-password' : 'current-password'}
+              avecJauge={mode === 'creation'}
+            />
+          )}
+
+          {/* On n'oublie pas son mot de passe au moment de le choisir :
+              le lien n'existe qu'à la connexion. */}
+          {mode === 'connexion' && (
+            <button type="button" className="lien lien--oubli" onClick={() => setMode('oubli')}>
+              Mot de passe oublié ?
+            </button>
+          )}
+
+          {mode === 'oubli' && (
+            <p className="sheet__note" style={{ marginTop: -2, marginBottom: 14 }}>
+              Je t'envoie un lien pour en choisir un nouveau. Il n'est valable qu'une fois.
+            </p>
+          )}
 
           {erreur && (
             <p className="field__erreur" role="alert">
@@ -152,9 +186,36 @@ export function FormulaireCompte() {
             </p>
           )}
 
+          {/* LE MÊME MESSAGE QUE L'ADRESSE EXISTE OU NON. Répondre
+              « compte inconnu » offrirait à n'importe qui un moyen de
+              tester quelles adresses ont un compte ici. */}
+          {envoye && (
+            <p className="field__ok" role="status">
+              Si un compte existe pour <strong>{envoye}</strong>, le lien vient de partir. Regarde
+              tes indésirables, il s'y range souvent.
+            </p>
+          )}
+
           <button className="btn btn--accent btn--large" type="submit" disabled={occupe}>
-            {occupe ? 'Un instant…' : mode === 'creation' ? 'Créer mon compte' : 'Se connecter'}
+            {occupe
+              ? 'Un instant…'
+              : mode === 'creation'
+                ? 'Créer mon compte'
+                : mode === 'oubli'
+                  ? 'Envoyer le lien'
+                  : 'Se connecter'}
           </button>
+
+          {mode === 'oubli' && (
+            <button
+              type="button"
+              className="lien"
+              style={{ display: 'block', margin: '12px auto 0' }}
+              onClick={() => setMode('connexion')}
+            >
+              Revenir à la connexion
+            </button>
+          )}
         </form>
 
         {!SUPABASE_CONFIGURE && (

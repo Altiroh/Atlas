@@ -33,24 +33,27 @@ import { OeilAtlas } from '../ui/OeilAtlas'
    elle sert (docs/06 § 2).
    --------------------------------------------------------------- */
 
+/* UNE LIGNE PAR CAPACITÉ, et pas deux.
+   Chacune portait une phrase de description PUIS une note de détail :
+   trois capacités faisaient six paragraphes, et le bouton
+   « Commencer » se retrouvait très bas — sur un téléphone, hors de
+   l'écran. Le détail qui compte tient dans la même phrase ; le reste
+   n'était que du remplissage poli. */
 const CAPACITES = [
   {
     t: 'Notifications',
-    d: 'Pour les rappels et les relances.',
     e: 'à installer',
-    n: "Disponible une fois Atlas ajouté à l'écran d'accueil. La permission sera demandée à ce moment-là.",
+    d: 'Pour les rappels — dès qu’Atlas est sur ton écran d’accueil.',
   },
   {
     t: 'Dictée',
-    d: 'Capturer une idée en marchant, sans taper.',
     e: 'bientôt',
-    n: 'Le micro ne sera demandé qu’au premier appui sur le bouton de dictée.',
+    d: 'Capturer en marchant. Le micro ne sera demandé qu’au moment voulu.',
   },
   {
     t: "Captures d'écran",
-    d: 'Ranger une capture juste après l’avoir prise.',
     e: 'indisponible',
-    n: "Aucun navigateur ne sait détecter une capture d'écran. Il faudra une vraie app installée.",
+    d: 'Aucun navigateur ne sait les détecter. Il faudrait une vraie app.',
   },
 ]
 
@@ -98,16 +101,15 @@ export function BienvenueScreen() {
                 </span>
               </div>
               <p className="capacite__texte">{c.d}</p>
-              <p className="capacite__note">{c.n}</p>
             </li>
           ))}
         </ul>
 
-        <p className="sheet__note" style={{ marginTop: 18 }}>
+        <p className="sheet__note" style={{ marginTop: 12 }}>
           Je ne demanderai jamais une autorisation avant d'en avoir besoin.
         </p>
 
-        <button className="btn btn--accent btn--large" style={{ marginTop: 18 }} onClick={terminer}>
+        <button className="btn btn--accent btn--large" style={{ marginTop: 14 }} onClick={terminer}>
           Commencer
         </button>
       </div>

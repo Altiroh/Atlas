@@ -1870,7 +1870,23 @@
 
 /* le segmenté et le bouton principal respirent davantage sur cet écran */
 .seg--large { width: 100%; }
-.seg--large .seg__item { flex: 1; padding: 8px 12px; font-size: 13.5px; }
+/* LES DEUX MOITIÉS NE FONT PAS LA MÊME LONGUEUR — « Se connecter »
+   contre « Créer un compte ». Avec `flex: 1` seul, un élément flex ne
+   peut pas descendre sous la largeur de son propre texte : les deux
+   débordaient donc de leur cadre de dix pixels, et le second se
+   faisait rogner par le bord de la carte.
+
+   `min-width: 0` lève ce plancher ; l'`overflow` du cadre garantit
+   qu'au pire un caractère est coupé PROPREMENT, au lieu que la mise
+   en page déborde. Et la taille du texte cède sur écran étroit
+   (voir doigt.css) pour que ce pire cas n'arrive jamais. */
+.seg--large { max-width: 100%; overflow: hidden; }
+.seg--large .seg__item {
+  flex: 1 1 0;
+  min-width: 0;
+  padding: 8px 10px;
+  font-size: 13.5px;
+}
 
 .btn--large { width: 100%; height: 44px; font-size: 15px; }
 
@@ -2433,12 +2449,12 @@
 .capacites {
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  margin-top: 10px;
+  gap: 7px;
+  margin-top: 8px;
 }
 
 .capacite {
-  padding: 12px 13px;
+  padding: 10px 12px;
   border-radius: var(--r);
   background: var(--surface-sunken);
   border: 1px solid var(--border);
@@ -2468,7 +2484,7 @@
 
 :root[data-theme='dark'] .capacite__etat[data-etat='bientôt'] { color: hsl(36 90% 64%); }
 
-.capacite__texte { margin-top: 5px; font-size: 12.5px; color: var(--text-2); line-height: 1.45; }
+.capacite__texte { margin-top: 3px; font-size: 12.5px; color: var(--text-2); line-height: 1.45; }
 .capacite__note { margin-top: 5px; font-size: 11.5px; color: var(--text-3); line-height: 1.45; }
 
 .profil__actions {
@@ -3703,3 +3719,27 @@
 @media (prefers-reduced-motion: reduce) {
   .ouverture__curseur { animation: none; opacity: 0; }
 }
+
+/* Le lien « Mot de passe oublié ? » — aligné à droite, sous le champ,
+   là où l'œil arrive en quittant la saisie. */
+.lien--oubli {
+  display: block;
+  margin: -8px 0 14px auto;
+  padding: 6px 2px;
+  font-size: 12.5px;
+}
+
+/* Le pendant vert de `.field__erreur` : une confirmation se lit comme
+   une erreur si elle en emprunte la forme sans en emprunter la
+   couleur. */
+.field__ok {
+  margin: -6px 0 14px;
+  padding: 9px 11px;
+  border-radius: var(--r-sm);
+  background: hsl(150 62% 42% / 0.12);
+  color: hsl(150 62% 28%);
+  font-size: 12.5px;
+  line-height: 1.45;
+}
+.field__ok strong { font-weight: 600; }
+:root[data-theme='dark'] .field__ok { color: hsl(150 62% 66%); }
