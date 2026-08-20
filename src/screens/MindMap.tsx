@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
-import { idNoeud, useAtlas, type Noeud, type Post } from '../store/atlas'
+import { idNoeud, type Noeud } from '../store/atlas'
 import { IconClose, IconFocus, IconPencil, IconPlus, IconTrash } from '../ui/Icon'
 import { BarreCanevas, OutilCanevas, SeparateurCanevas } from '../ui/BarreCanevas'
 
@@ -29,9 +29,22 @@ const ZOOM_MAX = 2.4
 
 type Vue = { x: number; y: number; k: number }
 
-export function MindMap({ post }: { post: Post }) {
-  const majPost = useAtlas((s) => s.majPost)
-  const carte = post.carte ?? []
+/**
+ * La carte reçoit son contenu et rend ses modifications : elle ne
+ * connaît ni le post ni le magasin. C'est ce qui permet d'en poser
+ * deux dans la même note sans qu'elles se marchent dessus.
+ */
+export function MindMap({
+  carte,
+  titre,
+  ecrire: poser,
+}: {
+  carte: Noeud[]
+  /** sert de racine quand la carte est vide — on ne part jamais
+      d'une page blanche */
+  titre: string
+  ecrire: (n: Noeud[]) => void
+}) {
 
   const surface = useRef<HTMLDivElement>(null)
   const [vue, setVue] = useState<Vue>({ x: 0, y: 0, k: 1 })
@@ -39,10 +52,15 @@ export function MindMap({ post }: { post: Post }) {
   const [edition, setEdition] = useState<string | null>(null)
   const [glisse, setGlisse] = useState<{ id: string; x: number; y: number } | null>(null)
 
-  const ecrire = useCallback(
-    (noeuds: Noeud[]) => majPost(post.id, { carte: noeuds }),
-    [majPost, post.id],
-  )
+  const ecrire = poser
+
+  /* Une carte vide reçoit sa racine — le titre de la note. On ne part
+     jamais d'une page blanche : un canevas vide ne dit pas qu'on peut
+     y écrire, il dit qu'il ne s'est rien passé. */
+  useEffect(() => {
+    if (carte.length === 0) poser(carteInitiale(titre))
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [carte.length])
 
   /* --- recentrage : ramène tout le contenu dans le cadre --- */
   const recentrer = useCallback(() => {

@@ -1,6 +1,7 @@
 import { db } from './db'
 import type { Espace, Noeud, Post } from './atlas'
-import { imagesDe, versMarkdown } from './blocs'
+import { versMarkdown } from './blocs'
+import { imagesDuPost, type Colonne, type Evenement, type Forme, type Ligne } from './formes'
 
 /* ---------------------------------------------------------------
    Export — l'assurance-vie du projet (D2).
@@ -118,6 +119,88 @@ function carteEnListe(noeuds: Noeud[]): string {
   return lignes.join('\n')
 }
 
+/** Le lien markdown d'une image, avec l'extension réelle du fichier. */
+function lienImage(id: string, extensions: Map<string, string>, texte = '') {
+  return `![${texte}](images/${id}.${extensions.get(id) ?? 'bin'})`
+}
+
+/**
+ * La frise devient une liste, du premier au dernier.
+ *
+ * Les pistes disparaissent : le markdown ne sait pas mettre deux fils
+ * côte à côte, et une piste rendue en colonne serait moins lisible que
+ * pas de piste du tout. On garde hors d'Atlas ce qui compte — l'ordre
+ * et ce qui est dit — et `atlas.json` conserve le reste au complet.
+ */
+function friseEnListe(evenements: Evenement[]): string {
+  return [...evenements]
+    .sort((a, b) => a.ordre - b.ordre)
+    .map((e) => {
+      const tete = [e.quand?.trim(), e.titre.trim() || 'Sans titre'].filter(Boolean).join(' — ')
+      const note = e.note?.trim() ? `\n  ${e.note.trim().replace(/\n/g, '\n  ')}` : ''
+      return `- ${tete}${note}`
+    })
+    .join('\n')
+}
+
+/** La table devient un vrai tableau markdown — lisible dans n'importe quel éditeur. */
+function tableEnMarkdown(
+  colonnes: Colonne[],
+  lignes: Ligne[],
+  extensions: Map<string, string>,
+): string {
+  if (!colonnes.length) return ''
+  const cellule = (l: Ligne, c: Colonne) => {
+    const v = l.cellules[c.id] ?? ''
+    if (c.type === 'case') return v === 'oui' ? 'x' : ''
+    if (c.type === 'image') return v ? lienImage(v, extensions) : ''
+    // une barre verticale dans une cellule casserait la table entière
+    return v.replace(/\|/g, '\\|').replace(/\n/g, ' ')
+  }
+  return [
+    `| ${colonnes.map((c) => c.nom || '—').join(' | ')} |`,
+    `|${' --- |'.repeat(colonnes.length)}`,
+    ...lignes.map((l) => `| ${colonnes.map((c) => cellule(l, c)).join(' | ')} |`),
+  ].join('\n')
+}
+
+/**
+ * Le contenu d'une forme, sans son nom.
+ *
+ * Une forme absente de ce `switch` s'exporte VIDE, en silence. C'est
+ * la raison d'être du `default` explicite plus bas : le compilateur ne
+ * dira rien, alors autant que le prochain à passer ici le lise.
+ */
+function formeEnMarkdown(f: Forme, extensions: Map<string, string>): string {
+  switch (f.t) {
+    case 'texte':
+      return f.blocs?.length ? versMarkdown(f.blocs, extensions) : ''
+    case 'carte':
+      return f.carte?.length ? carteEnListe(f.carte) : ''
+    case 'dessin':
+      // un tracé vectoriel n'a pas d'équivalent markdown : il reste
+      // intact dans atlas.json, et on le signale plutôt que de mentir
+      return f.dessin?.length
+        ? `*(dessin — ${f.dessin.length} traits, conservés dans atlas.json)*`
+        : ''
+    case 'planche': {
+      // le placement libre ne se dit pas davantage : on remet à la
+      // suite, du fond vers le premier plan
+      const pieces = [...(f.planche ?? [])].sort((a, b) => a.z - b.z)
+      return pieces
+        .map((p) => (p.imageId ? lienImage(p.imageId, extensions, p.texte ?? '') : `**${p.texte ?? ''}**`))
+        .filter((l) => l !== '****')
+        .join('\n\n')
+    }
+    case 'frise':
+      return f.frise?.length ? friseEnListe(f.frise) : ''
+    case 'table':
+      return f.lignes?.length ? tableEnMarkdown(f.colonnes ?? [], f.lignes, extensions) : ''
+    default:
+      return ''
+  }
+}
+
 function postEnMarkdown(post: Post, extensions: Map<string, string>) {
   const bouts: string[] = []
   bouts.push(`### ${post.titre.trim() || 'Sans titre'}`)
@@ -125,20 +208,34 @@ function postEnMarkdown(post: Post, extensions: Map<string, string>) {
   if (post.coverId) {
     bouts.push(`![](images/${post.coverId}.${extensions.get(post.coverId) ?? 'bin'})`)
   }
-  // les blocs donnent un vrai markdown — titres, listes, tableaux ;
-  // le champ `texte` ne sert de repli que pour les notes d'avant
-  if (post.blocs?.length) {
-    const md = versMarkdown(post.blocs, extensions)
-    if (md.trim()) bouts.push(md)
-  } else if (post.texte.trim()) {
-    bouts.push(post.texte.trim())
-  }
-  if (post.dessin?.length) {
-    bouts.push(`*(dessin — ${post.dessin.length} traits, conservés dans atlas.json)*`)
-  }
-  if (post.carte?.length) {
-    bouts.push('**Carte**\n')
-    bouts.push(carteEnListe(post.carte))
+  /* CHAQUE FORME EST UNE SECTION, sous son propre nom. Une note à trois
+     cartes doit se relire telle qu'elle a été écrite : c'est tout
+     l'intérêt de les avoir nommées. Le titre de section n'apparaît que
+     s'il y a plus d'une forme — sur une note ordinaire, un intertitre
+     « Fiche » serait du bruit. */
+  if (post.formes?.length) {
+    const plusieurs = post.formes.length > 1
+    for (const f of post.formes) {
+      const md = formeEnMarkdown(f, extensions)
+      if (!md.trim()) continue
+      if (plusieurs) bouts.push(`**${f.nom}**`)
+      bouts.push(md)
+    }
+  } else {
+    // notes d'avant les formes, non encore reprises
+    if (post.blocs?.length) {
+      const md = versMarkdown(post.blocs, extensions)
+      if (md.trim()) bouts.push(md)
+    } else if (post.texte.trim()) {
+      bouts.push(post.texte.trim())
+    }
+    if (post.dessin?.length) {
+      bouts.push(`*(dessin — ${post.dessin.length} traits, conservés dans atlas.json)*`)
+    }
+    if (post.carte?.length) {
+      bouts.push('**Carte**\n')
+      bouts.push(carteEnListe(post.carte))
+    }
   }
   return bouts.join('\n\n')
 }
@@ -155,9 +252,9 @@ export async function construireArchive(posts: Post[], espaces: Espace[]): Promi
   // On ne récupère que les images réellement référencées : les orphelines
   // ne méritent pas de place dans la sauvegarde.
   const ids = [
-    ...posts.map((p) => p.coverId),
-    // les images posées DANS le texte comptent autant que la couverture
-    ...posts.flatMap((p) => (p.blocs ? imagesDe(p.blocs) : [])),
+    // couverture, fiches, planches, colonnes visuelles : `imagesDuPost`
+    // est le seul endroit qui sait où une note range ses images
+    ...posts.flatMap(imagesDuPost),
     ...espaces.map((e) => e.imageId),
   ].filter((v): v is string => Boolean(v))
 

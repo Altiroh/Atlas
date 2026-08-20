@@ -2881,9 +2881,9 @@
   z-index: 55;
   display: grid;
   place-items: center;
-  /* la taille exacte du dessin, couronne comprise : 40 x 1,6 */
-  width: 64px;
-  height: 64px;
+  /* la taille exacte du dessin, couronne comprise : 40 x 1,8 */
+  width: 72px;
+  height: 72px;
   padding: 0;
   border: 0;
   background: none;
@@ -2906,6 +2906,19 @@
 
 .bulle:hover { transform: scale(1.06); }
 .bulle:active { transform: scale(0.95); }
+
+/* Porté : il grossit un peu et se pose au-dessus de tout, y compris
+   des feuilles montantes — on doit voir où on le dépose. */
+.bulle[data-porte] {
+  z-index: 75;
+  transform: scale(1.12);
+  cursor: grabbing;
+  transition: none;
+}
+.bulle[data-porte]::before {
+  box-shadow: var(--shadow), 0 0 0 7px var(--accent-soft);
+}
+.bulle { touch-action: none; cursor: grab; }
 .bulle:hover::before,
 .bulle[data-ouverte='true']::before {
   box-shadow: var(--shadow), 0 0 0 5px var(--accent-soft);
@@ -3291,8 +3304,13 @@
 }
 
 /* le papier */
+/* LE MOTIF SE MESURE DANS LE REPÈRE DU DESSIN, PAS À L’ÉCRAN.
+   Le canevas fait 1000 unités de large et s’affiche vers 350 px : tout
+   y est divisé par trois. Un trait d’une unité dans la couleur la plus
+   pâle de l’app donnait donc un tiers de pixel — la grille était bien
+   dessinée, elle ne se voyait simplement pas. */
 .pap-marque { fill: var(--border-strong); }
-.pap-ligne { fill: none; stroke: var(--border); stroke-width: 1; }
+.pap-ligne { fill: none; stroke: var(--border-strong); stroke-width: 2.4; }
 
 .dessin__outils .seg { flex: none; }
 

@@ -19,7 +19,7 @@
   /* le point de rotation est le centre du dessin, pas celui de chaque
      langue : elles pivotent AUTOUR DE L'ŒIL, comme une couronne */
   transform-box: view-box;
-  transform-origin: 80px 80px;
+  transform-origin: 90px 90px;
 }
 
 /* Trois tons : l'accent, une braise plus claire décalée vers l'orange,
@@ -40,7 +40,7 @@
 
 .oeil__langue {
   transform-box: view-box;
-  transform-origin: 80px 80px;
+  transform-origin: 90px 90px;
   animation-name: langue-fremit;
   animation-timing-function: cubic-bezier(0.45, 0, 0.35, 1);
   animation-iteration-count: infinite;
@@ -48,23 +48,27 @@
   will-change: transform;
 }
 
-/* Un souffle, pas un battement : deux degrés et quatre centièmes
-   d'échelle. Au-delà, la couronne se met à tourner, et l'œil semble
-   posé sur un ventilateur. */
+/* Le premier réglage était trop sage — un degré et demi, ça ne se
+   voyait pas. On monte à cinq degrés et huit centièmes d'échelle : à
+   ce niveau le feu bouge vraiment, sans que la couronne se mette à
+   tourner comme un ventilateur. La limite est là, pas plus loin.
+
+   L'opacité travaille avec : une langue qui pâlit en se rétractant a
+   l'air de reculer dans le feu, pas de rapetisser. */
 @keyframes langue-fremit {
   from {
-    transform: rotate(-1.4deg) scale(0.975);
-    opacity: 0.82;
+    transform: rotate(-2.6deg) scale(0.93);
+    opacity: 0.7;
   }
   to {
-    transform: rotate(1.6deg) scale(1.035);
+    transform: rotate(2.8deg) scale(1.06);
     opacity: 1;
   }
 }
 
 .oeil__braise {
   transform-box: view-box;
-  transform-origin: 80px 80px;
+  transform-origin: 90px 90px;
   animation-name: braise-derive;
   animation-timing-function: ease-in-out;
   animation-iteration-count: infinite;
@@ -100,4 +104,38 @@
   .oeil__braise {
     animation: none;
   }
+}
+
+/* ---------- porté : l'œil se ferme ---------- */
+
+/* Pendant qu'on déplace Atlas, la paupière descend ET Y RESTE. On ne
+   suspend pas le clignement — une animation figée à mi-course donnerait
+   un œil MI-CLOS, pas un œil fermé — on la remplace par une descente
+   qui tient sa position.
+
+   Le regard s'arrête aussi : un œil fermé qui continue de balayer la
+   pièce est exactement le genre de détail qui trahit une animation
+   empilée sur une autre. */
+
+.oeil--dort .oeil__paupiere {
+  animation: paupiere-baisse 180ms var(--ease) both;
+}
+
+@keyframes paupiere-baisse {
+  to {
+    transform: translateY(106px);
+  }
+}
+
+.oeil--dort .oeil__regard,
+.oeil--dort .oeil__voile,
+.oeil--dort .oeil__lueur {
+  animation-play-state: paused;
+}
+
+/* Les langues, elles, continuent : le feu ne s'arrête pas parce qu'on
+   déplace la mascotte — il ralentit, comme une braise qu'on soulève. */
+.oeil--dort .oeil__langue,
+.oeil--dort .oeil__braise {
+  animation-duration: 5.5s !important;
 }

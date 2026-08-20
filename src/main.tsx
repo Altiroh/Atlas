@@ -18,6 +18,7 @@ import './styles/demarrage.css'
 import './styles/apparition.css'
 import './styles/canevas.css'
 import './styles/oeil.css'
+import './styles/note.css'
 /* EN DERNIER, et c'est structurel : `feuille.css` n'ajoute pas des
    composants, il ADAPTE ceux d'au-dessus aux écrans étroits. Une règle
    sous `@media` ne gagne aucune spécificité — chargée avant, elle se

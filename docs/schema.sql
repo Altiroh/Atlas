@@ -52,6 +52,12 @@ create table if not exists posts (
 -- ajoute la colonne. Elle ne coûte rien si elle existe déjà.
 alter table posts add column if not exists blocs jsonb;
 
+-- Les FORMES d'une note : fiches, cartes et dessins en nombre libre,
+-- chacune nommée. Elles remplacent `blocs` / `carte` / `dessin`, qui
+-- restent en place — ils servent à reconstruire les formes d'une note
+-- écrite avant elles, à sa première ouverture, et une seule fois.
+alter table posts add column if not exists formes jsonb;
+
 -- `texte` reste rempli, en projection de `blocs` : c'est lui que lit
 -- la recherche. Le client s'en charge, le serveur ne calcule rien.
 

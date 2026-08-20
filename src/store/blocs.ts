@@ -37,8 +37,22 @@ export type TypeBloc =
   | 'etiquettes'
   | 'separateur'
   | 'image'
+  | 'galerie'
   | 'tableau'
   | 'colonnes'
+
+/**
+ * Une image de galerie.
+ *
+ * Elle porte son propre identifiant, distinct de celui de l'image :
+ * on peut poser deux fois le même cliché dans une planche-contact
+ * sans que retirer l'un retire l'autre.
+ */
+export type Vignette = {
+  id: string
+  imageId: string | null
+  legende?: string
+}
 
 export type Bloc = {
   id: string
@@ -61,6 +75,8 @@ export type Bloc = {
    * des deux cas — probablement les deux.
    */
   largeur?: number
+  /** galerie — plusieurs images alignées, chacune avec sa légende */
+  vignettes?: Vignette[]
   /** tableau : lignes × colonnes de texte */
   cellules?: string[][]
   /** tableau : la première ligne est-elle un en-tête */
@@ -99,6 +115,10 @@ export function nouveauBloc(t: TypeBloc = 'para', patch: Partial<Bloc> = {}): Bl
   if (t === 'image') {
     b.imageId = null
     b.legende = ''
+    b.largeur = 100
+  }
+  if (t === 'galerie') {
+    b.vignettes = []
     b.largeur = 100
   }
   if (t === 'tableau') {
@@ -149,6 +169,7 @@ export const CATALOGUE: EntreeCatalogue[] = [
   { id: 'etiquettes', t: 'etiquettes', libelle: 'Étiquettes', quoi: 'Des mots-clés en pastilles.', cles: 'etiquette tag mot cle label', groupe: 'Lister' },
 
   { id: 'image', t: 'image', libelle: 'Image', quoi: 'Ici, au milieu du texte.', cles: 'image photo illustration', groupe: 'Mettre en page' },
+  { id: 'galerie', t: 'galerie', libelle: 'Galerie', quoi: 'Plusieurs images alignées.', cles: 'galerie images photos planche contact serie', groupe: 'Mettre en page' },
   { id: 'tableau', t: 'tableau', libelle: 'Tableau', quoi: 'Des lignes et des colonnes.', cles: 'tableau grille lignes colonnes cellule', groupe: 'Mettre en page' },
   { id: 'colonnes', t: 'colonnes', libelle: 'Colonnes', quoi: 'Deux blocs côte à côte.', cles: 'colonnes cote a cote mise en page', groupe: 'Mettre en page' },
   { id: 'separateur', t: 'separateur', libelle: 'Séparation', quoi: 'Un trait, pour souffler.', indice: '---', cles: 'separation trait ligne barre', groupe: 'Mettre en page' },
@@ -269,6 +290,9 @@ export function versTexte(blocs: Bloc[]): string {
   for (const b of blocs) {
     if (b.t === 'etiquettes') lignes.push((b.mots ?? []).join(' '))
     else if (b.t === 'image') lignes.push(b.legende ?? '')
+    else if (b.t === 'galerie') {
+      lignes.push((b.vignettes ?? []).map((v) => v.legende ?? '').filter(Boolean).join(' · '))
+    }
     else if (b.t === 'tableau') lignes.push((b.cellules ?? []).map((r) => r.join(' ')).join('\n'))
     else if (b.t === 'colonnes') lignes.push((b.colonnes ?? []).map(versTexte).join('\n'))
     else if (b.t === 'separateur') continue
@@ -313,6 +337,19 @@ export function versMarkdown(blocs: Bloc[], images?: Map<string, string>): strin
         }
         if (b.legende?.trim()) bouts.push(`*${b.legende.trim()}*`)
         break
+      case 'galerie': {
+        /* Le markdown ne sait pas aligner : les images se remettent à la
+           suite, chacune avec sa légende en texte de remplacement. On
+           perd la mise en page, jamais le contenu — et `atlas.json`
+           garde l'alignement au cas où. */
+        for (const v of b.vignettes ?? []) {
+          if (!v.imageId) continue
+          const ext = images?.get(v.imageId) ?? 'bin'
+          bouts.push(`![${v.legende ?? ''}](images/${v.imageId}.${ext})`)
+          if (v.legende?.trim()) bouts.push(`*${v.legende.trim()}*`)
+        }
+        break
+      }
       case 'tableau': {
         const c = b.cellules ?? []
         if (!c.length) break
@@ -340,6 +377,9 @@ export function imagesDe(blocs: Bloc[]): string[] {
   const ids: string[] = []
   for (const b of blocs) {
     if (b.t === 'image' && b.imageId) ids.push(b.imageId)
+    if (b.t === 'galerie') {
+      for (const v of b.vignettes ?? []) if (v.imageId) ids.push(v.imageId)
+    }
     if (b.t === 'colonnes') (b.colonnes ?? []).forEach((c) => ids.push(...imagesDe(c)))
   }
   return ids

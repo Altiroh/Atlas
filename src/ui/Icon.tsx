@@ -205,3 +205,68 @@ export const IconReturn = ({ size = 20, className, style }: Props) => (
     <path d="m9 9.5-4 4 4 4" />
   </svg>
 )
+
+export const IconCoche = ({ size = 20, className, style }: Props) => (
+  <svg {...base(size)} strokeWidth={2.6} className={className} style={style} aria-hidden="true">
+    <path d="m5 12.5 4.5 4.5L19 7" />
+  </svg>
+)
+
+/* Un lien vers une autre note : deux maillons. C'est le geste le plus
+   important de la table — une ligne qui devient une note. */
+export const IconLien = ({ size = 20, className, style }: Props) => (
+  <svg {...base(size)} className={className} style={style} aria-hidden="true">
+    <path d="M10 13.5a3.5 3.5 0 0 0 5 0l3-3a3.5 3.5 0 0 0-5-5l-1.5 1.5" />
+    <path d="M14 10.5a3.5 3.5 0 0 0-5 0l-3 3a3.5 3.5 0 0 0 5 5l1.5-1.5" />
+  </svg>
+)
+
+/* Un chevron, tourné par `style` pour les trois autres directions :
+   quatre composants identiques à 90 degrés près ne méritent pas
+   quatre entrées dans le jeu d'icônes. */
+export const IconChevron = ({ size = 20, className, style }: Props) => (
+  <svg {...base(size)} className={className} style={style} aria-hidden="true">
+    <path d="m14.5 5.5-7 6.5 7 6.5" />
+  </svg>
+)
+
+/* Deux cadres qui se chevauchent en biais : c'est l'empilement, et
+   c'est la seule chose qui distingue une planche d'une galerie. */
+export const IconPlanche = ({ size = 20, className, style }: Props) => (
+  <svg {...base(size)} className={className} style={style} aria-hidden="true">
+    <rect x="3" y="6.5" width="11" height="9" rx="1.8" transform="rotate(-7 8.5 11)" />
+    <rect x="10.5" y="9" width="10.5" height="10.5" rx="1.8" transform="rotate(6 15.75 14.25)" />
+  </svg>
+)
+
+/* Un axe, des jalons : trois points sur une ligne, dont un plus haut —
+   les pistes parallèles font partie de l'idée. */
+export const IconFrise = ({ size = 20, className, style }: Props) => (
+  <svg {...base(size)} className={className} style={style} aria-hidden="true">
+    <path d="M3 14.5h18" />
+    <path d="M7 14.5V9M13 14.5V6M18.5 14.5v-3.5" />
+    <circle cx="7" cy="7.6" r="1.5" />
+    <circle cx="13" cy="4.6" r="1.5" />
+    <circle cx="18.5" cy="9.6" r="1.5" />
+  </svg>
+)
+
+/* Une grille dont la première colonne est plus large : c'est une table
+   d'entités, pas un damier — la colonne qui nomme y est plus grande. */
+export const IconTable = ({ size = 20, className, style }: Props) => (
+  <svg {...base(size)} className={className} style={style} aria-hidden="true">
+    <rect x="3" y="4.5" width="18" height="15" rx="2.4" />
+    <path d="M3 9.5h18M11 9.5v10M3 14.5h18" />
+  </svg>
+)
+
+/* Trois vignettes alignées : la galerie se lit dans le fil, elle ne
+   s'empile pas. La différence avec la planche doit se voir au premier
+   coup d'œil, sinon les deux entrées du catalogue se confondent. */
+export const IconGalerie = ({ size = 20, className, style }: Props) => (
+  <svg {...base(size)} className={className} style={style} aria-hidden="true">
+    <rect x="2.5" y="7" width="5.6" height="10" rx="1.4" />
+    <rect x="9.2" y="7" width="5.6" height="10" rx="1.4" />
+    <rect x="15.9" y="7" width="5.6" height="10" rx="1.4" />
+  </svg>
+)

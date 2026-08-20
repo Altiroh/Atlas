@@ -1,42 +1,58 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { libelleHeure, libelleJour, titreDe, useAtlas } from '../store/atlas'
+import {
+  depuisAncienModele,
+  LIBELLES,
+  nouvelleForme,
+  type Forme,
+  type TypeForme,
+} from '../store/formes'
 import { oublierImage, stockerImage } from '../store/db'
 import { lisible, peutAjouterImage, QUOTA_IMAGES } from '../store/quota'
-import { IconBolt, IconImage, IconTrash } from '../ui/Icon'
+import { Confirmation } from '../ui/Confirmation'
+import {
+  IconBack,
+  IconBolt,
+  IconCarte,
+  IconClose,
+  IconImage,
+  IconPencil,
+  IconPlus,
+  IconTexte,
+  IconTrash,
+} from '../ui/Icon'
 import { useImageUrl } from '../ui/useImageUrl'
-import { MindMap, carteInitiale } from './MindMap'
 import { Dessin } from './Dessin'
 import { Editeur } from './Editeur'
-import { Confirmation } from '../ui/Confirmation'
-import { IconCarte, IconPencil, IconPlus, IconTexte } from '../ui/Icon'
+import { carteInitiale, MindMap } from './MindMap'
 
 /* ---------------------------------------------------------------
-   L'éditeur de post. Deux manières de travailler la même matière :
-   · Texte — titre, corps, image de couverture ;
-   · Carte — la même idée en mind map.
+   L'ÉDITEUR DE NOTE.
 
-   Ce sont deux vues d'UN SEUL objet, pas deux objets. Un post gagne
-   une carte quand on en a besoin, et la garde.
+   Deux lignes en tête, et la séparation entre les deux est le sujet :
+
+   · LA PREMIÈRE PARLE DE LA NOTE — d'où l'on vient, comment elle
+     s'appelle, et le seul geste qu'Atlas ne sait pas défaire. Elle ne
+     bouge jamais.
+   · LA SECONDE PARLE DE SES FORMES — les onglets. Elle défile
+     horizontalement, parce qu'une note peut en porter dix et qu'on ne
+     va pas rétrécir les noms jusqu'à l'illisible pour les faire
+     tenir.
+
+   Une note porte autant de fiches, de cartes et de dessins qu'elle
+   veut, chacune nommée et renommable. Le « type » d'une note reste
+   une conséquence de ce qu'on en fait, jamais une case à cocher
+   (docs/03 § 1.2) — on ajoute simplement la forme dont on a besoin au
+   moment où on en a besoin.
 
    Tout s'enregistre au fil de la frappe : il n'y a pas de bouton
    « Enregistrer », et il n'y en aura jamais.
    --------------------------------------------------------------- */
 
-type Mode = 'texte' | 'carte' | 'dessin'
-
-/* Un post n'a pas UN type : il a des FORMES, et il peut en cumuler.
-   Le texte est toujours là ; la carte et le dessin s'ajoutent quand
-   on en a besoin, et ne se retirent jamais tout seuls. */
-const FORMES: {
-  id: Mode
-  libelle: string
-  icone: typeof IconTexte
-  quoi: string
-  indice: string
-}[] = [
-  { id: 'texte', libelle: 'Texte', icone: IconTexte, quoi: 'Écrire au fil de la plume.', indice: 'défaut' },
-  { id: 'carte', libelle: 'Carte mentale', icone: IconCarte, quoi: 'Ramifier une idée en branches.', indice: 'nœuds' },
-  { id: 'dessin', libelle: 'Dessin', icone: IconPencil, quoi: 'Croquer, annoter, surligner.', indice: 'vectoriel' },
+const AJOUTS: { t: TypeForme; icone: typeof IconTexte; quoi: string }[] = [
+  { t: 'texte', icone: IconTexte, quoi: 'Écrire au fil de la plume.' },
+  { t: 'carte', icone: IconCarte, quoi: 'Ramifier une idée en branches.' },
+  { t: 'dessin', icone: IconPencil, quoi: 'Croquer, annoter, surligner.' },
 ]
 
 export function PostEditor() {
@@ -54,20 +70,36 @@ export function PostEditor() {
   const cover = useImageUrl(post?.coverId)
   const fichier = useRef<HTMLInputElement>(null)
   const [envoi, setEnvoi] = useState(false)
-  const [mode, setMode] = useState<Mode>('texte')
+  const [actif, setActif] = useState<string | null>(null)
   const [aSupprimer, setASupprimer] = useState(false)
-  const [choixForme, setChoixForme] = useState(false)
+  const [ajout, setAjout] = useState(false)
+  const [renomme, setRenomme] = useState<string | null>(null)
 
-  /* Changer de post ramène au texte — sauf si la capture a demandé une
-     forme précise : « En dessin » doit ouvrir sur le dessin, pas sur un
-     texte qu'il faudrait ensuite quitter. Le vœu est consommé une fois. */
+  /* La reprise des notes écrites avant les formes : une fois, à
+     l'ouverture, et on réenregistre aussitôt. */
+  const secours = useMemo(
+    () => (post && !post.formes ? depuisAncienModele(post) : null),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [post?.id],
+  )
+  const formes = post?.formes ?? secours ?? []
+
   useEffect(() => {
-    if (formeInitiale) {
-      setMode(formeInitiale)
+    if (post && !post.formes && secours) majPost(post.id, { formes: secours })
+  }, [post, secours, majPost])
+
+  /* Changer de note ramène à sa première forme — sauf si la capture a
+     demandé une forme précise : « En dessin » doit ouvrir sur le
+     dessin. Le vœu est consommé une fois. */
+  useEffect(() => {
+    if (!post) return
+    const voulu = formeInitiale
+    if (voulu) {
       setFormeInitiale(null)
-    } else {
-      setMode('texte')
+      const f = formes.find((x) => x.t === voulu)
+      if (f) return setActif(f.id)
     }
+    setActif(formes[0]?.id ?? null)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [post?.id])
 
@@ -79,16 +111,39 @@ export function PostEditor() {
         </div>
         <div className="empty__ref">ATL_00 / VIDE</div>
         <div className="empty__title">Rien de sélectionné</div>
-        <div className="empty__sub">Choisis un post dans le flux, ou commences-en un nouveau.</div>
+        <div className="empty__sub">Choisis une note dans le flux, ou commences-en une nouvelle.</div>
         <button
           className="btn btn--accent"
           style={{ marginTop: 14 }}
           onClick={() => select(creerPost())}
         >
-          Nouveau post
+          Nouvelle note
         </button>
       </div>
     )
+  }
+
+  const forme = formes.find((f) => f.id === actif) ?? formes[0]
+
+  const ecrireFormes = (suite: Forme[]) => majPost(post.id, { formes: suite })
+
+  /** Écrit le contenu d'une seule forme, sans toucher aux autres. */
+  const majForme = (id: string, patch: Partial<Forme>) =>
+    ecrireFormes(formes.map((f) => (f.id === id ? { ...f, ...patch } : f)))
+
+  const ajouter = (t: TypeForme) => {
+    const f = nouvelleForme(formes, t, t === 'carte' ? { carte: carteInitiale(titreDe(post)) } : {})
+    ecrireFormes([...formes, f])
+    setActif(f.id)
+    setAjout(false)
+  }
+
+  const retirer = (id: string) => {
+    // il reste toujours une forme : une note sans rien où écrire n'existe pas
+    if (formes.length <= 1) return
+    const suite = formes.filter((f) => f.id !== id)
+    ecrireFormes(suite)
+    if (actif === id) setActif(suite[0].id)
   }
 
   const importer = async (f: File | undefined) => {
@@ -107,63 +162,88 @@ export function PostEditor() {
     }
   }
 
-  const presentes = FORMES.filter(
-    (f) => f.id === 'texte' || (f.id === 'carte' ? post.carte : post.dessin),
-  )
-  const absentes = FORMES.filter((f) => !presentes.includes(f))
-
-  const ouvrirForme = (f: Mode) => {
-    // la carte naît du titre du post : on ne repart jamais d'une page blanche
-    if (f === 'carte' && !post.carte?.length) {
-      majPost(post.id, { carte: carteInitiale(titreDe(post)) })
-    }
-    if (f === 'dessin' && !post.dessin) majPost(post.id, { dessin: [] })
-    setMode(f)
-    setChoixForme(false)
-  }
-
   return (
     <div className="post">
-      <div className="post__bar">
-        <div className="seg" role="group" aria-label="Forme">
-          {presentes.map((f) => (
+      {/* ── première ligne : la note ── */}
+      <div className="note__tete">
+        <button className="note__retour" onClick={() => select(null)}>
+          <IconBack size={17} />
+          <span>Retour</span>
+        </button>
+
+        <input
+          className="note__titre"
+          value={post.titre}
+          placeholder={titreDe(post)}
+          onChange={(e) => majPost(post.id, { titre: e.target.value })}
+          aria-label="Titre de la note"
+        />
+
+        <button
+          className="note__suppr"
+          onClick={() => setASupprimer(true)}
+          aria-label="Supprimer la note"
+        >
+          <IconTrash size={16} />
+          <span>Supprimer la note</span>
+        </button>
+      </div>
+
+      {/* ── deuxième ligne : les formes ── */}
+      <div className="note__onglets" role="tablist" aria-label="Formes de la note">
+        {formes.map((f) =>
+          renomme === f.id ? (
+            /* ENTRÉE VALIDE DIRECTEMENT, sans passer par le `blur`.
+               Le premier jet appelait `blur()` sur Entrée et laissait le
+               gestionnaire de sortie faire le travail : une saisie dont
+               la validation dépend d'un événement de focus se perd dès
+               que le focus n'a pas été posé là où on croyait — ce qui
+               arrive plus souvent qu'on ne pense au doigt. Le `blur`
+               reste, en second chemin. */
+            <RenommerOnglet
+              key={f.id}
+              nom={f.nom}
+              valider={(nom) => {
+                majForme(f.id, { nom: nom.trim() || LIBELLES[f.t] })
+                setRenomme(null)
+              }}
+              annuler={() => setRenomme(null)}
+            />
+          ) : (
             <button
               key={f.id}
-              className="seg__item"
-              aria-current={mode === f.id}
-              onClick={() => setMode(f.id)}
+              className="onglet"
+              role="tab"
+              aria-selected={forme?.id === f.id}
+              /* Un deuxième appui sur l'onglet COURANT le renomme. Ni
+                 double-clic — introuvable au doigt — ni menu : le geste
+                 est le même que pour renommer un fichier partout
+                 ailleurs, et il ne coûte aucun bouton. */
+              onClick={() => (forme?.id === f.id ? setRenomme(f.id) : setActif(f.id))}
             >
-              {f.libelle}
+              {f.nom}
+              {formes.length > 1 && forme?.id === f.id && (
+                <span
+                  className="onglet__fermer"
+                  role="button"
+                  aria-label={`Retirer ${f.nom}`}
+                  onPointerDown={(e) => {
+                    e.stopPropagation()
+                    retirer(f.id)
+                  }}
+                >
+                  <IconClose size={12} />
+                </span>
+              )}
             </button>
-          ))}
-          {absentes.length > 0 && (
-            <button
-              className="seg__item seg__item--plus"
-              aria-label="Ajouter une forme"
-              onClick={() => setChoixForme(true)}
-            >
-              <IconPlus size={14} />
-            </button>
-          )}
-        </div>
-
-        {mode === 'carte' && <span className="post__nom">{titreDe(post)}</span>}
-
-        <div style={{ flex: 1 }} />
-
-        {mode === 'texte' && !cover && (
-          <button className="btn btn--ghost" onClick={() => fichier.current?.click()} disabled={envoi}>
-            <IconImage size={16} />
-            {envoi ? 'Import…' : 'Image'}
-          </button>
+          ),
         )}
-        <button
-          className="btn btn--icon btn--danger"
-          onClick={() => setASupprimer(true)}
-          aria-label="Supprimer ce post"
-        >
-          <IconTrash size={17} />
+
+        <button className="onglet onglet--plus" onClick={() => setAjout(true)} aria-label="Ajouter une forme">
+          <IconPlus size={15} />
         </button>
+
+        <span className="note__onglets-fin" aria-hidden="true" />
       </div>
 
       <input
@@ -177,13 +257,22 @@ export function PostEditor() {
         }}
       />
 
-      {mode === 'carte' ? (
-        <MindMap post={post} />
-      ) : mode === 'dessin' ? (
-        <Dessin post={post} />
+      {forme?.t === 'carte' ? (
+        <MindMap
+          carte={forme.carte ?? []}
+          titre={titreDe(post)}
+          ecrire={(carte) => majForme(forme.id, { carte })}
+        />
+      ) : forme?.t === 'dessin' ? (
+        <Dessin
+          traits={forme.dessin ?? []}
+          papier={forme.papier ?? 'points'}
+          ecrire={(dessin) => majForme(forme.id, { dessin })}
+          setPapier={(papier) => majForme(forme.id, { papier })}
+        />
       ) : (
         <div className="scroll">
-          <article className="editor" key={post.id}>
+          <article className="editor" key={forme?.id}>
             {cover && (
               <div className="editor__cover">
                 <img src={cover} alt="" />
@@ -209,15 +298,12 @@ export function PostEditor() {
               </div>
             )}
 
-            <input
-              className="editor__titre"
-              value={post.titre}
-              placeholder="Titre"
-              onChange={(e) => majPost(post.id, { titre: e.target.value })}
-              aria-label="Titre du post"
-            />
-
-            <Editeur post={post} />
+            {forme && (
+              <Editeur
+                blocs={forme.blocs ?? []}
+                ecrire={(blocs) => majForme(forme.id, { blocs })}
+              />
+            )}
 
             <div className="editor__section">
               <div className="eyebrow">Espace</div>
@@ -239,35 +325,41 @@ export function PostEditor() {
             </div>
 
             <div className="editor__meta">
+              {!cover && (
+                <button className="editor__ajoutCover" onClick={() => fichier.current?.click()} disabled={envoi}>
+                  <IconImage size={14} />
+                  {envoi ? 'Import…' : 'Image de couverture'}
+                </button>
+              )}
               Créé {libelleJour(post.createdAt).toLowerCase()} à {libelleHeure(post.createdAt)}
               {post.updatedAt - post.createdAt > 60_000 &&
                 ` · modifié à ${libelleHeure(post.updatedAt)}`}
-              {post.carte && ` · ${post.carte.length} nœud${post.carte.length > 1 ? 's' : ''}`}
             </div>
           </article>
         </div>
       )}
 
-      {choixForme && (
-        <div className="sheet" role="dialog" onClick={() => setChoixForme(false)}>
+      {ajout && (
+        <div className="sheet" role="dialog" onClick={() => setAjout(false)}>
           <div className="sheet__panel rise" onClick={(e) => e.stopPropagation()}>
             <div className="menu__section">Ajouter une forme</div>
             <div className="menu">
-              {absentes.map((f) => (
-                <button key={f.id} className="menu__item" onClick={() => ouvrirForme(f.id)}>
+              {AJOUTS.map((a) => (
+                <button key={a.t} className="menu__item" onClick={() => ajouter(a.t)}>
                   <span className="menu__icone">
-                    <f.icone size={17} />
+                    <a.icone size={17} />
                   </span>
                   <span className="menu__corps">
-                    <span className="menu__nom">{f.libelle}</span>
-                    <span className="menu__quoi">{f.quoi}</span>
+                    <span className="menu__nom">{LIBELLES[a.t]}</span>
+                    <span className="menu__quoi">{a.quoi}</span>
                   </span>
-                  <span className="menu__indice">{f.indice}</span>
                 </button>
               ))}
             </div>
             <p className="menu__pied">
-              La même idée, travaillée autrement. Rien ne remplace rien : les formes s'ajoutent.
+              La même idée, travaillée autrement. On peut en ajouter plusieurs du même type — deux
+              cartes pour deux angles, une fiche par chapitre. Appuyer deux fois sur un onglet le
+              renomme.
             </p>
           </div>
         </div>
@@ -275,11 +367,12 @@ export function PostEditor() {
 
       {aSupprimer && (
         <Confirmation
-          titre="Supprimer ce post ?"
+          titre="Supprimer cette note ?"
           detail={
             <>
-              <strong>{titreDe(post)}</strong> — le texte, l'image, la carte et le dessin partent
-              avec lui, sur tous tes appareils. C'est le seul geste qu'Atlas ne sait pas défaire.
+              <strong>{titreDe(post)}</strong> — ses {formes.length} forme
+              {formes.length > 1 ? 's' : ''}, son image et son contenu partent avec elle, sur tous
+              tes appareils. C'est le seul geste qu'Atlas ne sait pas défaire.
             </>
           }
           action="Supprimer"
@@ -294,3 +387,43 @@ export function PostEditor() {
   )
 }
 
+/* Le champ de renommage d’un onglet.
+
+   Son état est LOCAL : on n’écrit dans la note qu’une fois, à la
+   validation. Écrire à chaque touche renommerait la forme lettre par
+   lettre — et une note synchronisée enverrait autant de versions. */
+function RenommerOnglet({
+  nom,
+  valider,
+  annuler,
+}: {
+  nom: string
+  valider: (n: string) => void
+  annuler: () => void
+}) {
+  const [v, setV] = useState(nom)
+  const ref = useRef<HTMLInputElement>(null)
+
+  useEffect(() => {
+    ref.current?.focus()
+    ref.current?.select()
+  }, [])
+
+  return (
+    <input
+      ref={ref}
+      className="onglet onglet--saisie"
+      value={v}
+      onChange={(e) => setV(e.target.value)}
+      onBlur={() => valider(v)}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault()
+          valider(v)
+        }
+        if (e.key === 'Escape') annuler()
+      }}
+      aria-label={`Renommer ${nom}`}
+    />
+  )
+}

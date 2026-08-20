@@ -2,6 +2,7 @@ import { create } from 'zustand'
 import { useAtlas, viderLesAttentes, type Espace, type Post } from './atlas'
 import { db } from './db'
 import type { Dorsale } from './dorsale'
+import { imagesDuPost } from './formes'
 
 /* ---------------------------------------------------------------
    Le moteur de synchronisation.
@@ -158,9 +159,22 @@ export const useSync = create<SyncStore>((set, get) => ({
 
 /* ================= images ================= */
 
-/** Toutes les images référencées par le contenu visible. */
+/**
+ * Toutes les images référencées par le contenu visible.
+ *
+ * COUVERTURES ET CONTENU, sans distinction. Cette fonction ne
+ * regardait que `coverId` et l'image d'espace : tout ce qu'on posait
+ * DANS une note — image de fiche, planche, colonne visuelle d'une
+ * table — restait sur l'appareil qui l'avait importée et n'arrivait
+ * jamais sur les autres. La note s'y ouvrait avec des cadres vides,
+ * sans que rien ne signale la perte.
+ *
+ * `imagesDuPost` est le seul endroit qui sait où se cachent les
+ * images d'une note ; ajouter une forme qui en accepte se règle donc
+ * là-bas, et jamais ici.
+ */
 function imagesReferencees(posts: Post[], espaces: Espace[]) {
-  return [...posts.map((p) => p.coverId), ...espaces.map((e) => e.imageId)].filter(
+  return [...posts.flatMap(imagesDuPost), ...espaces.map((e) => e.imageId)].filter(
     (v): v is string => Boolean(v),
   )
 }

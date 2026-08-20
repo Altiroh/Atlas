@@ -9,7 +9,6 @@ import { SettingsPanel } from '../screens/SettingsPanel'
 import { Bonjour } from '../ui/Bonjour'
 import { useEtatProfil } from '../ui/BoutonProfil'
 import {
-  IconBack,
   IconBolt,
   IconEspaces,
   IconFlux,
@@ -48,10 +47,7 @@ export function CompactShell() {
   const enDetail = nav === 'flux' && selectedId !== null
 
   return (
-    <div className="shell-compact" data-bande={nav === 'flux'}>
-      {/* Une ligne entière de barre de titre pour un mot, c'est de la place
-          perdue. Le titre devient une pastille posée dans la zone de
-          l'encoche : le contenu remonte, et le nom reste lisible. */}
+    <div className="shell-compact" data-bande={nav === 'flux' && !enDetail}>
       {/* La pastille de titre a été retirée. Elle répétait ce que la barre
           d'onglets dit déjà — celui qui est en surbrillance EST l'écran
           courant — et elle coûtait quarante pixels de haut sur chaque
@@ -59,11 +55,10 @@ export function CompactShell() {
           vraiment quelque chose : le bonjour, ou le retour. */}
       {nav === 'flux' && !enDetail && <Bonjour variante="encoche" />}
 
-      {enDetail && (
-        <button className="retour glass" onClick={() => select(null)} aria-label="Retour">
-          <IconBack size={18} />
-        </button>
-      )}
+      {/* Le bouton de retour flottant a disparu : l'en-tête de la note
+          porte le sien, avec son libellé, sur la même ligne que le
+          titre et la suppression. Deux retours à l'écran, dont un
+          muet, c'était un de trop. */}
 
       <main className="pane">
         {nav === 'capture' && <CaptureScreen />}

@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react'
-import { useAtlas, type Outil, type Papier, type Post, type Trait } from '../store/atlas'
+import type { Outil, Papier, Trait } from '../store/atlas'
 import { IconRestore, IconTrash } from '../ui/Icon'
 import { BarreCanevas, OutilCanevas, SeparateurCanevas, TiroirCanevas } from '../ui/BarreCanevas'
 
@@ -147,10 +147,22 @@ function IconPapier({ size = 18 }: { size?: number }) {
   )
 }
 
-export function Dessin({ post }: { post: Post }) {
-  const majPost = useAtlas((s) => s.majPost)
-  const traits = post.dessin ?? []
-  const papier = post.papier ?? 'points'
+/**
+ * Le dessin reçoit ses traits et rend ses modifications : il ne
+ * connaît ni le post ni le magasin. Deux dessins peuvent donc vivre
+ * dans la même note sans se marcher dessus.
+ */
+export function Dessin({
+  traits,
+  papier,
+  ecrire,
+  setPapier,
+}: {
+  traits: Trait[]
+  papier: Papier
+  ecrire: (t: Trait[]) => void
+  setPapier: (p: Papier) => void
+}) {
 
   const surface = useRef<SVGSVGElement>(null)
   const enCours = useRef<Trait | null>(null)
@@ -160,8 +172,6 @@ export function Dessin({ post }: { post: Post }) {
   const [epaisseur, setEpaisseur] = useState(EPAISSEURS[1])
   const [outil, setOutil] = useState<Outil>('plume')
   const [gomme, setGomme] = useState(false)
-
-  const ecrire = (t: Trait[]) => majPost(post.id, { dessin: t })
 
   /** Coordonnées du cadre fixe, quelle que soit la taille affichée. */
   const point = (e: React.PointerEvent): [number, number] => {
@@ -348,7 +358,7 @@ export function Dessin({ post }: { post: Post }) {
                 titre={p.libelle}
                 actif={papier === p.id}
                 onClick={() => {
-                  majPost(post.id, { papier: p.id })
+                  setPapier(p.id)
                   fermer()
                 }}
               >
@@ -383,14 +393,14 @@ export function Dessin({ post }: { post: Post }) {
           onPointerCancel={up}
         >
           <defs>
-            <pattern id="pap-points" width="25" height="25" patternUnits="userSpaceOnUse">
-              <circle className="pap-marque" cx="1" cy="1" r="1.4" />
+            <pattern id="pap-points" width="32" height="32" patternUnits="userSpaceOnUse">
+              <circle className="pap-marque" cx="2" cy="2" r="2.6" />
             </pattern>
-            <pattern id="pap-grille" width="25" height="25" patternUnits="userSpaceOnUse">
-              <path className="pap-ligne" d="M 25 0 L 0 0 0 25" />
+            <pattern id="pap-grille" width="40" height="40" patternUnits="userSpaceOnUse">
+              <path className="pap-ligne" d="M 40 0 L 0 0 0 40" />
             </pattern>
-            <pattern id="pap-lignes" width="25" height="32" patternUnits="userSpaceOnUse">
-              <path className="pap-ligne" d="M 0 32 L 25 32" />
+            <pattern id="pap-lignes" width="25" height="44" patternUnits="userSpaceOnUse">
+              <path className="pap-ligne" d="M 0 44 L 25 44" />
             </pattern>
           </defs>
 

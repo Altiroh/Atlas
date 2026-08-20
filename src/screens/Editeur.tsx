@@ -8,12 +8,9 @@ import {
   type KeyboardEvent,
 } from 'react'
 import { createPortal } from 'react-dom'
-import type { Post } from '../store/atlas'
-import { useAtlas } from '../store/atlas'
 import {
   CATALOGUE,
   decrire,
-  depuisTexte,
   estTextuel,
   HORS_COLONNE,
   idBloc,
@@ -203,23 +200,15 @@ function dansUneColonne(blocs: Bloc[], id: string): boolean {
 
 /* ================= le composant ================= */
 
-export function Editeur({ post }: { post: Post }) {
-  const majPost = useAtlas((s) => s.majPost)
+export function Editeur({ blocs, ecrire: poser }: { blocs: Bloc[]; ecrire: (b: Bloc[]) => void }) {
   const conteneur = useRef<HTMLDivElement>(null)
 
-  /* La reprise des notes écrites AVANT les blocs. Elle se fait à
-     l'ouverture, une fois, et se réenregistre : on ne relit jamais un
-     champ de texte deux fois de la même note. */
-  const secours = useMemo(
-    () => (post.blocs ? null : depuisTexte(post.texte)),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [post.id],
-  )
-  const blocs = post.blocs ?? secours ?? []
-
-  useEffect(() => {
-    if (!post.blocs && secours) majPost(post.id, { blocs: secours })
-  }, [post.id, post.blocs, secours, majPost])
+  /* Le contenu vient du PARENT, qui sait dans quelle forme il vit.
+     L'éditeur ne connaît plus ni le post ni le magasin : il reçoit des
+     blocs, il en rend d'autres. C'est ce qui permet d'en poser deux
+     dans la même note sans qu'ils se marchent dessus. */
+  const frais = useRef(blocs)
+  frais.current = blocs
 
   /* ÉCRIRE PREND UNE FONCTION, et relit l'état au moment de l'appel.
      C'est le détail qui rend les gestes composables : « couper le
@@ -228,11 +217,11 @@ export function Editeur({ post }: { post: Post }) {
      second effacerait purement et simplement le premier. */
   const ecrire = useCallback(
     (transformation: (actuels: Bloc[]) => Bloc[]) => {
-      const magasin = useAtlas.getState()
-      const frais = magasin.posts.find((p) => p.id === post.id)?.blocs ?? secours ?? []
-      magasin.majPost(post.id, { blocs: jamaisVide(transformation(frais)) })
+      const suite = jamaisVide(transformation(frais.current))
+      frais.current = suite
+      poser(suite)
     },
-    [post.id, secours],
+    [poser],
   )
 
   const [cible, setCible] = useState<Cible>(null)

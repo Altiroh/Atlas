@@ -1,0 +1,237 @@
+/* ========================================================
+   L'EN-TÊTE D'UNE NOTE — deux lignes, deux sujets.
+
+   · La PREMIÈRE parle de la note : d'où l'on vient, comment
+     elle s'appelle, et le seul geste qu'Atlas ne sait pas
+     défaire. Elle ne bouge jamais.
+   · La SECONDE parle de ses formes. Elle défile
+     horizontalement : une note peut en porter dix, et on ne
+     va pas rétrécir les noms jusqu'à l'illisible pour les
+     faire tenir.
+
+   Les mélanger — ce qu'on faisait — obligeait à choisir entre
+   le titre et les onglets dès qu'il y avait plus de trois
+   formes.
+   ======================================================== */
+
+.note__tete {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: none;
+  padding: 10px 14px 8px;
+}
+
+.note__retour {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  flex: none;
+  height: 34px;
+  padding: 0 11px 0 8px;
+  border-radius: var(--r-sm);
+  color: var(--text-2);
+  font-size: 13.5px;
+  font-weight: 520;
+  transition:
+    background var(--fast) var(--ease),
+    color var(--fast) var(--ease);
+}
+.note__retour:hover {
+  background: var(--surface-sunken);
+  color: var(--text);
+}
+
+/* Le titre EST un champ, sans en avoir l'air : le cadre n'apparaît
+   qu'au survol. Un titre qui se donne des airs de formulaire invite à
+   le remplir avant d'écrire — or il se déduit très bien de la
+   première ligne, et c'est le comportement voulu. */
+.note__titre {
+  flex: 1;
+  min-width: 0;
+  height: 34px;
+  padding: 0 9px;
+  border: 1px solid transparent;
+  border-radius: var(--r-sm);
+  background: none;
+  color: var(--text);
+  font: inherit;
+  font-size: 15px;
+  font-weight: 570;
+  letter-spacing: -0.014em;
+  text-overflow: ellipsis;
+  transition: border-color var(--fast) var(--ease);
+}
+.note__titre::placeholder {
+  color: var(--text-2);
+  font-weight: 540;
+}
+.note__titre:hover {
+  border-color: var(--border);
+}
+.note__titre:focus {
+  outline: none;
+  border-color: var(--accent-line);
+}
+
+.note__suppr {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex: none;
+  height: 34px;
+  padding: 0 12px;
+  border-radius: var(--r-sm);
+  color: var(--text-3);
+  font-size: 13px;
+  font-weight: 500;
+  transition:
+    background var(--fast) var(--ease),
+    color var(--fast) var(--ease);
+}
+.note__suppr:hover {
+  background: hsl(2 74% 50% / 0.1);
+  color: hsl(2 74% 46%);
+}
+:root[data-theme='dark'] .note__suppr:hover {
+  color: hsl(2 92% 70%);
+}
+
+/* ---------- les onglets ---------- */
+
+.note__onglets {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  flex: none;
+  padding: 0 14px 8px;
+  /* IL DÉFILE, et sans barre visible : c'est une rangée d'onglets, pas
+     une zone de contenu. `pan-x` garde le geste horizontal au doigt
+     tout en laissant le défilement vertical de la page tranquille. */
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: none;
+  touch-action: pan-x;
+  overscroll-behavior-x: contain;
+  border-bottom: 1px solid var(--border);
+}
+.note__onglets::-webkit-scrollbar {
+  display: none;
+}
+
+/* Une butée en fin de rangée : sans elle, le dernier onglet colle au
+   bord et on ne voit pas qu'il y en avait d'autres. */
+.note__onglets-fin {
+  flex: none;
+  width: 6px;
+}
+
+.onglet {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex: none;
+  height: 32px;
+  padding: 0 12px;
+  border-radius: var(--r-sm) var(--r-sm) 0 0;
+  color: var(--text-3);
+  font-size: 13.5px;
+  font-weight: 520;
+  white-space: nowrap;
+  transition:
+    background var(--fast) var(--ease),
+    color var(--fast) var(--ease);
+}
+.onglet:hover {
+  color: var(--text-2);
+  background: var(--surface-sunken);
+}
+
+/* L'onglet courant porte un filet d'accent SOUS lui, qui mord sur la
+   ligne de séparation : c'est ce chevauchement d'un pixel qui le
+   rattache au contenu au lieu de le poser dessus. */
+.onglet[aria-selected='true'] {
+  color: var(--text);
+  background: var(--surface-sunken);
+  box-shadow: inset 0 -2px 0 var(--accent);
+}
+
+.onglet__fermer {
+  display: grid;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  margin-right: -4px;
+  border-radius: 50%;
+  color: var(--text-3);
+}
+.onglet__fermer:hover {
+  background: var(--border);
+  color: var(--text);
+}
+
+.onglet--saisie {
+  border: 1px solid var(--accent-line);
+  border-radius: var(--r-sm);
+  background: var(--surface-solid);
+  color: var(--text);
+  font: inherit;
+  font-size: 13.5px;
+  font-weight: 520;
+  width: 9.5em;
+  padding: 0 10px;
+}
+.onglet--saisie:focus {
+  outline: none;
+}
+
+.onglet--plus {
+  padding: 0 10px;
+  color: var(--text-3);
+}
+
+/* ---------- l'image de couverture, reléguée ---------- */
+
+/* Elle était un bouton de la barre d'outils, à côté de la suppression.
+   C'est une décoration qu'on pose une fois : elle descend au pied de
+   la fiche, avec la date. */
+.editor__ajoutCover {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-right: 10px;
+  padding: 3px 9px;
+  border-radius: var(--r-xs);
+  border: 1px dashed var(--border-strong);
+  color: var(--text-3);
+  font-size: 11.5px;
+  transition: color var(--fast) var(--ease), border-color var(--fast) var(--ease);
+}
+.editor__ajoutCover:hover {
+  color: var(--text-2);
+  border-color: var(--text-3);
+}
+
+@media (pointer: coarse), (max-width: 700px) {
+  .note__tete {
+    padding: 8px 10px 6px;
+    gap: 6px;
+  }
+  .note__retour,
+  .note__titre,
+  .note__suppr {
+    height: 40px;
+  }
+  /* le texte du bouton de suppression ne tient pas à côté du titre sur
+     un téléphone : l'icône reste, et le libellé passe à l'aria */
+  .note__suppr span {
+    display: none;
+  }
+  .note__suppr {
+    padding: 0 10px;
+  }
+  .onglet {
+    height: 38px;
+    font-size: 14px;
+  }
+}

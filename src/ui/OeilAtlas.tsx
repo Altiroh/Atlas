@@ -46,7 +46,7 @@ const STRIES = Array.from({ length: 22 }, (_, i) => {
    est ENGENDRÉE le long d'une spirale, et son épaisseur suit un profil
    qui s'annule aux deux bouts. C'est ce qui leur donne une pointe qui
    s'enroule au lieu d'un bout coupé net, et ce qui permet d'en poser
-   onze toutes différentes sans en dessiner onze.
+   treize toutes différentes sans en dessiner treize.
 
    Le rendu vient d'une seule chose : ELLES NE BATTENT PAS ENSEMBLE.
    Chacune a sa durée et son retard, aucun n'est multiple d'un autre,
@@ -55,98 +55,118 @@ const STRIES = Array.from({ length: 22 }, (_, i) => {
 
    Rien n'est animé que `transform` et `opacity`, comme partout. */
 
-/* Le cadre passe à 160 pour que la couronne tienne DEDANS.
+/* Le cadre fait 180 pour que la couronne tienne DEDANS.
 
    L'œil mesure 100 unités et n'en cède aucune : c'est lui qu'on
    reconnaît. Il reste donc à 100, centré, et c'est le cadre qui
-   s'élargit — 30 unités de marge tout autour, soit exactement ce qu'il
-   faut aux langues les plus longues, échelle du frémissement comprise.
-   Un cadre trop juste ne raccourcit pas les flammes : il les COUPE,
-   et une flamme coupée net cesse d'être une flamme. */
-const CADRE = 160
+   s'élargit — 40 unités de marge tout autour, soit ce qu'il faut aux
+   langues les plus longues, échelle du frémissement comprise (elles
+   grossissent de 6 %, ce qui reprend cinq unités à la marge).
+
+   Un cadre trop juste ne raccourcit pas les flammes : il les COUPE.
+   Et une pointe qui disparaît au rythme d'une animation se remarque
+   bien davantage qu'une flamme un peu plus courte. */
+const CADRE = 180
 const CENTRE = CADRE / 2
 
 /**
  * Une langue de flamme, en un chemin fermé.
  *
- * `a0` l'angle de départ · `r0`→`r1` sa portée depuis le centre ·
- * `courbure` de combien la pointe s'enroule · `largeur` son épaisseur
- * maximale, atteinte au tiers de sa longueur.
+ * `a0` où elle naît sur le pourtour du globe · `rBase` à quelle
+ * profondeur sous lui · `longueur` son développé · `virage` de combien
+ * sa pointe s'enroule · `inclinaison` son écart au départ · `largeur`
+ * son épaisseur maximale.
+ *
+ * ── LA COURBE EST INTÉGRÉE, PAS PARAMÉTRÉE EN POLAIRE.
+ *
+ * Trois essais en coordonnées polaires autour du centre de l'œil ont
+ * donné, dans l'ordre : une orbite, une turbine, puis un anneau plein.
+ * La raison est géométrique et vaut d'être retenue : dans ce repère,
+ * faire tourner la pointe la fait tourner À GRAND RAYON — elle balaie
+ * un arc immense au lieu de s'enrouler sur elle-même. Un crochet serré
+ * y est tout simplement inexprimable.
+ *
+ * Ici on suit une DIRECTION qui pivote de plus en plus (θ = θ₀ + k·t²)
+ * et on avance pas à pas dans cette direction. La langue part donc
+ * droit, puis s'enroule en spirale d'un rayon qui vaut sa longueur
+ * divisée par son virage — c'est-à-dire petit. C'est exactement le
+ * geste d'une flamme qui lèche.
  */
 function langue(
   a0: number,
-  r0: number,
-  r1: number,
-  courbure: number,
+  rBase: number,
+  longueur: number,
+  virage: number,
+  inclinaison: number,
   largeur: number,
-  n = 24,
+  n = 44,
 ): string {
-  const p = (t: number): [number, number] => {
-    /* Le rayon d'abord, l'angle ensuite — et c'est TOUT le dessin.
+  // le pied, caché sous le globe : une flamme sort du feu, pas d'à côté
+  let x = CENTRE + Math.cos(a0) * rBase
+  let y = CENTRE + Math.sin(a0) * rBase
 
-       Une première version faisait croître les deux en même temps : la
-       langue s'enroulait dès sa base et contournait le globe, donnant
-       une orbite, puis une turbine. Une flamme fait l'inverse — elle
-       PART DROIT, et seule sa pointe s'enroule. D'où l'exposant 3 sur
-       l'angle : au deux tiers du parcours, la langue n'a tourné que de
-       quatre degrés ; tout le crochet tient dans le dernier tiers. */
-    const r = r0 + (r1 - r0) * Math.pow(t, 0.8)
-    const a = a0 + courbure * Math.pow(t, 3)
-    return [CENTRE + Math.cos(a) * r, CENTRE + Math.sin(a) * r]
+  const axe: [number, number][] = []
+  const pas = longueur / n
+  for (let i = 0; i <= n; i++) {
+    axe.push([x, y])
+    const t = i / n
+    const theta = a0 + inclinaison + virage * t * t
+    x += Math.cos(theta) * pas
+    y += Math.sin(theta) * pas
   }
 
   const gauche: [number, number][] = []
   const droite: [number, number][] = []
-
   for (let i = 0; i <= n; i++) {
     const t = i / n
-    const [x, y] = p(t)
-    const [xa, ya] = p(Math.max(0, t - 0.012))
-    const [xb, yb] = p(Math.min(1, t + 0.012))
+    const [xa, ya] = axe[Math.max(0, i - 1)]
+    const [xb, yb] = axe[Math.min(n, i + 1)]
     const L = Math.hypot(xb - xa, yb - ya) || 1
     // la normale : c'est elle qui donne son épaisseur au chemin
     const nx = -(yb - ya) / L
     const ny = (xb - xa) / L
-    /* Profil d'épaisseur : nulle aux deux bouts, maximale au milieu.
-       Une langue pincée aux deux extrémités ressemble à une flamme ;
-       une langue large dès sa base ressemble à un pétale — et onze
-       pétales larges se rejoignent en un anneau plein. La puissance
-       0,75 retient la largeur un peu plus longtemps qu'un sinus nu. */
-    const w = largeur * Math.pow(Math.sin(Math.PI * t), 0.75)
-    gauche.push([x + nx * w, y + ny * w])
-    droite.push([x - nx * w, y - ny * w])
+    /* Épaisse au pied, effilée à la pointe — et jamais nulle au départ,
+       puisque le départ est caché. Une langue large jusqu'au bout
+       ressemble à un pétale ; treize pétales font un anneau. */
+    const w = largeur * Math.pow(Math.sin(Math.PI * (0.12 + 0.88 * t)), 0.5) * (1 - 0.55 * t)
+    gauche.push([axe[i][0] + nx * w, axe[i][1] + ny * w])
+    droite.push([axe[i][0] - nx * w, axe[i][1] - ny * w])
   }
 
   const pts = [...gauche, ...droite.reverse()]
-  return `M${pts.map(([x, y]) => `${x.toFixed(1)} ${y.toFixed(1)}`).join('L')}Z`
+  return `M${pts.map(([px, py]) => `${px.toFixed(1)} ${py.toFixed(1)}`).join('L')}Z`
 }
 
 const TAU = Math.PI * 2
 
-/* Onze langues, trois tons, aucune période commune. Les paramètres
+/* Treize langues, trois tons, aucune période commune. Les paramètres
    sont dérivés de l'indice plutôt que tirés au hasard : le dessin doit
    être le même d'un rendu à l'autre. */
-const LANGUES = Array.from({ length: 11 }, (_, i) => ({
-  d: langue(
-    /* L'écart n'alterne PAS d'une langue à l'autre : un décalage
-       alterné sur onze éléments les regroupe deux par deux, et la
-       couronne se lit alors comme cinq touffes. Le reste d'une
-       multiplication irrationnelle décale sans jamais rimer. */
-    (i / 11) * TAU + (((i * 0.37) % 1) - 0.5) * 0.14,
-    // elles naissent SOUS le globe (rayon 45), jamais à côté de lui
-    40 + ((i * 3) % 3) * 1.5,
-    /* La plus longue s'arrête à 75, pas à 80. Le frémissement va
-       jusqu'à 3,5 % d'échelle : une langue tangente au cadre au repos
-       se ferait couper une fois sur deux, et rien ne trahit plus un
-       dessin qu'une pointe qui disparaît au rythme d'une animation. */
-    68 + ((i * 7) % 5) * 1.8,
-    (i % 3 === 0 ? -1 : 1) * (0.55 + ((i * 5) % 4) * 0.13),
-    6.4 + ((i * 5) % 4) * 1.05,
-  ),
-  ton: i % 3,
-  duree: 3.4 + ((i * 7) % 6) * 0.53,
-  retard: ((i * 13) % 11) * 0.31,
-}))
+const LANGUES = Array.from({ length: 13 }, (_, i) => {
+  /* Le sens du crochet suit un cycle de 3 sur 13 éléments : il ne se
+     répète donc jamais deux tours de suite au même endroit. Un sens
+     qui alterne simplement donne une roue à aubes — l'œil y lit une
+     rotation là où il devrait lire du désordre. */
+  const sens = i % 3 === 0 ? -1 : 1
+  return {
+    d: langue(
+      /* L'écart n'alterne pas non plus : sur un nombre pair d'éléments
+         un décalage alterné les regroupe deux par deux, et la couronne
+         se lit comme des touffes. Le reste d'un produit irrationnel
+         décale sans jamais rimer. */
+      (i / 13) * TAU + (((i * 0.37) % 1) - 0.5) * 0.2,
+      // le pied, sous le globe de rayon 45
+      40,
+      40 + ((i * 7) % 5) * 5,
+      sens * (1.55 + ((i * 5) % 4) * 0.28),
+      sens * 0.5,
+      6 + ((i * 7) % 4) * 1.5,
+    ),
+    ton: i % 3,
+    duree: 2.6 + ((i * 7) % 6) * 0.43,
+    retard: ((i * 13) % 11) * 0.29,
+  }
+})
 
 /* Les braises : de petites boules détachées, en orbite lente. Elles
    font respirer le vide entre les langues — sans elles la couronne
@@ -166,11 +186,13 @@ const BRAISES = Array.from({ length: 6 }, (_, i) => {
 
 /**
  * `veille` — le balayage lent, celui de quelqu'un qui attend.
+ * `dort`   — l'œil fermé : pendant qu'on le déplace. C'est le seul
+ *            retour qui dit « je suis pris » plutôt que « touché ».
  * `cause`  — en conversation : il lit le fil, relève les yeux vers toi,
  *            retourne au fil. Et il cligne plus souvent, parce qu'un
  *            regard qui écoute n'est pas un regard qui rêve.
  */
-export type ModeRegard = 'veille' | 'cause'
+export type ModeRegard = 'veille' | 'cause' | 'dort'
 
 export const OeilAtlas = memo(function OeilAtlas({
   size = 74,
@@ -190,11 +212,11 @@ export const OeilAtlas = memo(function OeilAtlas({
      s'élargit — jamais l'œil ne rétrécit pour lui faire de la place.
      C'est ce qui permet de poser `flux` sur un composant déjà en place
      sans reprendre un seul appelant. */
-  const cote = avecFlux ? size * 1.6 : size
+  const cote = avecFlux ? size * 1.8 : size
 
   return (
     <svg
-      className={`oeil${mode === 'cause' ? ' oeil--cause' : ''}`}
+      className={`oeil oeil--${mode}`}
       width={cote}
       height={cote}
       viewBox={avecFlux ? `0 0 ${CADRE} ${CADRE}` : '0 0 100 100'}

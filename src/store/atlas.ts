@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import { db, oublierImage } from './db'
 import { versTexte, type Bloc } from './blocs'
+import { normaliserFormes, texteDesFormes, type Forme } from './formes'
 
 /* ---------------------------------------------------------------
    État applicatif — persisté (jalon 2) et synchronisable (jalon 3).
@@ -78,7 +79,20 @@ export type Post = Synchronisable & {
    * simple chaîne, sans rien connaître des blocs.
    */
   texte: string
-  /** le contenu réel — null pour une note écrite avant les blocs */
+  /**
+   * LES FORMES DE LA NOTE — fiches, cartes, dessins, en nombre libre.
+   * `null` pour une note écrite avant elles : elle est reconstruite à
+   * sa première ouverture, à partir des quatre champs qui suivent.
+   */
+  formes: Forme[] | null
+
+  /* --- ancien modèle, LU MAIS PLUS ÉCRIT ---
+     Ces quatre champs servent uniquement à reconstruire `formes`, une
+     fois par note, à sa première ouverture. Les garder coûte quelques
+     octets ; les effacer d'un coup sur toute la base coûterait
+     potentiellement tout, et une note qu'on n'ouvre jamais n'a aucune
+     raison d'être réécrite. */
+  /** @deprecated repris dans la première fiche de `formes` */
   blocs: Bloc[] | null
   espaceId: string | null
   coverId: string | null
@@ -110,6 +124,7 @@ function normaliserPost(p: Partial<Post> & { id: string }): Post {
     id: p.id,
     titre: p.titre ?? '',
     texte: p.texte ?? '',
+    formes: normaliserFormes(p.formes),
     blocs: p.blocs ?? null,
     espaceId: p.espaceId ?? null,
     coverId: p.coverId ?? null,
@@ -323,11 +338,14 @@ export const useAtlas = create<AtlasStore>((set, get) => ({
       posts: s.posts.map((p) => {
         if (p.id !== idPost) return p
         modifie = { ...p, ...patch, updatedAt: Date.now(), sale: true }
-        /* Le texte brut se REFAIT ICI, à chaque écriture des blocs, et
+        /* Le texte brut se REFAIT ICI, à chaque écriture du contenu, et
            nulle part ailleurs. C'est le seul endroit qu'on ne peut pas
            contourner — et une copie qu'on pense à rafraîchir est une
            copie qui finit par mentir. */
-        if (patch.blocs !== undefined && patch.texte === undefined) {
+        if (patch.formes !== undefined && patch.texte === undefined) {
+          modifie.texte = patch.formes ? texteDesFormes(patch.formes) : ''
+        } else if (patch.blocs !== undefined && patch.texte === undefined) {
+          // chemin d'avant les formes, gardé pour les notes non reprises
           modifie.texte = patch.blocs ? versTexte(patch.blocs) : ''
         }
         if (patch.espaceId !== undefined && p.etat !== 'archivee') {
