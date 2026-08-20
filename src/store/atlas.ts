@@ -194,8 +194,6 @@ type AtlasStore = {
   espaceActif: string | null
   query: string
   focus: boolean
-  /** forme dans laquelle ouvrir le prochain post sélectionné */
-  formeInitiale: 'texte' | 'carte' | 'dessin' | null
 
   hydrater: () => Promise<void>
   /** Vide tout le contenu local puis relit. Utilisé au changement de compte. */
@@ -206,7 +204,6 @@ type AtlasStore = {
   select: (id: string | null) => void
   setEspaceActif: (id: string | null) => void
   setQuery: (query: string) => void
-  setFormeInitiale: (f: 'texte' | 'carte' | 'dessin' | null) => void
   toggleFocus: () => void
 
   creerPost: (texte?: string, espaceId?: string | null) => string
@@ -249,7 +246,6 @@ export const useAtlas = create<AtlasStore>((set, get) => ({
   espaceActif: null,
   query: '',
   focus: false,
-  formeInitiale: null,
 
   /* NON RÉENTRANTE, et c'est un garde-fou appris à la dure : deux
      hydratations concurrentes (double montage en développement,
@@ -313,7 +309,6 @@ export const useAtlas = create<AtlasStore>((set, get) => ({
   select: (selectedId) => set({ selectedId }),
   setEspaceActif: (espaceActif) => set({ espaceActif }),
   setQuery: (query) => set({ query }),
-  setFormeInitiale: (formeInitiale) => set({ formeInitiale }),
   toggleFocus: () => set((s) => ({ focus: !s.focus })),
 
   creerPost: (texte = '', espaceId = null) => {

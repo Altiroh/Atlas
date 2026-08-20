@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { OeilAtlas } from './OeilAtlas'
 import { IconClose } from './Icon'
 
@@ -44,8 +44,61 @@ const ACCUEIL: Tour = {
 const CLE_POS = 'atlas.bulle.pos'
 /** Au-delà de ce déplacement, ce n'est plus un appui : c'est un geste. */
 const SEUIL = 6
+/** Ce qu'on lui laisse d'air, contre un bord comme contre la barre. */
+const MARGE = 6
 
 type Pos = { fx: number; fy: number }
+
+/**
+ * LA ZONE OÙ ATLAS A LE DROIT DE SE POSER, en pixels.
+ *
+ * Il pouvait atterrir SUR la barre de navigation : il y masquait un
+ * onglet, et comme il passe devant, l'onglet devenait intouchable.
+ * Un objet qu'on déplace librement doit avoir des bords ; ici les
+ * bords sont ceux du contenu, pas ceux de l'écran.
+ *
+ * On MESURE la barre au lieu de coder sa hauteur en dur : elle change
+ * avec la coquille (barre en bas sur téléphone, rail à gauche
+ * ailleurs), avec la zone sûre de l'iPhone et avec l'orientation. Une
+ * constante serait fausse dans au moins un de ces cas, et fausse en
+ * silence.
+ */
+function limites(l: number, h: number) {
+  let bas = window.innerHeight
+  let gauche = 0
+
+  const barre = document.querySelector('.tabbar')
+  if (barre) bas = Math.min(bas, barre.getBoundingClientRect().top)
+
+  const rail = document.querySelector('.rail')
+  if (rail) gauche = Math.max(gauche, rail.getBoundingClientRect().right)
+
+  const minX = gauche + MARGE
+  const minY = MARGE
+  return {
+    minX,
+    minY,
+    maxX: Math.max(minX, window.innerWidth - l - MARGE),
+    maxY: Math.max(minY, bas - h - MARGE),
+  }
+}
+
+/**
+ * Des pixels vers la fraction gardée.
+ *
+ * LA BASE EST CELLE DU RENDU, et ça n'a rien d'un détail : le style
+ * pose `left: fx%` puis `translate: -fx%`, ce qui place le coin à
+ * `fx × (largeur d'écran − largeur de la bulle)`. Convertir sur une
+ * autre base — la plage autorisée, par exemple — donnait une bulle
+ * qui se décalait légèrement toute seule entre le lâcher et le
+ * rendu suivant.
+ */
+function enFraction(x: number, y: number, l: number, h: number): Pos {
+  return {
+    fx: Math.min(1, Math.max(0, x / Math.max(1, window.innerWidth - l))),
+    fy: Math.min(1, Math.max(0, y / Math.max(1, window.innerHeight - h))),
+  }
+}
 
 function posGardee(): Pos | null {
   try {
@@ -68,6 +121,41 @@ export function BulleAtlas() {
   const [pos, setPos] = useState<Pos | null>(posGardee)
   const [porte, setPorte] = useState(false)
   const geste = useRef<{ dx: number; dy: number; bouge: boolean } | null>(null)
+  const bouton = useRef<HTMLButtonElement>(null)
+
+  /* Une position gardée AVANT cette règle — ou sur un écran d'une autre
+     forme, ou avant une rotation — peut tomber sur la barre. On la
+     ramène dans la zone permise à l'arrivée et à chaque changement de
+     taille, sinon la contrainte ne vaudrait que pour le geste en cours.
+
+     Quand rien n'a été déplacé, `pos` est nul et la position vient du
+     CSS, qui est déjà juste : la correction ne se déclenche pas et ne
+     fige donc pas une place que la coquille sait mieux choisir. */
+  useLayoutEffect(() => {
+    const ramener = () => {
+      const el = bouton.current
+      if (!el) return
+      const r = el.getBoundingClientRect()
+      const lim = limites(r.width, r.height)
+      const x = Math.min(lim.maxX, Math.max(lim.minX, r.left))
+      const y = Math.min(lim.maxY, Math.max(lim.minY, r.top))
+      if (Math.abs(x - r.left) < 0.5 && Math.abs(y - r.top) < 0.5) return
+      const corrigee = enFraction(x, y, r.width, r.height)
+      setPos(corrigee)
+      try {
+        localStorage.setItem(CLE_POS, JSON.stringify(corrigee))
+      } catch {
+        /* navigation privée : tant pis, on corrigera de nouveau au prochain lancement */
+      }
+    }
+    ramener()
+    window.addEventListener('resize', ramener)
+    window.addEventListener('orientationchange', ramener)
+    return () => {
+      window.removeEventListener('resize', ramener)
+      window.removeEventListener('orientationchange', ramener)
+    }
+  }, [])
 
   const prendre = (e: React.PointerEvent<HTMLButtonElement>) => {
     const r = e.currentTarget.getBoundingClientRect()
@@ -84,22 +172,19 @@ export function BulleAtlas() {
     const g = geste.current
     if (!g) return
     const r = e.currentTarget.getBoundingClientRect()
-    const x = e.clientX - g.dx
-    const y = e.clientY - g.dy
+    const brutX = e.clientX - g.dx
+    const brutY = e.clientY - g.dy
     if (!g.bouge) {
       // tant qu'on n'a pas franchi le seuil, ça reste un appui
-      if (Math.abs(x - r.left) < SEUIL && Math.abs(y - r.top) < SEUIL) return
+      if (Math.abs(brutX - r.left) < SEUIL && Math.abs(brutY - r.top) < SEUIL) return
       g.bouge = true
       setPorte(true)
     }
-    // on garde la bulle entière à l'écran, marges sûres comprises
-    const marge = 6
-    const maxX = window.innerWidth - r.width - marge
-    const maxY = window.innerHeight - r.height - marge
-    setPos({
-      fx: Math.min(1, Math.max(0, Math.min(maxX, Math.max(marge, x)) / (maxX || 1))),
-      fy: Math.min(1, Math.max(0, Math.min(maxY, Math.max(marge, y)) / (maxY || 1))),
-    })
+    // la bulle entière reste à l'écran, ET hors de la barre de navigation
+    const lim = limites(r.width, r.height)
+    const x = Math.min(lim.maxX, Math.max(lim.minX, brutX))
+    const y = Math.min(lim.maxY, Math.max(lim.minY, brutY))
+    setPos(enFraction(x, y, r.width, r.height))
   }
 
   const lacher = () => {
@@ -167,6 +252,7 @@ export function BulleAtlas() {
   return (
     <>
       <button
+        ref={bouton}
         className="bulle"
         style={style}
         aria-label={ouverte ? 'Fermer Atlas' : 'Parler à Atlas — maintenir pour le déplacer'}

@@ -74,8 +74,6 @@ export function PostEditor() {
   const supprimerPost = useAtlas((s) => s.supprimerPost)
   const creerPost = useAtlas((s) => s.creerPost)
   const select = useAtlas((s) => s.select)
-  const formeInitiale = useAtlas((s) => s.formeInitiale)
-  const setFormeInitiale = useAtlas((s) => s.setFormeInitiale)
 
   const post = posts.find((p) => p.id === selectedId) ?? null
   const cover = useImageUrl(post?.coverId)
@@ -99,17 +97,14 @@ export function PostEditor() {
     if (post && !post.formes && secours) majPost(post.id, { formes: secours })
   }, [post, secours, majPost])
 
-  /* Changer de note ramène à sa première forme — sauf si la capture a
-     demandé une forme précise : « En dessin » doit ouvrir sur le
-     dessin. Le vœu est consommé une fois. */
+  /* Changer de note ramène à sa PREMIÈRE FORME, sans exception.
+
+     La capture pouvait demander à ouvrir sur le dessin ou sur la
+     carte ; elle ne propose plus ce choix, et le vœu qu'elle posait
+     dans le magasin a disparu avec. Une note s'ouvre donc toujours
+     sur sa fiche — c'est-à-dire sur ce qu'on vient d'écrire. */
   useEffect(() => {
     if (!post) return
-    const voulu = formeInitiale
-    if (voulu) {
-      setFormeInitiale(null)
-      const f = formes.find((x) => x.t === voulu)
-      if (f) return setActif(f.id)
-    }
     setActif(formes[0]?.id ?? null)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [post?.id])

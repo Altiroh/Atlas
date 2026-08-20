@@ -1,134 +1,75 @@
 import { useEffect, useRef, useState } from 'react'
 import { useAtlas } from '../store/atlas'
-import { carteInitiale } from './MindMap'
-import { IconCarte, IconPencil, IconReturn, IconTexte } from '../ui/Icon'
+import { IconReturn } from '../ui/Icon'
 
 /* ---------------------------------------------------------------
-   L'éclair. Un champ, un curseur, rien à décider.
+   L'ÉCLAIR. Un champ, un curseur, rien à décider.
 
-   Une seule décision est offerte, et EN AMONT : comment capturer.
-   Le choix se fait d'abord, la surface s'adapte ensuite — et on n'en
-   tient qu'un à la fois. Proposer trois boutons de sortie après avoir
-   écrit revenait à demander de trancher au pire moment : une fois
-   l'idée déjà posée, quand on veut seulement enchaîner.
+   ── PLUS DE CHOIX EN AMONT
 
-   Le texte reste le chemin par défaut. C'est le plus court, et neuf
-   idées sur dix commencent par des mots.
+   Cet écran proposait trois manières de capturer — texte, carte,
+   dessin — à choisir AVANT d'écrire. C'était déjà une amélioration
+   sur trois boutons de sortie posés après ; c'était encore une
+   décision de trop.
+
+   Deux raisons, et elles sont dans les documents de cadrage :
+
+   · docs/01 § 4 — « une idée surgit, objectif ZÉRO DÉCISION ». Un
+     choix offert à l'instant où l'idée arrive, c'est un choix qu'on
+     fait mal : on ne sait pas encore si ça deviendra une carte, on
+     sait seulement qu'il faut le poser avant de l'oublier.
+   · docs/03 § 1.2 — le type d'une note est une CONSÉQUENCE de ce
+     qu'on en fait, jamais une case à cocher. Or choisir « Carte »
+     au moment de capturer, c'est exactement cocher une case.
+
+   Une capture fait donc une fiche, toujours. Et comme une note porte
+   maintenant autant de formes qu'elle veut, ajouter la carte ou le
+   dessin ensuite ne coûte plus rien — c'est un onglet, au moment où
+   on sait qu'on en a besoin.
+
+   ── ET ON PART SUR LA NOTE
+
+   Le champ ne se vide plus pour enchaîner. On est renvoyé sur ce
+   qu'on vient de capturer : c'est là qu'on réorganise, qu'on ajoute
+   une forme, qu'on range. Enchaîner sans jamais rien revoir, c'est
+   le cimetière à notes de docs/01 § 12.
    --------------------------------------------------------------- */
-
-type Style = 'texte' | 'carte' | 'dessin'
-
-const STYLES: {
-  id: Style
-  libelle: string
-  icone: typeof IconTexte
-  invite: string
-  action: string
-  aide: string
-}[] = [
-  {
-    id: 'texte',
-    libelle: 'Texte',
-    icone: IconTexte,
-    invite: 'Une idée ?',
-    action: 'Capturer',
-    aide: '',
-  },
-  {
-    id: 'carte',
-    libelle: 'Carte',
-    icone: IconCarte,
-    invite: "L'idée au centre",
-    action: 'Ouvrir la carte',
-    aide: 'Ce que tu écris devient le nœud central.',
-  },
-  {
-    id: 'dessin',
-    libelle: 'Dessin',
-    icone: IconPencil,
-    invite: 'De quoi s’agit-il ? (facultatif)',
-    action: 'Ouvrir le dessin',
-    aide: 'Le texte devient le titre du croquis.',
-  },
-]
 
 export function CaptureScreen({ autoFocus = true }: { autoFocus?: boolean }) {
   const espaces = useAtlas((s) => s.espaces)
   const creerPost = useAtlas((s) => s.creerPost)
-  const majPost = useAtlas((s) => s.majPost)
   const select = useAtlas((s) => s.select)
   const setNav = useAtlas((s) => s.setNav)
-  const setFormeInitiale = useAtlas((s) => s.setFormeInitiale)
 
-  const [style, setStyle] = useState<Style>('texte')
   const [texte, setTexte] = useState('')
   const [espaceId, setEspaceId] = useState<string | null>(null)
-  const [dernier, setDernier] = useState<string | null>(null)
   const ref = useRef<HTMLTextAreaElement>(null)
-
-  const courant = STYLES.find((s) => s.id === style)!
-  // seul le dessin peut partir sans un mot : on y va pour tracer
-  const pretAPartir = style === 'dessin' || Boolean(texte.trim())
 
   useEffect(() => {
     // Le clavier doit être là AVANT que l'écran ait fini d'apparaître :
     // c'est tout l'enjeu des 2 secondes du jalon 2.
     if (autoFocus) ref.current?.focus()
-  }, [autoFocus, style])
+  }, [autoFocus])
 
   const valider = () => {
-    if (!pretAPartir) return
     const propre = texte.trim()
+    if (!propre) return
     const id = creerPost(propre, espaceId)
-
-    if (style === 'carte') majPost(id, { carte: carteInitiale(propre) })
-    if (style === 'dessin') majPost(id, { dessin: [] })
-
     setTexte('')
-
-    if (style === 'texte') {
-      // on enchaîne : le champ se vide et garde le curseur
-      setDernier(id)
-      ref.current?.focus()
-      return
-    }
-    // les deux autres s'ouvrent tout de suite dans leur forme
-    setFormeInitiale(style)
+    /* Le texte devient de vrais blocs à l'ouverture (`depuisAncienModele`),
+       donc la note s'ouvre sur ce qu'on vient d'écrire, prêt à être
+       repris — pas sur une page blanche à côté de sa propre capture. */
     select(id)
-    setNav('flux')
-  }
-
-  const developper = () => {
-    if (!dernier) return
-    select(dernier)
     setNav('flux')
   }
 
   return (
     <div className="capture">
       <div className="capture__body glass rise">
-        <div className="capture__styles" role="group" aria-label="Comment capturer">
-          {STYLES.map((s) => (
-            <button
-              key={s.id}
-              className="capture__style"
-              aria-current={style === s.id}
-              onClick={() => {
-                setStyle(s.id)
-                setDernier(null)
-              }}
-            >
-              <s.icone size={16} />
-              {s.libelle}
-            </button>
-          ))}
-        </div>
-
         <textarea
           ref={ref}
           className="capture__field"
-          data-style={style}
-          placeholder={courant.invite}
+          placeholder="Une idée ?"
           value={texte}
           onChange={(e) => setTexte(e.target.value)}
           onKeyDown={(e) => {
@@ -160,21 +101,11 @@ export function CaptureScreen({ autoFocus = true }: { autoFocus?: boolean }) {
 
         <div className="capture__foot">
           <span className="capture__hint">
-            {dernier && !texte ? (
-              <button className="lien" onClick={developper}>
-                Enregistré — l'ouvrir pour le développer
-              </button>
-            ) : courant.aide ? (
-              courant.aide
-            ) : (
-              <>
-                <IconReturn size={13} style={{ display: 'inline', verticalAlign: '-2px' }} />{' '}
-                enregistre · ⇧⏎ nouvelle ligne
-              </>
-            )}
+            <IconReturn size={13} style={{ display: 'inline', verticalAlign: '-2px' }} /> enregistre
+            · ⇧⏎ nouvelle ligne
           </span>
-          <button className="btn btn--accent" onClick={valider} disabled={!pretAPartir}>
-            {courant.action}
+          <button className="btn btn--accent" onClick={valider} disabled={!texte.trim()}>
+            Capturer
           </button>
         </div>
       </div>
