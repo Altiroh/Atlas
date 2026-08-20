@@ -105,6 +105,21 @@ export type Colonne = {
   id: string
   nom: string
   type: TypeColonne
+  /**
+   * La largeur posée à la main, en pixels. Absente tant qu'on n'y a
+   * pas touché — et c'est important : une largeur écrite d'office
+   * figerait la colonne à ce que le navigateur avait calculé le jour
+   * de la création, sur cet écran-là. Tant que le champ manque, la
+   * table respire toute seule.
+   */
+  largeur?: number
+  /**
+   * La couleur choisie pour une étiquette de cette colonne, par mot
+   * en minuscules. Ce qui n'y figure pas reçoit une teinte déduite du
+   * mot lui-même : deux tables qui parlent de « héros » lui donneront
+   * la même couleur sans que personne n'ait rien réglé.
+   */
+  teintes?: Record<string, number>
 }
 
 /**
@@ -188,6 +203,104 @@ export function colonnesInitiales(): Colonne[] {
     { id: idDans('c'), nom: 'Ce qu’il faut savoir', type: 'texte' },
     { id: idDans('c'), nom: 'Rôle', type: 'etiquette' },
   ]
+}
+
+/* ---------------------------------------------------------------
+   Les étiquettes.
+
+   Elles se stockent en une chaîne séparée par des virgules (voir
+   Table.tsx) : la lecture et l'écriture passent donc toutes par ces
+   deux fonctions, et jamais par un `split` recopié à cinq endroits.
+   --------------------------------------------------------------- */
+
+/** La forme sous laquelle deux écritures d'un même mot se rejoignent. */
+export function clefEtiquette(mot: string) {
+  return mot.trim().toLocaleLowerCase('fr')
+}
+
+export function etiquettesDe(valeur: string): string[] {
+  return valeur
+    .split(',')
+    .map((m) => m.trim())
+    .filter(Boolean)
+}
+
+/**
+ * Toutes les étiquettes déjà employées dans une colonne.
+ *
+ * C'EST CE QUI FAIT D'UNE COLONNE UN VOCABULAIRE. Sans cette liste,
+ * chaque cellule repart de zéro : on écrit « protagoniste » dans
+ * l'une, « Protagoniste » dans la suivante, et la table cesse d'être
+ * regroupable — deux mots pour une seule idée, sans que rien ne le
+ * signale. On rend donc la PREMIÈRE ÉCRITURE de chaque mot, casse
+ * comprise, et c'est elle qu'on reproposera.
+ */
+export function etiquettesConnues(colonneId: string, lignes: Ligne[]): string[] {
+  const vues = new Map<string, string>()
+  for (const l of lignes) {
+    for (const mot of etiquettesDe(l.cellules[colonneId] ?? '')) {
+      const c = clefEtiquette(mot)
+      if (!vues.has(c)) vues.set(c, mot)
+    }
+  }
+  return [...vues.values()].sort((a, b) => a.localeCompare(b, 'fr'))
+}
+
+/**
+ * Les teintes proposées. Assez éloignées les unes des autres pour se
+ * distinguer d'un coup d'œil, et assez peu nombreuses pour qu'un choix
+ * reste un choix.
+ */
+export const TEINTES = [4, 28, 45, 104, 158, 192, 222, 262, 300, 334]
+
+/**
+ * La couleur d'une étiquette : celle qu'on a posée, sinon une déduite
+ * du mot.
+ *
+ * LA DÉDUCTION COMPTE AUTANT QUE LE CHOIX. Une étiquette qui naît
+ * grise attend qu'on s'occupe d'elle ; une étiquette qui naît colorée
+ * rend la colonne lisible avant même qu'on ait su qu'on pouvait
+ * changer la couleur. Le condensé est stable, donc le même mot garde
+ * sa teinte d'une session à l'autre et d'un appareil à l'autre.
+ */
+export function teinteEtiquette(mot: string, teintes?: Record<string, number>): number {
+  const c = clefEtiquette(mot)
+  const posee = teintes?.[c]
+  if (typeof posee === 'number') return posee
+  let h = 0
+  for (let i = 0; i < c.length; i++) h = (h * 31 + c.charCodeAt(i)) >>> 0
+  return TEINTES[h % TEINTES.length]
+}
+
+/**
+ * La teinte à réserver à une étiquette qui vient d'apparaître.
+ *
+ * LE CONDENSÉ SEUL NE SUFFIT PAS. Dix teintes et vingt mots : deux
+ * étiquettes finissent forcément de la même couleur, et une colonne où
+ * « héros » et « traître » sont du même violet a perdu exactement ce
+ * qu'on lui demandait — se lire d'un coup d'œil.
+ *
+ * On part donc de la couleur naturelle du mot, et on ne s'en écarte
+ * QUE si elle est déjà prise dans cette colonne : la première teinte
+ * libre est alors réservée, et écrite dans la colonne pour ne plus
+ * bouger. Elle est écrite AU MOMENT DE L'AJOUT, jamais au rendu — une
+ * couleur qui se recalcule à l'affichage changerait le jour où l'on
+ * supprime une autre étiquette, et rien n'est plus déroutant qu'un
+ * repère visuel qui se déplace tout seul.
+ *
+ * Passé dix étiquettes distinctes, les couleurs se répètent. C'est
+ * assumé : au-delà, la couleur n'est plus un repère de toute façon,
+ * et le choix manuel reste là pour les cas qui comptent.
+ */
+export function teinteLibre(
+  mot: string,
+  connues: string[],
+  teintes?: Record<string, number>,
+): number | null {
+  const naturelle = teinteEtiquette(mot, teintes)
+  const prises = new Set(connues.map((m) => teinteEtiquette(m, teintes)))
+  if (!prises.has(naturelle)) return null
+  return TEINTES.find((h) => !prises.has(h)) ?? null
 }
 
 export function ligneVide(): Ligne {

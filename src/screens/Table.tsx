@@ -1,7 +1,13 @@
-import { useRef, useState } from 'react'
+import { useRef, useState, type CSSProperties } from 'react'
 import {
+  clefEtiquette,
+  etiquettesConnues,
+  etiquettesDe,
   idDans,
   ligneVide,
+  teinteEtiquette,
+  teinteLibre,
+  TEINTES,
   type Colonne,
   type Ligne,
   type TypeColonne,
@@ -55,6 +61,14 @@ const TYPES: { t: TypeColonne; nom: string; quoi: string }[] = [
   { t: 'image', nom: 'Image', quoi: 'Un visage, un lieu.' },
 ]
 
+/** En deçà, une colonne n'affiche plus rien d'utile — même vide, on la voit. */
+const LARGEUR_MIN = 72
+
+/** Le style d'une étiquette, à partir de sa teinte. */
+function styleEtiquette(mot: string, teintes?: Record<string, number>): CSSProperties {
+  return { ['--h' as string]: teinteEtiquette(mot, teintes) }
+}
+
 export function Table({
   colonnes,
   lignes,
@@ -71,6 +85,15 @@ export function Table({
 }) {
   const [menuType, setMenuType] = useState<string | null>(null)
   const [ligneActive, setLigneActive] = useState<string | null>(null)
+
+  /* LA LARGEUR EN COURS DE GLISSÉ NE PASSE PAS PAR LE MODÈLE.
+     Écrire à chaque pixel parcouru enregistrerait la note, réveillerait
+     la synchronisation et redessinerait toute la grille soixante fois
+     par seconde. On tient donc l'aperçu ici, et on ne pose la valeur
+     qu'en relâchant. */
+  const [redim, setRedim] = useState<{ id: string; largeur: number } | null>(null)
+  const glisse = useRef<{ x: number; largeur: number } | null>(null)
+  const largeurDe = (c: Colonne) => (redim?.id === c.id ? redim.largeur : c.largeur)
 
   const majColonne = (id: string, patch: Partial<Colonne>) =>
     ecrire({ colonnes: colonnes.map((c) => (c.id === id ? { ...c, ...patch } : c)) })
@@ -131,7 +154,11 @@ export function Table({
                   nomme rien et ne doit donc rien afficher */}
               <th className="table__gouttiere" aria-label="Actions" />
               {colonnes.map((c) => (
-                <th key={c.id} className="table__entete">
+                <th
+                  key={c.id}
+                  className="table__entete"
+                  style={largeurDe(c) ? { width: largeurDe(c), minWidth: largeurDe(c) } : undefined}
+                >
                   <input
                     className="table__nomColonne"
                     value={c.nom}
@@ -168,6 +195,14 @@ export function Table({
                             </span>
                           </button>
                         ))}
+                        {c.type === 'etiquette' && (
+                          <CouleursEtiquettes
+                            colonne={c}
+                            lignes={lignes}
+                            poser={(teintes) => majColonne(c.id, { teintes })}
+                          />
+                        )}
+
                         <div className="menu__sep" />
                         <button
                           className="menu__item menu__item--danger"
@@ -184,6 +219,53 @@ export function Table({
                       </div>
                     </>
                   )}
+
+                  {/* LA POIGNÉE DE LARGEUR — au clavier et au doigt, elle
+                      n'existe pas : la CSS ne la montre que sous un
+                      pointeur fin. Sur téléphone, une table se lit en
+                      défilant, et une zone de deux pixels au bord d'une
+                      colonne serait un piège, pas un réglage.
+
+                      Un double-clic REND LA COLONNE À LA MISE EN PAGE
+                      AUTOMATIQUE : c'est la seule sortie possible d'une
+                      largeur qu'on a rendue trop étroite sans le vouloir. */}
+                  <span
+                    className="table__redim"
+                    aria-hidden="true"
+                    onPointerDown={(e) => {
+                      const th = e.currentTarget.closest('th') as HTMLElement | null
+                      if (!th) return
+                      glisse.current = {
+                        x: e.clientX,
+                        largeur: c.largeur ?? Math.round(th.getBoundingClientRect().width),
+                      }
+                      /* La capture garde le glissé vivant quand le pointeur
+                         sort de la poignée — sept pixels de large, on en
+                         sort au premier mouvement un peu vif. Elle peut
+                         être refusée (pointeur déjà relâché) : ce n'est
+                         pas une raison d'abandonner le redimensionnement. */
+                      try {
+                        e.currentTarget.setPointerCapture(e.pointerId)
+                      } catch {
+                        /* sans capture, le glissé marche tant qu'on reste dessus */
+                      }
+                      setRedim({ id: c.id, largeur: glisse.current.largeur })
+                    }}
+                    onPointerMove={(e) => {
+                      const d = glisse.current
+                      if (!d) return
+                      setRedim({
+                        id: c.id,
+                        largeur: Math.max(LARGEUR_MIN, Math.round(d.largeur + e.clientX - d.x)),
+                      })
+                    }}
+                    onPointerUp={() => {
+                      if (glisse.current && redim) majColonne(c.id, { largeur: redim.largeur })
+                      glisse.current = null
+                      setRedim(null)
+                    }}
+                    onDoubleClick={() => majColonne(c.id, { largeur: undefined })}
+                  />
                 </th>
               ))}
               <th className="table__ajoutColonne">
@@ -263,11 +345,28 @@ export function Table({
                 </td>
 
                 {colonnes.map((c) => (
-                  <td key={c.id} className="table__cellule" data-type={c.type}>
+                  <td
+                    key={c.id}
+                    className="table__cellule"
+                    data-type={c.type}
+                    /* LA LARGEUR SE POSE AUSSI SUR LES CELLULES, sinon
+                       elle ne sert à rien. Dans un tableau, une colonne
+                       fait la largeur de son contenu le plus exigeant :
+                       le plancher de 168 px des cellules l'emportait sur
+                       l'en-tête, et une colonne tirée à 100 px revenait
+                       sagement à 168 sans rien dire. On ne voyait pas un
+                       refus — on voyait un réglage qui ne prend pas. */
+                    style={
+                      largeurDe(c) ? { width: largeurDe(c), minWidth: largeurDe(c) } : undefined
+                    }
+                  >
                     <Cellule
                       type={c.type}
                       valeur={l.cellules[c.id] ?? ''}
                       poser={(v) => majCellule(l.id, c.id, v)}
+                      colonne={c}
+                      lignes={lignes}
+                      poserTeintes={(teintes) => majColonne(c.id, { teintes })}
                     />
                   </td>
                 ))}
@@ -313,10 +412,16 @@ function Cellule({
   type,
   valeur,
   poser,
+  colonne,
+  lignes,
+  poserTeintes,
 }: {
   type: TypeColonne
   valeur: string
   poser: (v: string) => void
+  colonne: Colonne
+  lignes: Ligne[]
+  poserTeintes: (teintes: Record<string, number>) => void
 }) {
   switch (type) {
     case 'case':
@@ -353,7 +458,15 @@ function Cellule({
       )
 
     case 'etiquette':
-      return <Etiquettes valeur={valeur} poser={poser} />
+      return (
+        <Etiquettes
+          valeur={valeur}
+          poser={poser}
+          colonne={colonne}
+          lignes={lignes}
+          poserTeintes={poserTeintes}
+        />
+      )
 
     case 'image':
       return <CelluleImage valeur={valeur} poser={poser} />
@@ -372,45 +485,225 @@ function Cellule({
  * ailleurs : l'export markdown, la recherche et le changement de type
  * de colonne lisent tous une chaîne. La virgule est ce que les gens
  * tapent de toute façon.
+ *
+ * ── LA COLONNE EST UN VOCABULAIRE, PAS UN CHAMP LIBRE
+ *
+ * La saisie était un simple champ texte : on y retapait « antagoniste »
+ * à chaque ligne, en se trompant une fois sur cinq. Une colonne
+ * d'étiquettes ne vaut que si les mêmes mots reviennent — c'est ce qui
+ * permet de la lire d'un coup d'œil et d'y voir des groupes. On
+ * REPROPOSE donc ce que la colonne contient déjà, avec sa couleur, et
+ * taper reste possible : la liste guide, elle n'enferme pas.
  */
-function Etiquettes({ valeur, poser }: { valeur: string; poser: (v: string) => void }) {
+function Etiquettes({
+  valeur,
+  poser,
+  colonne,
+  lignes,
+  poserTeintes,
+}: {
+  valeur: string
+  poser: (v: string) => void
+  colonne: Colonne
+  lignes: Ligne[]
+  poserTeintes: (teintes: Record<string, number>) => void
+}) {
   const [saisie, setSaisie] = useState(false)
-  const mots = valeur
-    .split(',')
-    .map((m) => m.trim())
-    .filter(Boolean)
+  const [brouillon, setBrouillon] = useState('')
+  const mots = etiquettesDe(valeur)
+  const vocabulaire = etiquettesConnues(colonne.id, lignes)
 
-  if (saisie) {
+  const fermer = () => {
+    setSaisie(false)
+    setBrouillon('')
+  }
+
+  /* Ajouter ne DOUBLONNE JAMAIS, casse comprise : « Héros » posé sur
+     une ligne qui porte déjà « héros » ne fait rien. Deux graphies du
+     même mot dans une même cellule ne veulent rien dire. */
+  const ajouter = (mot: string) => {
+    const net = mot.trim()
+    if (!net) return
+    if (!mots.some((m) => clefEtiquette(m) === clefEtiquette(net))) {
+      poser([...mots, net].join(', '))
+
+      /* UNE ÉTIQUETTE NEUVE RÉSERVE SA COULEUR EN NAISSANT.
+         C'est le seul moment où on peut le faire sans mentir : plus
+         tard, la même étiquette existe ailleurs dans la colonne, et
+         lui changer sa teinte repeindrait des lignes qu'on n'a pas
+         touchées. */
+      if (!vocabulaire.some((m) => clefEtiquette(m) === clefEtiquette(net))) {
+        const libre = teinteLibre(net, vocabulaire, colonne.teintes)
+        if (libre !== null) {
+          poserTeintes({ ...(colonne.teintes ?? {}), [clefEtiquette(net)]: libre })
+        }
+      }
+    }
+    setBrouillon('')
+  }
+
+  const retirer = (mot: string) => poser(mots.filter((m) => m !== mot).join(', '))
+
+  if (!saisie) {
     return (
-      <input
-        className="table__champ"
-        autoFocus
-        defaultValue={valeur}
-        placeholder="séparés, par, des, virgules"
-        onBlur={(e) => {
-          poser(e.target.value)
-          setSaisie(false)
-        }}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter') e.currentTarget.blur()
-          if (e.key === 'Escape') setSaisie(false)
-        }}
-      />
+      <button className="table__etiquettes" onClick={() => setSaisie(true)}>
+        {mots.length ? (
+          mots.map((m, i) => (
+            <span key={i} className="table__etiquette" style={styleEtiquette(m, colonne.teintes)}>
+              {m}
+            </span>
+          ))
+        ) : (
+          <span className="table__creux">—</span>
+        )}
+      </button>
     )
   }
 
+  const pris = new Set(mots.map(clefEtiquette))
+  const filtre = clefEtiquette(brouillon)
+  const propositions = vocabulaire.filter(
+    (m) => !pris.has(clefEtiquette(m)) && (!filtre || clefEtiquette(m).includes(filtre)),
+  )
+  /* « Créer » ne s'affiche que si le mot n'est nulle part dans la
+     colonne : sinon la proposition suffit, et deux chemins pour la
+     même chose font hésiter. */
+  const inedit = filtre.length > 0 && !vocabulaire.some((m) => clefEtiquette(m) === filtre)
+
   return (
-    <button className="table__etiquettes" onClick={() => setSaisie(true)}>
-      {mots.length ? (
-        mots.map((m, i) => (
-          <span key={i} className="table__etiquette">
-            {m}
-          </span>
-        ))
-      ) : (
-        <span className="table__creux">—</span>
-      )}
-    </button>
+    <>
+      <span className="table__voile" onClick={fermer} />
+      <div className="etiq">
+        <div className="etiq__champ">
+          {mots.map((m, i) => (
+            <span key={i} className="table__etiquette" style={styleEtiquette(m, colonne.teintes)}>
+              {m}
+              <button
+                className="etiq__retrait"
+                aria-label={`Retirer ${m}`}
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={() => retirer(m)}
+              >
+                ×
+              </button>
+            </span>
+          ))}
+          <input
+            className="etiq__saisie"
+            autoFocus
+            value={brouillon}
+            placeholder={mots.length ? '' : 'Ajouter…'}
+            aria-label="Ajouter une étiquette"
+            onChange={(e) => {
+              const v = e.target.value
+              // la virgule VALIDE le mot, elle ne s'écrit pas
+              if (v.endsWith(',')) ajouter(v.slice(0, -1))
+              else setBrouillon(v.replace(/,/g, ''))
+            }}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                e.preventDefault()
+                ajouter(brouillon)
+              }
+              if (e.key === 'Escape') fermer()
+              /* Effacer sur un champ vide retire la dernière étiquette :
+                 c'est le geste qu'on fait sans y penser, et sans lui il
+                 faut viser une croix de dix pixels. */
+              if (e.key === 'Backspace' && !brouillon && mots.length) {
+                retirer(mots[mots.length - 1])
+              }
+            }}
+          />
+        </div>
+
+        {(propositions.length > 0 || inedit) && (
+          <div className="etiq__liste">
+            {propositions.map((m) => (
+              <button
+                key={m}
+                className="etiq__proposition"
+                /* Le pointeur ne doit pas voler le focus du champ : sans
+                   ça, le clic déclenche un blur qui ferme l'éditeur avant
+                   que le clic n'arrive. */
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={() => ajouter(m)}
+              >
+                <span className="etiq__pastille" style={styleEtiquette(m, colonne.teintes)} />
+                {m}
+              </button>
+            ))}
+            {inedit && (
+              <button
+                className="etiq__proposition etiq__proposition--neuve"
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={() => ajouter(brouillon)}
+              >
+                <IconPlus size={13} />
+                Créer « {brouillon.trim()} »
+              </button>
+            )}
+          </div>
+        )}
+      </div>
+    </>
+  )
+}
+
+/**
+ * Le réglage des couleurs, dans le menu de la colonne.
+ *
+ * IL VIT AVEC LA COLONNE, PAS AVEC LA CELLULE. Une étiquette n'a pas
+ * une couleur par ligne : « antagoniste » est rouge dans toute la
+ * table, ou nulle part. Mettre le choix dans une cellule laisserait
+ * croire le contraire, et donnerait envie de le refaire vingt fois.
+ */
+function CouleursEtiquettes({
+  colonne,
+  lignes,
+  poser,
+}: {
+  colonne: Colonne
+  lignes: Ligne[]
+  poser: (teintes: Record<string, number>) => void
+}) {
+  const [ouverte, setOuverte] = useState<string | null>(null)
+  const connues = etiquettesConnues(colonne.id, lignes)
+  if (!connues.length) return null
+
+  return (
+    <>
+      <div className="menu__sep" />
+      <div className="menu__section">Couleur des étiquettes</div>
+      <div className="etiq__reglage">
+        {connues.map((m) => (
+          <div key={m} className="etiq__rangee">
+            <button
+              className="table__etiquette etiq__cible"
+              style={styleEtiquette(m, colonne.teintes)}
+              aria-expanded={ouverte === m}
+              onClick={() => setOuverte(ouverte === m ? null : m)}
+            >
+              {m}
+            </button>
+
+            {ouverte === m && (
+              <div className="etiq__palette">
+                {TEINTES.map((h) => (
+                  <button
+                    key={h}
+                    className="etiq__choix"
+                    style={{ ['--h' as string]: h }}
+                    aria-label={`Teinte ${h}`}
+                    aria-pressed={teinteEtiquette(m, colonne.teintes) === h}
+                    onClick={() => poser({ ...(colonne.teintes ?? {}), [clefEtiquette(m)]: h })}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+    </>
   )
 }
 

@@ -137,9 +137,29 @@ export function PostEditor() {
 
   const ecrireFormes = (suite: Forme[]) => majPost(post.id, { formes: suite })
 
-  /** Écrit le contenu d'une seule forme, sans toucher aux autres. */
-  const majForme = (id: string, patch: Partial<Forme>) =>
-    ecrireFormes(formes.map((f) => (f.id === id ? { ...f, ...patch } : f)))
+  /**
+   * Écrit le contenu d'une seule forme, sans toucher aux autres.
+   *
+   * ── ON RELIT LES FORMES DANS LE MAGASIN, PAS DANS LE RENDU
+   *
+   * Cette fonction repartait de `formes`, la valeur figée par le rendu
+   * en cours. Deux appels dans un même gestionnaire partaient donc tous
+   * les deux du MÊME état d'avant, et le second effaçait le premier
+   * sans un mot.
+   *
+   * Ce n'est pas un cas d'école : poser une étiquette écrit à la fois la
+   * cellule et la couleur réservée au mot. La couleur arrivait, le mot
+   * disparaissait — on tapait « Soldat », on validait, et la cellule
+   * restait vide. Aucune erreur, aucune trace, juste une saisie perdue.
+   *
+   * Zustand écrit de façon synchrone : relire l'état au moment de
+   * l'appel suffit donc à faire se composer deux écritures d'affilée,
+   * dans n'importe quel ordre, depuis n'importe quelle forme.
+   */
+  const majForme = (id: string, patch: Partial<Forme>) => {
+    const frais = useAtlas.getState().posts.find((p) => p.id === post.id)?.formes ?? formes
+    ecrireFormes(frais.map((f) => (f.id === id ? { ...f, ...patch } : f)))
+  }
 
   const ajouter = (t: TypeForme) => {
     const f = nouvelleForme(formes, t, t === 'carte' ? { carte: carteInitiale(titreDe(post)) } : {})

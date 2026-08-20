@@ -413,8 +413,43 @@ tr[data-actif] .table__poignee { opacity: 1; }
 }
 .table__ajoutColonne button:hover { background: var(--surface-sunken); color: var(--text); }
 
-.table__cellule { min-width: 168px; }
+.table__cellule { min-width: 168px; position: relative; }
 .table__cellule--fin { min-width: 38px; width: 38px; text-align: center; }
+
+/* LA POIGNÉE DE LARGEUR N'EXISTE QUE SOUS UN POINTEUR FIN.
+
+   Au doigt, une bande de six pixels au bord d'une colonne n'est pas un
+   réglage : c'est un piège posé au milieu du geste de défilement, qui
+   est justement celui qu'on fait tout le temps dans une table étroite.
+   Sur téléphone, la mise en page automatique reste seule maîtresse. */
+.table__redim { display: none; }
+
+@media (pointer: fine) {
+  .table__redim {
+    display: block;
+    position: absolute;
+    top: 0;
+    right: -3px;
+    width: 7px;
+    height: 100%;
+    z-index: 3;
+    cursor: col-resize;
+    touch-action: none;
+  }
+  .table__redim::after {
+    content: '';
+    position: absolute;
+    top: 6px;
+    bottom: 6px;
+    left: 3px;
+    width: 2px;
+    border-radius: 2px;
+    background: var(--accent);
+    opacity: 0;
+    transition: opacity 120ms var(--ease);
+  }
+  .table__redim:hover::after { opacity: 0.75; }
+}
 
 .table__champ {
   width: 100%;
@@ -454,13 +489,155 @@ tr[data-actif] .table__poignee { opacity: 1; }
   padding: 7px 9px;
   text-align: left;
 }
+/* LA TEINTE ARRIVE PAR --h, ET ELLE EST TOUJOURS LÀ.
+
+   Même sans réglage : `teinteEtiquette` déduit une couleur du mot
+   lui-même quand aucune n'a été choisie. Une colonne d'étiquettes est
+   donc lisible dès la première saisie, et le réglage ne sert qu'à
+   corriger un voisinage malheureux — pas à sortir du gris.
+
+   La lumière et la saturation, elles, ne bougent pas : c'est ce qui
+   empêche dix couleurs choisies au hasard de faire dix poids
+   différents dans la page. */
 .table__etiquette {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
   padding: 2px 8px;
   border-radius: 99px;
-  background: var(--accent-soft);
-  color: var(--accent-text);
+  background: hsl(var(--h, 214) 62% 93%);
+  color: hsl(var(--h, 214) 46% 32%);
   font-size: 11.5px;
   font-weight: 540;
+  white-space: nowrap;
+}
+
+:root[data-theme='dark'] .table__etiquette {
+  background: hsl(var(--h, 214) 42% 24%);
+  color: hsl(var(--h, 214) 68% 82%);
+}
+
+.etiq__retrait {
+  display: grid;
+  place-items: center;
+  width: 15px;
+  height: 15px;
+  margin-right: -4px;
+  border-radius: 99px;
+  color: inherit;
+  opacity: 0.55;
+  font-size: 13px;
+  line-height: 1;
+}
+.etiq__retrait:hover { opacity: 1; background: hsl(var(--h, 214) 40% 50% / 0.18); }
+
+/* ── l'éditeur d'étiquettes d'une cellule ── */
+
+.etiq {
+  position: relative;
+  z-index: 21;
+}
+
+.etiq__champ {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 8px;
+  background: var(--surface-sunken);
+  box-shadow: inset 0 0 0 1.5px var(--accent);
+}
+
+.etiq__saisie {
+  flex: 1;
+  min-width: 64px;
+  border: 0;
+  background: none;
+  color: var(--text);
+  font: inherit;
+  font-size: 13px;
+  padding: 2px 0;
+}
+.etiq__saisie:focus { outline: none; }
+
+/* La liste flotte SOUS la cellule sans l'agrandir : une cellule qui
+   grandit pousse toute la ligne, et la table saute sous les doigts au
+   moment précis où l'on vise une proposition. */
+.etiq__liste {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  min-width: 100%;
+  max-width: 280px;
+  max-height: 232px;
+  overflow: auto;
+  padding: 5px;
+  border-radius: var(--r);
+  background: var(--surface-solid);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow);
+  animation: table-menu 120ms var(--ease) both;
+}
+
+.etiq__proposition {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  min-height: 34px;
+  padding: 6px 8px;
+  border-radius: 9px;
+  color: var(--text);
+  font-size: 13px;
+  text-align: left;
+}
+.etiq__proposition:hover { background: var(--surface-sunken); }
+.etiq__proposition--neuve { color: var(--text-2); }
+
+.etiq__pastille {
+  flex: none;
+  width: 10px;
+  height: 10px;
+  border-radius: 99px;
+  background: hsl(var(--h, 214) 62% 58%);
+}
+
+/* ── le choix de couleur, dans le menu de colonne ── */
+
+.etiq__reglage {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 2px;
+}
+
+.etiq__rangee { display: flex; flex-direction: column; gap: 4px; }
+
+.etiq__cible {
+  align-self: flex-start;
+  max-width: 100%;
+  min-height: 26px;
+  padding: 4px 10px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.etiq__palette {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  padding: 2px 0 6px;
+}
+
+.etiq__choix {
+  width: 22px;
+  height: 22px;
+  border-radius: 99px;
+  background: hsl(var(--h) 62% 58%);
+  box-shadow: 0 0 0 1px var(--border);
+}
+.etiq__choix[aria-pressed='true'] {
+  box-shadow: 0 0 0 2px var(--surface-solid), 0 0 0 4px hsl(var(--h) 62% 58%);
 }
 .table__creux { color: var(--text-3); font-size: 13px; }
 
@@ -526,6 +703,8 @@ tr[data-actif] .table__poignee { opacity: 1; }
   box-shadow: var(--shadow);
   text-align: left;
   font-weight: 400;
+  max-height: min(64vh, 440px);
+  overflow: auto;
   animation: table-menu 140ms var(--ease) both;
 }
 
