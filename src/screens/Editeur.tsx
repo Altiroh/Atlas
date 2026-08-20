@@ -144,10 +144,23 @@ type ModeMenu = 'clef' | 'inserer' | 'transformer'
     ouvre une date, une fraction, un chemin. */
 export const CLEF = '+'
 
-/** Sous cette largeur, les panneaux montent du bas au lieu de s'accrocher
-    au bloc. C'est la largeur qui décide, jamais l'appareil deviné — comme
-    pour le choix des coquilles (docs/02 § 2). */
-const enFeuille = () => window.matchMedia('(max-width: 560px)').matches
+/** Quand les panneaux montent du bas au lieu de s'accrocher au bloc.
+
+    Deux conditions, et la seconde manquait : un écran étroit, OU un
+    POINTEUR GROSSIER. Les raisons de la feuille montante — les pouces
+    sont en bas, le clavier aussi — tiennent au doigt, pas aux pixels.
+    Un iPhone en paysage fait 900 px de large : il passait sous le seuil
+    et recevait un panneau de 290 px accroché à la ligne, soit un tiers
+    d'écran flottant au milieu. */
+const enFeuille = () =>
+  window.matchMedia('(max-width: 700px), (pointer: coarse)').matches
+
+/** Ferme le clavier logiciel. Il masque la moitié basse de l'écran —
+    donc exactement l'endroit où la feuille va s'ouvrir. */
+function fermerLeClavier() {
+  const el = document.activeElement
+  if (el instanceof HTMLElement) el.blur()
+}
 
 type Outils = {
   maj: (id: string, patch: Partial<Bloc>) => void
@@ -162,6 +175,9 @@ type Outils = {
   viser: (c: Cible) => void
   ouvrirCatalogue: (mode: ModeMenu, blocId: string, ancre: HTMLElement) => void
   cible: Cible
+  /** le bloc dont la gouttière est offerte — voir `actif` dans l'éditeur */
+  actif: string | null
+  marquerActif: (id: string | null) => void
 }
 
 /** Un bloc dupliqué doit être un NOUVEAU bloc de bout en bout : garder
@@ -220,6 +236,18 @@ export function Editeur({ post }: { post: Post }) {
   )
 
   const [cible, setCible] = useState<Cible>(null)
+
+  /* LE BLOC ACTIF EST UN ÉTAT, PAS UN `:focus-within`.
+
+     La gouttière se révélait en `:focus-within`. Au doigt, c'est une
+     impasse : toucher le « + » retire le focus au champ, donc la
+     gouttière disparaît — et le bouton s'évapore À L'INSTANT où on
+     appuie dessus. Vu de l'utilisateur, « le bouton ne fait rien ».
+
+     En le gardant en état, la gouttière survit à la fermeture du
+     clavier, qui est justement ce qu'on veut déclencher. */
+  const [actif, setActif] = useState<string | null>(null)
+
   const [menu, setMenu] = useState<{
     mode: ModeMenu
     blocId: string
@@ -258,11 +286,16 @@ export function Editeur({ post }: { post: Post }) {
       viser: setCible,
       ouvrirCatalogue: (mode, blocId, ancre) => {
         const r = ancre.getBoundingClientRect()
+        // le clavier part AVANT la mesure : il ne doit pas rester devant
+        // la feuille qui monte, ni décaler ce qu'on vient de mesurer
+        if (enFeuille()) fermerLeClavier()
         setMenu({ mode, blocId, rect: { x: r.left, y: r.top, bas: r.bottom }, filtre: '' })
       },
       cible,
+      actif,
+      marquerActif: setActif,
     }),
-    [ecrire, cible],
+    [ecrire, cible, actif],
   )
 
   /* --- le glissement, au niveau racine seulement --- */
@@ -432,13 +465,22 @@ function LigneBloc({
     <div
       className={`ed__bloc ed__bloc--${bloc.t}${enGlissement ? ' ed__bloc--pris' : ''}`}
       data-bloc={racine ? bloc.id : undefined}
+      data-outils={outils.actif === bloc.id || undefined}
       style={enGlissement ? { transform: `translateY(${decalage}px)` } : undefined}
     >
       <div className="ed__gouttiere">
         <button
-          className="ed__bouton"
+          className="ed__bouton ed__bouton--plus"
           aria-label="Insérer un bloc"
-          onClick={(e) => outils.ouvrirCatalogue('inserer', bloc.id, e.currentTarget)}
+          /* `pointerdown` PLUTÔT QUE `click`, et annulé : c'est ce qui
+             empêche le champ de perdre le focus sous le doigt — sans
+             quoi la gouttière se referme avant que le clic n'arrive. Le
+             clavier, lui, est fermé exprès juste après. */
+          onPointerDown={(e) => {
+            e.preventDefault()
+            outils.marquerActif(bloc.id)
+            outils.ouvrirCatalogue('inserer', bloc.id, e.currentTarget)
+          }}
         >
           <IconPlus size={15} />
         </button>
@@ -448,6 +490,7 @@ function LigneBloc({
           aria-label="Déplacer, ou ouvrir les actions"
           onPointerDown={(e) => {
             bouge.current = false
+            outils.marquerActif(bloc.id)
             if (racine && onPrendre && e.button === 0) onPrendre(bloc.id, e)
           }}
           onPointerMove={() => {
@@ -455,7 +498,10 @@ function LigneBloc({
           }}
           onClick={() => {
             // un clic net ouvre le menu ; un glissement ne doit surtout pas
-            if (!bouge.current) setMenu(true)
+            if (!bouge.current) {
+              if (enFeuille()) fermerLeClavier()
+              setMenu(true)
+            }
           }}
         >
           <IconPoignee size={15} />
@@ -706,6 +752,7 @@ function Saisie({
       spellCheck
       onChange={(e) => changer(e.target.value)}
       onKeyDown={auClavier}
+      onFocus={() => outils.marquerActif(bloc.id)}
       aria-label={decrire(bloc)?.libelle ?? 'Bloc'}
     />
   )
@@ -1049,16 +1096,29 @@ function Catalogue({
   }, [filtre, dansColonne])
 
   useEffect(() => setActif(0), [filtre])
-  useEffect(() => champ.current?.focus(), [])
 
-  /* Étroit, le catalogue MONTE DU BAS, sur toute la largeur : c'est là
-     que sont les pouces, c'est là qu'est le clavier, et un panneau
-     accroché à une ligne de texte finit toujours coincé contre un bord
-     ou sous le clavier. Large, il s'ouvre au contraire près du bloc,
-     vers le bas — ou au-dessus s'il déborde. Mesuré une fois, à
-     l'ouverture : un menu qui se replace pendant qu'on choisit est
-     plus pénible qu'un menu resté où on l'a posé. */
+  /* Étroit ou au doigt, le catalogue MONTE DU BAS, sur toute la largeur :
+     c'est là que sont les pouces, c'est là qu'est le clavier, et un
+     panneau accroché à une ligne de texte finit toujours coincé contre
+     un bord ou dessous. Large et à la souris, il s'ouvre au contraire
+     près du bloc. Décidé UNE FOIS, à l'ouverture. */
   const feuille = enFeuille()
+
+  /* Le champ de recherche ne prend le focus QU'AU CLAVIER-SOURIS.
+
+     En feuille, le focus rouvrirait le clavier logiciel — celui qu'on
+     vient tout juste de fermer pour laisser la place à la feuille, et
+     qui recouvrirait les deux tiers des propositions. Au doigt on
+     choisit dans une liste ; on ne tape pas pour filtrer quatorze
+     entrées. */
+  useEffect(() => {
+    if (!feuille) champ.current?.focus()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  /* Ancré : vers le bas, ou au-dessus s'il déborde. Mesuré une fois —
+     un menu qui se replace pendant qu'on choisit est plus pénible
+     qu'un menu resté où on l'a posé. */
   const hauteur = Math.min(340, window.innerHeight * 0.6)
   const versLeBas = rect.bas + hauteur < window.innerHeight
   const style = feuille

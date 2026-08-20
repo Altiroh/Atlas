@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { idNoeud, useAtlas, type Noeud, type Post } from '../store/atlas'
 import { IconClose, IconFocus, IconPencil, IconPlus, IconTrash } from '../ui/Icon'
+import { BarreCanevas, OutilCanevas, SeparateurCanevas } from '../ui/BarreCanevas'
 
 /* ---------------------------------------------------------------
    La mind map.
@@ -89,6 +90,22 @@ export function MindMap({ post }: { post: Post }) {
     el.addEventListener('wheel', onWheel, { passive: false })
     return () => el.removeEventListener('wheel', onWheel)
   }, [])
+
+  /* Le pourcentage de zoom ne se montre QUE PENDANT le geste, puis il
+     s'efface tout seul. Affiché en permanence, c'est un chiffre de plus
+     à ignorer ; affiché pendant qu'on pince, c'est un repère. */
+  const [montreZoom, setMontreZoom] = useState(false)
+  const premierZoom = useRef(true)
+  useEffect(() => {
+    // pas au tout premier rendu : le recentrage initial n'est pas un zoom
+    if (premierZoom.current) {
+      premierZoom.current = false
+      return
+    }
+    setMontreZoom(true)
+    const t = setTimeout(() => setMontreZoom(false), 1300)
+    return () => clearTimeout(t)
+  }, [vue.k])
 
   /* --- panoramique et pincement sur le fond --- */
   const doigts = useRef(new Map<number, { x: number; y: number }>())
@@ -337,24 +354,34 @@ export function MindMap({ post }: { post: Post }) {
         </div>
       </div>
 
-      <div className="carte__commandes glass">
-        <button onClick={() => setVue((v) => zoomCentre(surface.current, v, 1 / 1.25))} aria-label="Dézoomer">
-          <IconClose size={15} style={{ transform: 'rotate(45deg)' }} />
-        </button>
-        <span className="carte__zoom">{Math.round(vue.k * 100)} %</span>
-        <button onClick={() => setVue((v) => zoomCentre(surface.current, v, 1.25))} aria-label="Zoomer">
-          <IconPlus size={15} />
-        </button>
+      <BarreCanevas>
+        <OutilCanevas titre="Zoomer" onClick={() => setVue((v) => zoomCentre(surface.current, v, 1.25))}>
+          <IconPlus size={17} />
+        </OutilCanevas>
+        <OutilCanevas
+          titre="Dézoomer"
+          onClick={() => setVue((v) => zoomCentre(surface.current, v, 1 / 1.25))}
+        >
+          <IconClose size={17} style={{ transform: 'rotate(45deg)' }} />
+        </OutilCanevas>
+
+        <SeparateurCanevas />
 
         {/* Recentrer mérite SON bouton. C'était le pourcentage qu'il
-            fallait toucher — personne ne devine qu'un chiffre est une
+            fallait deviner — personne ne pense qu'un chiffre est une
             commande, et c'est pourtant le seul moyen de revenir quand
             on s'est perdu au bout de la carte. */}
-        <span className="carte__separateur" aria-hidden="true" />
-        <button onClick={recentrer} aria-label="Recentrer la carte" title="Recentrer la carte">
-          <IconFocus size={15} />
-        </button>
-      </div>
+        <OutilCanevas titre="Recentrer la carte" onClick={recentrer}>
+          <IconFocus size={17} />
+        </OutilCanevas>
+      </BarreCanevas>
+
+      {/* Le pourcentage ne s'affiche QUE PENDANT qu'on zoome, puis il
+          s'efface. Le reste du temps il ne répond à aucune question :
+          on voit la carte, on sait où on en est. */}
+      <span className="carte__zoom" data-vu={montreZoom || undefined} aria-hidden={!montreZoom}>
+        {Math.round(vue.k * 100)} %
+      </span>
 
       <p className="carte__aide">
         Glisse le fond pour te déplacer · sélectionne un nœud pour le ramifier · double-clic pour

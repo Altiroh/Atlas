@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react'
 import { useAtlas, type Outil, type Papier, type Post, type Trait } from '../store/atlas'
 import { IconRestore, IconTrash } from '../ui/Icon'
+import { BarreCanevas, OutilCanevas, SeparateurCanevas, TiroirCanevas } from '../ui/BarreCanevas'
 
 /* ---------------------------------------------------------------
    Le dessin — la troisième forme d'un post.
@@ -47,7 +48,104 @@ const PAPIERS: { id: Papier; libelle: string }[] = [
   { id: 'lignes', libelle: 'Lignes' },
 ]
 
-const EPAISSEURS = [2.5, 5, 11]
+/* Cinq épaisseurs plutôt que trois : entre le trait fin et le gros
+   marqueur il manquait tout le milieu, celui dont on se sert. */
+const EPAISSEURS = [1.5, 3, 5.5, 9, 14]
+
+/* L'icône de l'outil courant, montrée sur le bouton du tiroir : on doit
+   savoir avec quoi on dessine sans ouvrir quoi que ce soit. */
+function IconOutil({ id, size = 18 }: { id: Outil; size?: number }) {
+  const base = {
+    width: size,
+    height: size,
+    viewBox: '0 0 24 24',
+    fill: 'none',
+    stroke: 'currentColor',
+    strokeWidth: 1.8,
+    strokeLinecap: 'round' as const,
+    strokeLinejoin: 'round' as const,
+  }
+  if (id === 'surligneur') {
+    return (
+      <svg {...base} aria-hidden="true">
+        <path d="M4 19h6" strokeWidth={4} opacity={0.45} />
+        <path d="M8.5 15.5 16 8l3.5 3.5-7.5 7.5H8.5Z" />
+        <path d="m16 8 2-2a1.9 1.9 0 0 1 2.7 0l.8.8a1.9 1.9 0 0 1 0 2.7l-2 2" />
+      </svg>
+    )
+  }
+  if (id === 'ligne') {
+    return (
+      <svg {...base} aria-hidden="true">
+        <path d="M4 20 20 4" />
+        <circle cx="4.5" cy="19.5" r="2" />
+        <circle cx="19.5" cy="4.5" r="2" />
+      </svg>
+    )
+  }
+  return (
+    <svg {...base} aria-hidden="true">
+      <path d="M14.8 4.6a1.9 1.9 0 0 1 2.7 0l1.9 1.9a1.9 1.9 0 0 1 0 2.7L9.3 19.3l-4.8 1 1-4.8Z" />
+      <path d="m13 6.4 4.6 4.6" />
+    </svg>
+  )
+}
+
+function IconGomme({ size = 18 }: { size?: number }) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={1.8}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="m8.5 20.5-4-4a2 2 0 0 1 0-2.8l8-8a2 2 0 0 1 2.8 0l4.2 4.2a2 2 0 0 1 0 2.8l-7.8 7.8Z" />
+      <path d="M20.5 20.5h-12M9.5 9.5l5.5 5.5" />
+    </svg>
+  )
+}
+
+function IconAvancer({ size = 18 }: { size?: number }) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={1.8}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M20 11a8 8 0 1 0-2.3 5.7" />
+      <path d="M20.5 5.5V11H15" />
+    </svg>
+  )
+}
+
+function IconPapier({ size = 18 }: { size?: number }) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={1.7}
+      strokeLinecap="round"
+      aria-hidden="true"
+    >
+      <rect x="3.5" y="3.5" width="17" height="17" rx="2.5" />
+      <path d="M8.5 8.5h.01M12 8.5h.01M15.5 8.5h.01M8.5 12h.01M12 12h.01M15.5 12h.01M8.5 15.5h.01M12 15.5h.01M15.5 15.5h.01" strokeWidth={2.4} />
+    </svg>
+  )
+}
 
 export function Dessin({ post }: { post: Post }) {
   const majPost = useAtlas((s) => s.majPost)
@@ -147,105 +245,130 @@ export function Dessin({ post }: { post: Post }) {
 
   return (
     <div className="dessin">
-      <div className="dessin__outils">
-        <div className="seg" role="group" aria-label="Outil">
-          {OUTILS.map((o) => (
-            <button
-              key={o.id}
-              className="seg__item"
-              aria-current={outil === o.id && !gomme}
-              onClick={() => {
-                setOutil(o.id)
-                setGomme(false)
-              }}
-            >
-              {o.libelle}
-            </button>
-          ))}
-        </div>
+      {/* La MÊME barre que la carte mentale : une colonne à droite,
+          centrée. Ce sont deux canevas — on les pilote du même endroit,
+          avec les mêmes gestes, et on n'apprend qu'une fois.
 
-        <div className="seg" role="group" aria-label="Encre">
-          {ENCRES.map((c) => (
-            <button
-              key={c.id}
-              className="seg__item dessin__encre"
-              data-encre={c.id}
-              aria-current={encre === c.id && !gomme}
-              aria-label={c.libelle}
-              onClick={() => {
-                setEncre(c.id)
-                setGomme(false)
-              }}
-            >
-              <span />
-            </button>
-          ))}
-        </div>
+          Les outils à choix multiple ne déroulent pas un menu par
+          dessus le dessin : ils DÉPLIENT UN TIROIR vers la gauche. On
+          voit donc ce qu'on quitte et ce qu'on prend en même temps, et
+          le dessin reste visible dessous. */}
+      <BarreCanevas>
+        <TiroirCanevas titre="Outil" apercu={<IconOutil id={outil} />}>
+          {(fermer) =>
+            OUTILS.map((o) => (
+              <OutilCanevas
+                key={o.id}
+                titre={o.libelle}
+                actif={outil === o.id && !gomme}
+                onClick={() => {
+                  setOutil(o.id)
+                  setGomme(false)
+                  fermer()
+                }}
+              >
+                <IconOutil id={o.id} size={17} />
+              </OutilCanevas>
+            ))
+          }
+        </TiroirCanevas>
 
-        <div className="seg" role="group" aria-label="Épaisseur">
-          {EPAISSEURS.map((e) => (
-            <button
-              key={e}
-              className="seg__item dessin__ep"
-              aria-current={epaisseur === e && !gomme}
-              aria-label={`Épaisseur ${e}`}
-              onClick={() => {
-                setEpaisseur(e)
-                setGomme(false)
-              }}
-            >
-              <span style={{ width: e + 3, height: e + 3 }} />
-            </button>
-          ))}
-        </div>
-
-        <button
-          className="btn btn--ghost"
-          aria-pressed={gomme}
-          data-actif={gomme}
-          onClick={() => setGomme(!gomme)}
+        <TiroirCanevas
+          titre="Couleur"
+          apercu={<span className="canevas__pastille" data-encre={encre} />}
         >
-          Gomme
-        </button>
+          {(fermer) =>
+            ENCRES.map((c) => (
+              <OutilCanevas
+                key={c.id}
+                titre={c.libelle}
+                actif={encre === c.id && !gomme}
+                onClick={() => {
+                  setEncre(c.id)
+                  setGomme(false)
+                  fermer()
+                }}
+              >
+                <span className="canevas__pastille" data-encre={c.id} />
+              </OutilCanevas>
+            ))
+          }
+        </TiroirCanevas>
 
-        <div style={{ flex: 1 }} />
-
-        <div className="seg" role="group" aria-label="Papier">
-          {PAPIERS.map((p) => (
-            <button
-              key={p.id}
-              className="seg__item"
-              aria-current={papier === p.id}
-              onClick={() => majPost(post.id, { papier: p.id })}
-            >
-              {p.libelle}
-            </button>
-          ))}
-        </div>
-
-        <button className="btn btn--ghost" disabled={!traits.length} onClick={defaire}>
-          Défaire
-        </button>
-        <button
-          className="btn btn--icon"
-          disabled={!defaits.length}
-          onClick={retablir}
-          aria-label="Rétablir"
+        {/* L'aperçu de l'épaisseur EST un disque à l'échelle : le seul
+            qui ne demande pas d'être traduit. Cinq côte à côte se
+            comparent d'un regard, ce qu'un chiffre ne permet jamais. */}
+        <TiroirCanevas
+          titre="Épaisseur"
+          apercu={
+            <span
+              className="canevas__point"
+              style={{ width: epaisseur + 3, height: epaisseur + 3 }}
+            />
+          }
         >
-          <IconRestore size={16} />
-        </button>
-        <button
-          className="btn btn--icon btn--danger"
-          disabled={!traits.length}
+          {(fermer) =>
+            EPAISSEURS.map((e) => (
+              <OutilCanevas
+                key={e}
+                titre={`Épaisseur ${e}`}
+                actif={epaisseur === e && !gomme}
+                onClick={() => {
+                  setEpaisseur(e)
+                  setGomme(false)
+                  fermer()
+                }}
+              >
+                <span className="canevas__point" style={{ width: e + 3, height: e + 3 }} />
+              </OutilCanevas>
+            ))
+          }
+        </TiroirCanevas>
+
+        <OutilCanevas titre="Gomme" actif={gomme} onClick={() => setGomme(!gomme)}>
+          <IconGomme />
+        </OutilCanevas>
+
+        <SeparateurCanevas />
+
+        <OutilCanevas titre="Défaire" desactive={!traits.length} onClick={defaire}>
+          <IconRestore size={18} />
+        </OutilCanevas>
+        <OutilCanevas titre="Refaire" desactive={!defaits.length} onClick={retablir}>
+          <IconAvancer />
+        </OutilCanevas>
+
+        <SeparateurCanevas />
+
+        <TiroirCanevas titre="Papier" apercu={<IconPapier />}>
+          {(fermer) =>
+            PAPIERS.map((p) => (
+              <OutilCanevas
+                key={p.id}
+                titre={p.libelle}
+                actif={papier === p.id}
+                onClick={() => {
+                  majPost(post.id, { papier: p.id })
+                  fermer()
+                }}
+              >
+                <span className="canevas__papier" data-papier={p.id} />
+              </OutilCanevas>
+            ))
+          }
+        </TiroirCanevas>
+
+        <OutilCanevas
+          titre="Tout effacer"
+          desactive={!traits.length}
           onClick={() => {
             setDefaits([])
             ecrire([])
           }}
-          aria-label="Tout effacer"
         >
-          <IconTrash size={16} />
-        </button>
-      </div>
+          <IconTrash size={18} />
+        </OutilCanevas>
+      </BarreCanevas>
 
       <div className="dessin__cadre">
         <svg

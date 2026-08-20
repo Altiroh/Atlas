@@ -1399,53 +1399,8 @@
 }
 .noeud__outils button:hover { background: var(--surface-sunken); color: var(--text); }
 
-.carte__commandes {
-  position: absolute;
-  /* DÉCALÉE DE LA LARGEUR DE LA BULLE. L'œil d'Atlas est en bas à
-     droite, en `fixed`, et il recouvrait le zoom : deux commandes au
-     même endroit, dont une seule cliquable. On lui laisse son coin. */
-  right: calc(14px + var(--safe-right) + 66px);
-  bottom: calc(14px + var(--safe-bottom));
-  display: flex;
-  align-items: center;
-  gap: 2px;
-  padding: 4px;
-  border-radius: 99px;
-  box-shadow: var(--shadow);
-}
 
-.carte__separateur {
-  width: 1px;
-  height: 18px;
-  margin: 0 3px;
-  background: var(--border-strong);
-}
 
-.carte__commandes button {
-  display: grid;
-  place-items: center;
-  height: 30px;
-  min-width: 30px;
-  padding: 0 6px;
-  border-radius: 99px;
-  color: var(--text-2);
-  font-size: 12px;
-  font-weight: 500;
-  transition: background var(--fast) var(--ease), color var(--fast) var(--ease);
-}
-.carte__commandes button:hover { background: var(--surface-sunken); color: var(--text); }
-/* Le pourcentage n'est plus un bouton : il n'en avait que l'apparence,
-   et ce qu'il faisait — recentrer — a désormais le sien. */
-.carte__zoom {
-  display: grid;
-  place-items: center;
-  min-width: 46px;
-  height: 30px;
-  font-size: 12px;
-  font-weight: 500;
-  color: var(--text-3);
-  font-variant-numeric: tabular-nums;
-}
 
 .carte__aide {
   position: absolute;
@@ -2910,33 +2865,55 @@
    42. La bulle Atlas
    ======================================================== */
 
+/* LA MASCOTTE EST LE BOUTON — plus de pastille autour d'elle.
+
+   L'œil portait une couronne de flammes ; enfermé dans un disque de
+   verre bordé, celle-ci traversait le bord et se faisait couper. Or
+   entre les deux, il n'y a pas d'hésitation : la couronne EST la
+   forme reconnaissable, la pastille n'était qu'un support.
+
+   Reste à donner l'affordance autrement : un halo posé DERRIÈRE, à
+   la taille du globe seulement, qui ne mange pas les langues. */
 .bulle {
   position: fixed;
-  right: calc(18px + var(--safe-right));
-  bottom: calc(18px + var(--safe-bottom));
+  right: calc(14px + var(--safe-right));
+  bottom: calc(14px + var(--safe-bottom));
   z-index: 55;
   display: grid;
   place-items: center;
-  width: 56px;
-  height: 56px;
-  border-radius: 50%;
-  background: var(--surface-strong);
-  border: 1px solid var(--border);
-  box-shadow: var(--shadow), 0 0 0 0 var(--accent-glow);
-  -webkit-backdrop-filter: blur(var(--blur));
-  backdrop-filter: blur(var(--blur));
-  transition: transform var(--fast) var(--ease), box-shadow var(--mid) var(--ease);
+  /* la taille exacte du dessin, couronne comprise : 40 x 1,6 */
+  width: 64px;
+  height: 64px;
+  padding: 0;
+  border: 0;
+  background: none;
+  transition: transform var(--fast) var(--ease);
 }
 
-.bulle:hover { transform: scale(1.05); box-shadow: var(--shadow), 0 0 0 6px var(--accent-soft); }
-.bulle:active { transform: scale(0.96); }
-.bulle[data-ouverte='true'] { box-shadow: var(--shadow), 0 0 0 4px var(--accent-soft); }
+/* Le halo : un disque flou aux deux tiers du cadre, donc sous le globe
+   et pas sous les flammes. C'est lui qui décolle la mascotte du fond. */
+.bulle::before {
+  content: '';
+  position: absolute;
+  inset: 17%;
+  border-radius: 50%;
+  background: var(--surface-strong);
+  box-shadow: var(--shadow);
+  -webkit-backdrop-filter: blur(var(--blur));
+  backdrop-filter: blur(var(--blur));
+  transition: box-shadow var(--mid) var(--ease);
+}
+
+.bulle:hover { transform: scale(1.06); }
+.bulle:active { transform: scale(0.95); }
+.bulle:hover::before,
+.bulle[data-ouverte='true']::before {
+  box-shadow: var(--shadow), 0 0 0 5px var(--accent-soft);
+}
 
 /* en compacte, la barre d'onglets occupe déjà le bas */
 .app[data-shell='compact'] .bulle {
-  bottom: calc(96px + var(--safe-bottom));
-  width: 48px;
-  height: 48px;
+  bottom: calc(92px + var(--safe-bottom));
 }
 
 .causerie {
@@ -3157,14 +3134,14 @@
 
 :root[data-matiere='uni'] .glass,
 :root[data-matiere='uni'] .tabbar__verre,
-:root[data-matiere='uni'] .bulle,
+:root[data-matiere='uni'] .bulle::before,
 :root[data-matiere='uni'] .sheet {
   -webkit-backdrop-filter: none;
   backdrop-filter: none;
 }
 
 :root[data-matiere='uni'] .glass,
-:root[data-matiere='uni'] .bulle {
+:root[data-matiere='uni'] .bulle::before {
   background: var(--surface-uni);
 }
 

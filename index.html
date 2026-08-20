@@ -2,10 +2,17 @@
 <html lang="fr">
   <head>
     <meta charset="UTF-8" />
-    <!-- viewport-fit=cover : indispensable pour que l'app passe sous l'encoche et la barre d'accueil iOS -->
+    <!-- viewport-fit=cover : indispensable pour que l'app passe sous l'encoche et la barre d'accueil iOS.
+
+         PAS DE ZOOM. Atlas n'est pas un document : c'est une coque à
+         hauteur fixe (100dvh) avec ses propres zones de défilement.
+         Zoomer dedans ne grossit pas le texte — ça décale la coque hors
+         de l'écran, et la barre d'onglets disparaît. Le pincement est
+         donc rendu à la carte mentale et au dessin, qui en font quelque
+         chose, et retiré de l'app elle-même. -->
     <meta
       name="viewport"
-      content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=5"
+      content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no"
     />
     <meta name="description" content="Atlas — capturer, faire mûrir, fabriquer ses idées." />
 

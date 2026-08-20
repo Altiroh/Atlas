@@ -1,13 +1,16 @@
 /* ========================================================
    L'annonce de mise à jour.
 
-   Une bande légère, en haut, cinq secondes. Elle passe SOUS
-   l'encoche iOS et au-dessus de tout le reste, et elle ne
-   pousse rien : elle est en `fixed`, donc l'app ne bouge pas
-   d'un pixel pendant qu'elle vit sa vie.
+   Elle DESCEND DU HAUT et y remonte. Rien d'autre dans Atlas
+   ne vient de là : les feuilles montent du bas, les menus
+   s'accrochent à leur bloc. Cette direction est donc réservée
+   à ce qui parle de l'app elle-même, et se reconnaît sans être
+   lue.
 
-   La bande entière est le bouton — une cible de trois cents
-   pixels plutôt qu'une croix de douze.
+   Elle est en `fixed` : elle ne pousse rien, l'app ne bouge
+   pas d'un pixel pendant qu'elle vit sa vie. Et la bande
+   ENTIÈRE est le bouton — une cible de trois cents pixels
+   plutôt qu'une croix de douze.
    ======================================================== */
 
 .maj {
@@ -18,42 +21,45 @@
   display: flex;
   align-items: center;
   gap: 10px;
-  max-width: min(320px, calc(100vw - 32px));
-  padding: 8px 16px 8px 10px;
+  max-width: min(340px, calc(100vw - 24px));
+  padding: 8px 12px 8px 10px;
   border-radius: 99px;
   border: 1px solid var(--border);
   background: var(--surface-solid);
   box-shadow: var(--shadow);
   text-align: left;
   cursor: pointer;
-  /* le translate en X est porté par l'animation, pas par une règle
-     séparée : deux `transform` sur le même élément s'annulent */
-  animation: maj-entre var(--mid) var(--ease) both;
+  /* le centrage en X est porté PAR L'ANIMATION, jamais par une règle
+     séparée : deux `transform` sur le même élément s'écrasent */
+  animation: maj-descend 380ms var(--ease) both;
 }
 
 .maj[data-sort='true'] {
-  animation: maj-sort 280ms var(--ease) both;
+  animation: maj-remonte 300ms var(--ease) both;
 }
 
-@keyframes maj-entre {
+@keyframes maj-descend {
   from {
     opacity: 0;
-    transform: translate(-50%, -14px) scale(0.96);
+    transform: translate(-50%, -140%);
+  }
+  60% {
+    opacity: 1;
   }
   to {
     opacity: 1;
-    transform: translate(-50%, 0) scale(1);
+    transform: translate(-50%, 0);
   }
 }
 
-@keyframes maj-sort {
+@keyframes maj-remonte {
   from {
     opacity: 1;
-    transform: translate(-50%, 0) scale(1);
+    transform: translate(-50%, 0);
   }
   to {
     opacity: 0;
-    transform: translate(-50%, -12px) scale(0.97);
+    transform: translate(-50%, -140%);
   }
 }
 
@@ -61,6 +67,7 @@
   display: flex;
   flex-direction: column;
   min-width: 0;
+  flex: 1;
 }
 
 .maj__mot {
@@ -83,62 +90,60 @@
   white-space: nowrap;
 }
 
-/* L'œil garde son cerne clair : posé sur une surface pleine, il a
-   besoin de ce liseré pour ne pas se fondre dedans. */
+/* L'œil garde un halo : posé sur une surface pleine, il a besoin de ce
+   liseré pour ne pas se fondre dedans. */
 .maj .oeil {
   flex: none;
   border-radius: 50%;
   box-shadow: 0 2px 8px hsl(var(--accent-h) var(--accent-s) 45% / 0.25);
 }
 
-/* ---------- la version qui attend ---------- */
+/* ---------- la coche ---------- */
 
-/* Elle porte une décision : elle est donc plus large, plus haute, et
-   elle ne part pas toute seule. Un rappel qui s'efface pendant qu'on
-   lit ce qu'il propose est un rappel perdu. */
-.maj--prete {
-  max-width: min(420px, calc(100vw - 24px));
-  padding: 8px 8px 8px 12px;
-  border-radius: var(--r-lg);
-  cursor: default;
-  border-color: var(--accent-line);
-}
-
-.maj__action {
+/* Elle se TRACE. Un trait qui se remplit dit que quelque chose vient
+   d'aboutir ; une icône posée d'un coup dit seulement qu'elle est là.
+   `stroke-dashoffset` est la seule propriété qui sache dessiner un
+   chemin — et elle s'anime sur le compositeur, sans mise en page. */
+.maj__coche {
+  display: grid;
+  place-items: center;
   flex: none;
-  height: 32px;
-  padding: 0 13px;
-  border-radius: var(--r-xs);
-  background: var(--accent);
-  color: var(--accent-ink);
-  font-size: 13px;
-  font-weight: 570;
-  box-shadow: 0 4px 14px var(--accent-glow);
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: hsl(150 62% 42% / 0.14);
+  color: hsl(150 62% 38%);
+  opacity: 0;
+  transform: scale(0.7);
+  transition:
+    opacity var(--mid) var(--ease),
+    transform var(--mid) var(--ease);
+}
+.maj__coche svg {
+  width: 15px;
+  height: 15px;
+  /* la longueur du chemin, mesurée une fois : 22,6 unités */
+  stroke-dasharray: 23;
+  stroke-dashoffset: 23;
 }
 
-.maj__ecarter {
-  flex: none;
-  height: 32px;
-  padding: 0 9px;
-  border-radius: var(--r-xs);
-  color: var(--text-3);
-  font-size: 12.5px;
-  font-weight: 500;
-  transition: color var(--fast) var(--ease);
+.maj__coche[data-active='true'] {
+  opacity: 1;
+  transform: scale(1);
 }
-.maj__ecarter:hover {
-  color: var(--text-2);
+.maj__coche[data-active='true'] svg {
+  animation: coche-trace 420ms var(--ease) 120ms both;
 }
 
-@media (max-width: 420px) {
-  /* trop étroit pour trois colonnes : « Plus tard » disparaît, la
-     bande reste écartable en la touchant hors du bouton */
-  .maj__ecarter {
-    display: none;
+@keyframes coche-trace {
+  to {
+    stroke-dashoffset: 0;
   }
-  .maj--prete .maj__version {
-    display: none;
-  }
+}
+
+:root[data-theme='dark'] .maj__coche {
+  background: hsl(150 62% 50% / 0.18);
+  color: hsl(150 62% 62%);
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -146,5 +151,9 @@
   .maj[data-sort='true'] {
     animation: none;
     transform: translateX(-50%);
+  }
+  .maj__coche[data-active='true'] svg {
+    animation: none;
+    stroke-dashoffset: 0;
   }
 }

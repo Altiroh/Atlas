@@ -15,7 +15,7 @@
    une règle sous `@media` ne gagne aucune spécificité.
    ======================================================== */
 
-@media (pointer: coarse), (max-width: 560px) {
+@media (pointer: coarse), (max-width: 700px) {
   /* 44 px : le minimum au-dessous duquel on rate sa cible une fois
      sur cinq. Ce n'est pas une préférence, c'est mesuré. */
   .btn {
@@ -48,6 +48,17 @@
   }
   .seg__item--plus {
     padding: 10px 13px;
+  }
+
+  /* Le sélecteur « Se connecter / Créer un compte » n'a que la largeur
+     de la carte de connexion, soit 132 px par moitié. Avec 32 px de
+     marge intérieure, « Créer un compte » ne tenait plus sur une ligne
+     et se repliait en deux — ce qui se lit comme une troncature.
+     La hauteur de cible est conservée, c'est la marge LATÉRALE qui
+     cède, et le texte ne se replie plus jamais. */
+  .seg--large .seg__item {
+    padding: 12px 6px;
+    white-space: nowrap;
   }
 
   /* Les pastilles d'espace, dans l'éditeur : on les touche pour classer. */

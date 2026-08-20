@@ -1,0 +1,136 @@
+/* ========================================================
+   L'arrivée des listes.
+
+   Les éléments montent, légèrement, en décalé. Ce n'est pas
+   de la décoration : un écran qui se peint d'un bloc ne dit
+   pas dans quel ORDRE le lire. Un décalage de trente
+   millisecondes par ligne conduit l'œil du haut vers le bas,
+   et la liste se lit avant d'être lue.
+
+   Trois règles pour que ça ne devienne jamais pénible :
+
+   · CE N'EST PAS UNE ATTENTE. La dernière ligne visible est
+     posée en moins de 300 ms. Au-delà de huit rangs, plus
+     aucun retard n'est ajouté — sinon une longue liste
+     mettrait une seconde à finir d'arriver, chaque fois.
+   · `transform` ET `opacity` SEULS, comme partout ailleurs
+     dans Atlas : aucune mise en page n'est recalculée.
+   · L'animation ne joue QU'AU MONTAGE. React réutilise les
+     éléments d'un rendu à l'autre tant que la clé ne change
+     pas : taper dans une note ne relance rien. Changer de
+     filtre, si — et c'est voulu, la liste a vraiment changé.
+   ======================================================== */
+
+@keyframes monte-doucement {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 10px, 0);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* --- le flux --- */
+
+/* Posé sur `.item` et non sur `.swipe__row` : la rangée porte déjà le
+   `transform` du balayage, et deux transformations sur un même élément
+   s'écrasent — l'animation d'arrivée mangerait le geste. */
+.item,
+.esp__carte,
+.esp__ligne {
+  animation: monte-doucement 340ms var(--ease) both;
+}
+
+/* Le bandeau d'espace et les cartes du panneau des réglages arrivent
+   aussi, mais sans décalage : ils sont seuls de leur espèce. */
+.esp__banniere,
+.setting {
+  animation: monte-doucement 340ms var(--ease) both;
+}
+
+/* --- le décalage --- */
+
+/* Huit rangs suffisent : au neuvième on est déjà hors de l'écran, et
+   le retard cumulé se transformerait en attente. */
+.swipe:nth-child(1) .item,
+.esp__grille > *:nth-child(1),
+.esp__liste > *:nth-child(1) {
+  animation-delay: 0ms;
+}
+.swipe:nth-child(2) .item,
+.esp__grille > *:nth-child(2),
+.esp__liste > *:nth-child(2) {
+  animation-delay: 30ms;
+}
+.swipe:nth-child(3) .item,
+.esp__grille > *:nth-child(3),
+.esp__liste > *:nth-child(3) {
+  animation-delay: 60ms;
+}
+.swipe:nth-child(4) .item,
+.esp__grille > *:nth-child(4),
+.esp__liste > *:nth-child(4) {
+  animation-delay: 90ms;
+}
+.swipe:nth-child(5) .item,
+.esp__grille > *:nth-child(5),
+.esp__liste > *:nth-child(5) {
+  animation-delay: 120ms;
+}
+.swipe:nth-child(6) .item,
+.esp__grille > *:nth-child(6),
+.esp__liste > *:nth-child(6) {
+  animation-delay: 150ms;
+}
+.swipe:nth-child(7) .item,
+.esp__grille > *:nth-child(7),
+.esp__liste > *:nth-child(7) {
+  animation-delay: 180ms;
+}
+.swipe:nth-child(n + 8) .item,
+.esp__grille > *:nth-child(n + 8),
+.esp__liste > *:nth-child(n + 8) {
+  animation-delay: 210ms;
+}
+
+/* Les groupes de jour s'annoncent avant leurs lignes. */
+.daygroup__label {
+  animation: monte-doucement 300ms var(--ease) both;
+}
+
+/* --- les blocs d'un post --- */
+
+/* Ouvrir une note montre son contenu de la même façon. Le décalage y
+   est plus court : on vient de la choisir, on veut la lire. */
+.ed__bloc {
+  animation: monte-doucement 260ms var(--ease) both;
+}
+.ed__bloc:nth-child(2) {
+  animation-delay: 20ms;
+}
+.ed__bloc:nth-child(3) {
+  animation-delay: 40ms;
+}
+.ed__bloc:nth-child(n + 4) {
+  animation-delay: 60ms;
+}
+
+/* Pendant un glissement, l'élément pris est piloté par `transform` :
+   toute animation d'arrivée doit lâcher la main. */
+.ed__bloc--pris {
+  animation: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .item,
+  .esp__carte,
+  .esp__ligne,
+  .esp__banniere,
+  .setting,
+  .daygroup__label,
+  .ed__bloc {
+    animation: none;
+  }
+}

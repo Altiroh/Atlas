@@ -15,12 +15,25 @@ import './styles/bonjour.css'
 import './styles/confirmation.css'
 import './styles/maj.css'
 import './styles/demarrage.css'
+import './styles/apparition.css'
+import './styles/canevas.css'
+import './styles/oeil.css'
 /* EN DERNIER, et c'est structurel : `feuille.css` n'ajoute pas des
    composants, il ADAPTE ceux d'au-dessus aux écrans étroits. Une règle
    sous `@media` ne gagne aucune spécificité — chargée avant, elle se
    fait écraser par la règle de base du composant. */
 import './styles/feuille.css'
 import './styles/doigt.css'
+
+/* Safari ignore `user-scalable=no` depuis iOS 10 — la balise ne suffit
+   donc pas, et c'est justement sur iPhone que le zoom casse la coque.
+   Les événements `gesture*` sont propres à WebKit et restent, eux,
+   annulables : c'est le seul moyen qui tienne. La carte mentale et le
+   dessin gèrent leur propre pincement via Pointer Events, que ceci
+   n'affecte pas. */
+for (const nom of ['gesturestart', 'gesturechange', 'gestureend']) {
+  document.addEventListener(nom, (e) => e.preventDefault(), { passive: false })
+}
 
 /* Le thème est appliqué AVANT le premier rendu : sans ça, l'app
    s'affiche une image en clair avant de basculer en nuit. */

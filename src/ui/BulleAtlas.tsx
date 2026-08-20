@@ -78,11 +78,22 @@ export function BulleAtlas() {
       {ouverte && (
         <div className="causerie rise" role="dialog" aria-label="Atlas">
           <div className="causerie__tete">
-            {/* L'œil revient ICI, en tête à gauche : la fenêtre monte du
-                bas et recouvre la bulle, il fallait donc qu'il reste
-                visible quelque part — et le coin haut gauche est le
-                point de départ de la lecture. */}
-            <OeilAtlas size={26} mode="cause" />
+            {/* L'ŒIL EST LE BOUTON DE FERMETURE — ici comme en bas.
+
+                La fenêtre monte du bas et recouvre la bulle : l'œil
+                qu'on a touché pour ouvrir n'est plus atteignable, et
+                on cherche une croix. Celui-ci prend sa place, au même
+                geste. « Où qu'il soit, le toucher referme. »
+
+                Il entre en glissant depuis la position de la bulle, ce
+                qui montre que c'est LE MÊME œil qui a été soulevé. */}
+            <button
+              className="causerie__oeil"
+              onClick={() => setOuverte(false)}
+              aria-label="Fermer Atlas"
+            >
+              <OeilAtlas size={26} mode="cause" />
+            </button>
             <span className="causerie__nom">Atlas</span>
             <span className="causerie__etat">V0 — sans intelligence</span>
             <button

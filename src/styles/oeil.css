@@ -1,0 +1,103 @@
+/* ========================================================
+   LA COURONNE D'ATLAS.
+
+   Autour de l'œil, des langues qui frémissent et des braises
+   en orbite — un soleil, pas un halo. Trois tons seulement,
+   tous déduits de l'accent : changer la couleur de l'app
+   change la couleur du feu.
+
+   LE RENDU TIENT À UNE SEULE CHOSE : ELLES NE BATTENT PAS
+   ENSEMBLE. Chaque langue a sa durée, aucune n'est multiple
+   d'une autre, et les retards sont NÉGATIFS — l'animation
+   démarre donc déjà entamée, à un endroit différent pour
+   chacune. Sans ça, les onze langues partiraient au même
+   instant du même état : ce ne serait plus un frémissement,
+   ce serait un clignotement.
+   ======================================================== */
+
+.oeil__couronne {
+  /* le point de rotation est le centre du dessin, pas celui de chaque
+     langue : elles pivotent AUTOUR DE L'ŒIL, comme une couronne */
+  transform-box: view-box;
+  transform-origin: 80px 80px;
+}
+
+/* Trois tons : l'accent, une braise plus claire décalée vers l'orange,
+   et une profonde qui donne l'ombre. C'est ce décalage de teinte —
+   pas la seule luminosité — qui fait qu'on lit du feu. */
+.oeil__langue[data-ton='0'],
+.oeil__braise[data-ton='0'] {
+  fill: hsl(var(--accent-h) var(--accent-s) var(--accent-l));
+}
+.oeil__langue[data-ton='1'],
+.oeil__braise[data-ton='1'] {
+  fill: hsl(calc(var(--accent-h) + 14) var(--accent-s) calc(var(--accent-l) + 9%));
+}
+.oeil__langue[data-ton='2'],
+.oeil__braise[data-ton='2'] {
+  fill: hsl(calc(var(--accent-h) - 6) calc(var(--accent-s) * 0.94) calc(var(--accent-l) - 20%));
+}
+
+.oeil__langue {
+  transform-box: view-box;
+  transform-origin: 80px 80px;
+  animation-name: langue-fremit;
+  animation-timing-function: cubic-bezier(0.45, 0, 0.35, 1);
+  animation-iteration-count: infinite;
+  animation-direction: alternate;
+  will-change: transform;
+}
+
+/* Un souffle, pas un battement : deux degrés et quatre centièmes
+   d'échelle. Au-delà, la couronne se met à tourner, et l'œil semble
+   posé sur un ventilateur. */
+@keyframes langue-fremit {
+  from {
+    transform: rotate(-1.4deg) scale(0.975);
+    opacity: 0.82;
+  }
+  to {
+    transform: rotate(1.6deg) scale(1.035);
+    opacity: 1;
+  }
+}
+
+.oeil__braise {
+  transform-box: view-box;
+  transform-origin: 80px 80px;
+  animation-name: braise-derive;
+  animation-timing-function: ease-in-out;
+  animation-iteration-count: infinite;
+  animation-direction: alternate;
+}
+
+/* Les braises dérivent plus loin et plus lentement que les langues :
+   elles sont détachées, elles ne sont plus tenues par le feu. */
+@keyframes braise-derive {
+  from {
+    transform: rotate(-3deg) scale(0.9);
+    opacity: 0.45;
+  }
+  to {
+    transform: rotate(4deg) scale(1.12);
+    opacity: 0.95;
+  }
+}
+
+/* En conversation, tout le feu s'accélère d'un tiers. C'est la seule
+   chose qui change : la couronne ne dit pas ce qu'Atlas pense, elle
+   dit qu'il est réveillé. */
+.oeil--cause .oeil__langue,
+.oeil--cause .oeil__braise {
+  animation-duration: 2.4s !important;
+}
+.oeil--cause .oeil__braise {
+  animation-duration: 3s !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .oeil__langue,
+  .oeil__braise {
+    animation: none;
+  }
+}

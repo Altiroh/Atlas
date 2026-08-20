@@ -1,0 +1,219 @@
+/* ========================================================
+   La barre d'outils des canevas — carte mentale et dessin.
+
+   Une colonne contre le bord droit, centrée en hauteur. Elle
+   est la même pour les deux : ce sont deux canevas, on les
+   pilote du même endroit et avec les mêmes gestes.
+
+   Le tiroir s'ouvre VERS LA GAUCHE, dans le prolongement du
+   bouton — pas par-dessus le dessin. On voit ce qu'on quitte
+   et ce qu'on prend en même temps.
+   ======================================================== */
+
+.canevas__outils {
+  position: absolute;
+  right: calc(12px + var(--safe-right));
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 4;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 5px;
+  border-radius: 99px;
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow);
+}
+
+.canevas__bouton {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  color: var(--text-2);
+  transition:
+    background var(--fast) var(--ease),
+    color var(--fast) var(--ease);
+}
+.canevas__bouton:hover:not(:disabled) {
+  background: var(--surface-sunken);
+  color: var(--text);
+}
+.canevas__bouton:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+
+/* L'outil courant est TEINTÉ, pas seulement plus sombre : sur un
+   canevas déjà couvert de traits, une nuance de gris ne se voit pas. */
+.canevas__bouton[data-actif] {
+  background: var(--accent);
+  color: var(--accent-ink);
+  box-shadow: 0 3px 12px var(--accent-glow);
+}
+.canevas__bouton[data-actif]:hover {
+  background: var(--accent);
+  color: var(--accent-ink);
+}
+
+.canevas__sep {
+  width: 20px;
+  height: 1px;
+  margin: 3px 0;
+  background: var(--border-strong);
+  flex: none;
+}
+
+/* ---------- le tiroir ---------- */
+
+.canevas__tiroirHote {
+  position: relative;
+  display: grid;
+  place-items: center;
+}
+
+.canevas__tiroir {
+  position: absolute;
+  right: calc(100% + 8px);
+  top: 50%;
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  padding: 5px;
+  border-radius: 99px;
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow);
+  /* le centrage vertical est porté par l'animation : deux `transform`
+     sur le même élément s'écrasent */
+  animation: tiroir-sort 200ms var(--ease) both;
+}
+
+@keyframes tiroir-sort {
+  from {
+    opacity: 0;
+    transform: translate(10px, -50%) scale(0.94);
+  }
+  to {
+    opacity: 1;
+    transform: translate(0, -50%) scale(1);
+  }
+}
+
+.canevas__tiroir .canevas__bouton {
+  width: 34px;
+  height: 34px;
+}
+
+/* ---------- les aperçus dans les boutons ---------- */
+
+/* Une pastille de couleur : c'est l'aperçu de l'encre courante. */
+.canevas__pastille {
+  display: block;
+  width: 17px;
+  height: 17px;
+  border-radius: 50%;
+  border: 1.5px solid var(--surface-solid);
+  box-shadow: 0 0 0 1px var(--border-strong);
+}
+
+/* Un disque dont le diamètre EST l'épaisseur : le seul aperçu qui ne
+   demande pas d'être traduit. Les trois pastilles côte à côte se
+   comparent d'un regard, ce qu'un chiffre ne permet jamais. */
+.canevas__point {
+  display: block;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+/* ---------- au doigt ---------- */
+
+@media (pointer: coarse), (max-width: 700px) {
+  .canevas__outils {
+    right: calc(8px + var(--safe-right));
+    padding: 4px;
+  }
+  .canevas__bouton {
+    width: 42px;
+    height: 42px;
+  }
+  .canevas__tiroir .canevas__bouton {
+    width: 40px;
+    height: 40px;
+  }
+}
+
+/* Trop court pour une colonne centrée — elle déborderait en haut et en
+   bas. Elle se cale alors en haut, sous la bande de l'encoche. */
+@media (max-height: 520px) {
+  .canevas__outils {
+    top: calc(max(var(--safe-top), 10px) + 48px);
+    transform: none;
+  }
+  .canevas__tiroir {
+    animation: none;
+    transform: translateY(-50%);
+  }
+}
+
+/* Le pourcentage de zoom ne paraît QUE PENDANT le geste. Affiché en
+   permanence, c'est un chiffre de plus à ignorer ; affiché pendant
+   qu'on pince, c'est un repère. */
+.carte__zoom {
+  position: absolute;
+  left: 50%;
+  top: calc(max(var(--safe-top), 10px) + 14px);
+  z-index: 4;
+  padding: 5px 12px;
+  border-radius: 99px;
+  background: var(--surface-solid);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-sm);
+  font-size: 12px;
+  font-weight: 560;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-2);
+  pointer-events: none;
+  opacity: 0;
+  transform: translate(-50%, -6px);
+  transition:
+    opacity var(--fast) var(--ease),
+    transform var(--fast) var(--ease);
+}
+.carte__zoom[data-vu] {
+  opacity: 1;
+  transform: translate(-50%, 0);
+}
+
+/* ---------- les aperçus propres au dessin ---------- */
+
+.canevas__pastille[data-encre='accent'] { background: var(--accent); }
+.canevas__pastille[data-encre='encre'] { background: var(--text); }
+.canevas__pastille[data-encre='douce'] { background: var(--text-3); }
+
+/* La vignette de papier montre le motif lui-même : on choisit ce qu'on
+   voit, pas un mot qu'il faudrait traduire. */
+.canevas__papier {
+  display: block;
+  width: 20px;
+  height: 20px;
+  border-radius: 5px;
+  border: 1px solid var(--border-strong);
+  background-color: var(--surface-solid);
+}
+.canevas__papier[data-papier='points'] {
+  background-image: radial-gradient(circle at 1px 1px, var(--text-3) 1px, transparent 0);
+  background-size: 5px 5px;
+}
+.canevas__papier[data-papier='grille'] {
+  background-image: linear-gradient(var(--text-3) 1px, transparent 1px),
+    linear-gradient(90deg, var(--text-3) 1px, transparent 1px);
+  background-size: 6px 6px;
+  opacity: 0.85;
+}
+.canevas__papier[data-papier='lignes'] {
+  background-image: linear-gradient(var(--text-3) 1px, transparent 1px);
+  background-size: 100% 6px;
+  opacity: 0.85;
+}

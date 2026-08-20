@@ -26,7 +26,7 @@
   }
 }
 
-@media (max-width: 560px) {
+@media (max-width: 700px), (pointer: coarse) {
   .sheet {
     /* collée en bas, étirée sur toute la largeur */
     place-items: end stretch;
@@ -86,7 +86,7 @@
    flottant au-dessus d'un téléphone laisse deux bandes inutiles sur
    les côtés, et le clavier la coupe dès qu'on y écrit. */
 
-@media (max-width: 560px) {
+@media (max-width: 700px), (pointer: coarse) {
   .causerie {
     left: 0;
     right: 0;
@@ -111,5 +111,32 @@
     /* le fil occupe ce qui reste, et lui seul défile */
     flex: 1;
     min-height: 0;
+  }
+}
+
+/* L'œil de l'en-tête EST le bouton de fermeture. Il entre en glissant
+   depuis le coin de la bulle, pour montrer que c'est le même œil qu'on
+   vient de soulever — pas un second Atlas apparu de nulle part. */
+.causerie__oeil {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  animation: oeil-monte 420ms var(--ease) both;
+}
+.causerie__oeil:hover {
+  background: var(--surface-sunken);
+}
+
+@keyframes oeil-monte {
+  from {
+    opacity: 0;
+    transform: translate(14px, 26px) scale(1.35);
+  }
+  to {
+    opacity: 1;
+    transform: none;
   }
 }

@@ -632,66 +632,70 @@
    moment où l'on pose le curseur ferait sauter tout le texte.
    ======================================================== */
 
-@media (pointer: coarse), (max-width: 560px) {
+@media (pointer: coarse), (max-width: 700px) {
+  /* LA GOUTTIÈRE PASSE À GAUCHE, dans une bande réservée en permanence.
+     À droite, elle tombait sous le pouce qui tient le téléphone, et
+     surtout à l'endroit exact où le texte finit sa ligne. À gauche,
+     elle est là où commence la ligne — donc là où l'œil revient. */
   .ed {
-    padding-right: 42px;
+    padding-left: 44px;
+    padding-right: 0;
   }
 
   .ed__gouttiere {
-    left: auto;
-    right: -42px;
+    left: -44px;
+    right: auto;
     top: 0;
-    /* le « + » d'abord, le plus loin dans la marge : c'est le geste
-       principal, et le pouce arrive par le bord */
-    flex-direction: row-reverse;
-    gap: 2px;
+    gap: 3px;
   }
 
-  /* pas de survol : seul le bloc où l'on écrit montre ses outils */
+  /* AU DOIGT, PAS DE SURVOL — et surtout pas de `:focus-within` : le
+     bouton disparaîtrait à l'instant où on le touche, puisque le champ
+     perd alors le focus. C'est l'éditeur qui désigne le bloc actif. */
   .ed__bloc:hover > .ed__gouttiere {
     opacity: 0;
     pointer-events: none;
   }
-  .ed__bloc:focus-within > .ed__gouttiere {
+  .ed__bloc[data-outils] > .ed__gouttiere {
     opacity: 1;
     pointer-events: auto;
   }
 
   .ed__bouton {
-    width: 34px;
-    height: 34px;
+    width: 36px;
+    height: 36px;
   }
 
-  /* Le « + » se voit vraiment : plein, teinté de l'accent, rond.
-     C'est la seule affordance d'ajout au doigt — la discrétion, ici,
-     reviendrait à la cacher. */
-  .ed__gouttiere > .ed__bouton:first-child {
+  /* Le « + » se voit vraiment : plein, teinté de l'accent, rond. C'est
+     la seule affordance d'ajout au doigt — la discrétion reviendrait
+     ici à le cacher. */
+  .ed__bouton--plus {
     background: var(--accent);
     color: var(--accent-ink);
     border-radius: 50%;
     box-shadow: var(--shadow-sm);
   }
-  .ed__gouttiere > .ed__bouton:first-child:hover {
+  .ed__bouton--plus:hover {
     background: var(--accent);
     color: var(--accent-ink);
   }
 
   .ed__poignee {
-    opacity: 0.55;
+    opacity: 0.5;
   }
 
-  /* dans une colonne, la bande de droite n'existe pas : on revient à
-     gauche, contre le bloc */
+  /* dans une colonne, la bande réservée n'existe pas : les outils se
+     replient contre le bloc, en colonne et en petit */
   .ed__colonne .ed__gouttiere {
-    right: auto;
-    left: -24px;
+    left: -26px;
     flex-direction: column;
+    gap: 1px;
   }
   .ed__colonne .ed__bouton {
     width: 24px;
     height: 26px;
   }
-  .ed__colonne .ed__gouttiere > .ed__bouton:first-child {
+  .ed__colonne .ed__bouton--plus {
     border-radius: var(--r-xs);
     background: none;
     color: var(--text-3);
@@ -715,12 +719,28 @@
   right: 0;
   bottom: 0;
   top: auto;
+  /* PLEINE LARGEUR, plafonnée et centrée. `width: auto` seul donnait une
+     feuille de la largeur de l'écran sur un iPad — 1024 px de menu pour
+     choisir un type de bloc. Le plafond la ramène à une largeur de
+     lecture, `margin: auto` la recentre entre `left` et `right`. */
   width: auto;
-  max-height: min(66vh, 460px);
+  max-width: 560px;
+  margin: 0 auto;
+  /* une hauteur FIXE, pas un maximum : une feuille qui change de taille
+     selon le nombre de résultats ne se pose jamais au même endroit */
+  height: min(68dvh, 480px);
   padding: 0 8px calc(10px + var(--safe-bottom));
   border-radius: var(--r-lg) var(--r-lg) 0 0;
   border-bottom: 0;
   animation: feuille-monte var(--mid) var(--ease) both;
+}
+
+/* Le menu de bloc, lui, tient en cinq lignes : lui imposer 68 % de
+   l'écran ferait une feuille aux trois quarts vide. */
+.ed__menu.ed__catalogue--feuille {
+  height: auto;
+  max-height: min(68dvh, 480px);
+  padding-bottom: calc(14px + var(--safe-bottom));
 }
 
 /* la barrette : elle dit « ça vient du bas, et ça repart par le bas » */
@@ -754,7 +774,7 @@
   }
 }
 
-@media (max-width: 560px) {
+@media (max-width: 700px), (pointer: coarse) {
   /* au doigt, les entrées du catalogue se touchent : elles s'aèrent */
   .ed__catalogue--feuille .menu__item {
     padding: 11px 10px;
