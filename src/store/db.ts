@@ -137,6 +137,43 @@ export function registreImages(): Record<string, number> {
   return lireRegistre()
 }
 
+/* ---------------------------------------------------------------
+   CE QUI EST DÉJÀ CHEZ L'HÉBERGEUR.
+
+   Une image est immuable : une fois déposée, elle n'a plus jamais
+   besoin de repartir. Sans mémoire de ce qui est monté, la synchro
+   les repropose toutes à chaque tour — l'hébergeur répond « déjà
+   présent », on l'ignore, et on a payé un aller-retour réseau par
+   image, toutes les quatre-vingt-dix secondes.
+
+   Cette liste sert AUSSI à réparer : elle permet de parcourir toutes
+   les images de la base à chaque tour, et non plus seulement celles
+   des notes modifiées — sans que ça coûte quoi que ce soit pour les
+   images déjà en ligne. C'est ce qui rattrape le retard des images
+   posées avant que la synchro ne sache les voir.
+   --------------------------------------------------------------- */
+
+const ENVOYEES = 'atlas.images.envoyees'
+
+export function imagesEnvoyees(): Set<string> {
+  try {
+    return new Set(JSON.parse(localStorage.getItem(ENVOYEES) ?? '[]') as string[])
+  } catch {
+    return new Set()
+  }
+}
+
+export function marquerEnvoyee(id: string) {
+  const jeu = imagesEnvoyees()
+  if (jeu.has(id)) return
+  jeu.add(id)
+  try {
+    localStorage.setItem(ENVOYEES, JSON.stringify([...jeu]))
+  } catch {
+    /* au pire on renverra : « déjà présent » n'est pas une erreur */
+  }
+}
+
 /** Place occupée par les images, en octets. */
 export function octetsImages(): number {
   return Object.values(lireRegistre()).reduce((n, v) => n + v, 0)
@@ -184,6 +221,14 @@ export function oublierToutesLesImages() {
   for (const url of urls.values()) URL.revokeObjectURL(url)
   urls.clear()
   ecrireRegistre({})
+  /* Le souvenir de ce qui est monté part avec : au changement de
+     compte, le seau n'est plus le même, et croire qu'une image y est
+     déjà l'empêcherait d'y arriver. */
+  try {
+    localStorage.removeItem(ENVOYEES)
+  } catch {
+    /* sans importance */
+  }
 }
 
 export function oublierImage(id: string) {

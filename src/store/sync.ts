@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 import { useAtlas, viderLesAttentes, type Espace, type Post } from './atlas'
-import { db } from './db'
+import { db, imagesEnvoyees, marquerEnvoyee } from './db'
 import type { Dorsale } from './dorsale'
 import { imagesDuPost } from './formes'
 
@@ -104,9 +104,18 @@ export const useSync = create<SyncStore>((set, get) => ({
 
       // 4-5. ce qui a changé ici
       await viderLesAttentes()
+
+      /* LES IMAGES D'ABORD, ET CELLES DE TOUTE LA BASE.
+         Avant les notes, pour qu'aucun appareil ne reçoive jamais une
+         note désignant un fichier qui n'est pas encore là. Et sur
+         toute la base, pas seulement sur le lot : les images d'une
+         note déjà propre n'auraient sinon plus aucune occasion de
+         partir. */
+      const tout = useAtlas.getState()
+      await televerserImages(dorsale, tout.posts, tout.espaces)
+
       const lot = useAtlas.getState().aEnvoyer()
       if (lot.posts.length || lot.espaces.length) {
-        await televerserImages(dorsale, lot.posts, lot.espaces)
         await dorsale.pousser(lot)
         // 6. seulement maintenant
         useAtlas.getState().marquerPropre([
@@ -185,14 +194,40 @@ async function rapatrierImages(dorsale: Dorsale) {
     const local = await db.lire<Blob>('images', id)
     if (local) continue
     const distant = await dorsale.recupererImage(id)
-    if (distant) await db.poser('images', distant, id)
+    if (distant) {
+      await db.poser('images', distant, id)
+      // elle vient du serveur : inutile de la lui renvoyer un jour
+      marquerEnvoyee(id)
+    }
   }
 }
 
+/**
+ * Les images qui ne sont pas encore chez l'hébergeur.
+ *
+ * ── ON PARCOURT TOUTE LA BASE, PAS SEULEMENT CE QUI VIENT DE CHANGER
+ *
+ * Cette fonction ne recevait que le LOT — les enregistrements marqués
+ * modifiés. Ça paraît économe, et ça condamnait tout le passé : une
+ * note synchronisée avant que la synchro ne sache voir les images
+ * d'une fiche est propre pour toujours. Rien ne la resalira, donc
+ * `televerserImages` ne la regardera plus jamais, donc ses images ne
+ * quitteraient jamais l'appareil qui les a importées.
+ *
+ * On regarde donc TOUT, à chaque tour, et c'est la liste des images
+ * déjà envoyées qui rend l'opération gratuite : une image connue ne
+ * coûte pas même une lecture de la base locale. Seules les inconnues
+ * partent — et le retard se rattrape tout seul, au premier tour qui
+ * suit la mise à jour.
+ */
 async function televerserImages(dorsale: Dorsale, posts: Post[], espaces: Espace[]) {
+  const deja = imagesEnvoyees()
   for (const id of new Set(imagesReferencees(posts, espaces))) {
+    if (deja.has(id)) continue
     const blob = await db.lire<Blob>('images', id)
-    if (blob) await dorsale.envoyerImage(id, blob)
+    if (!blob) continue
+    await dorsale.envoyerImage(id, blob)
+    marquerEnvoyee(id)
   }
 }
 
