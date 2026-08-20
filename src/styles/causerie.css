@@ -1,0 +1,274 @@
+/* ========================================================
+   LA CONVERSATION — les cartes de résultat.
+
+   Atlas ne répond pas seulement par des phrases : il rend des
+   CONSTATS et des PROPOSITIONS. Les deux se posent dans le fil
+   comme des cartes, distinctes des bulles de dialogue, parce
+   qu'elles ne se lisent pas de la même façon — une bulle se
+   parcourt, une carte se travaille.
+
+   Elles prennent toute la largeur du fil, et non 86 % comme
+   une bulle : on y coche des cases.
+   ======================================================== */
+
+.carte-atlas {
+  align-self: stretch;
+  padding: 13px 14px;
+  border-radius: var(--r);
+  border: 1px solid var(--border);
+  background: var(--surface-sunken);
+}
+
+.carte-atlas[data-fait] {
+  opacity: 0.62;
+}
+
+.carte-atlas__titre {
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--text);
+}
+
+.carte-atlas__pourquoi {
+  margin-top: 4px;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--text-2);
+  text-wrap: pretty;
+}
+
+/* La note est le pas-de-côté : ce qu'Atlas s'interdit de faire, et
+   pourquoi. Elle se distingue du « pourquoi », qui explique la
+   trouvaille. */
+.carte-atlas__note {
+  margin-top: 10px;
+  padding-top: 9px;
+  border-top: 1px solid var(--border);
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--text-3);
+  font-style: italic;
+}
+
+.carte-atlas__pied {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.carte-atlas__pied .btn {
+  gap: 6px;
+  height: 36px;
+  font-size: 13px;
+  font-weight: 560;
+}
+
+.carte-atlas__fait {
+  font-size: 12px;
+  color: var(--text-3);
+}
+
+/* « Rien à signaler » est une réponse à part entière : elle mérite sa
+   forme, plus légère qu'une carte pleine. Sans elle, l'absence de
+   résultat ressemblerait à une panne. */
+.carte-atlas--rien {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  background: none;
+  border-style: dashed;
+  font-size: 12.5px;
+  color: var(--text-3);
+}
+
+.carte-atlas--regle {
+  border-color: var(--accent-line);
+  background: var(--accent-soft);
+}
+.carte-atlas--regle .carte-atlas__titre {
+  font-size: 11px;
+  font-weight: 580;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--accent-text);
+}
+
+.carte-atlas--annule {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 10px 12px;
+  font-size: 12.5px;
+  color: var(--text-2);
+}
+.carte-atlas--annule[data-utilisee='true'] {
+  opacity: 0.6;
+}
+
+/* ---------- les familles ---------- */
+
+.familles {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: 10px;
+}
+
+.famille {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 2px 10px;
+  padding: 9px 11px;
+  border-radius: var(--r-sm);
+  background: var(--surface-solid);
+  border: 1px solid var(--border);
+  text-align: left;
+  transition: border-color var(--fast) var(--ease);
+}
+.famille:hover { border-color: var(--accent-line); }
+
+.famille__nom { font-size: 13.5px; font-weight: 560; color: var(--text); }
+.famille__quoi { grid-column: 1; font-size: 12px; color: var(--text-3); }
+
+/* Le nombre de logiques : il dit ce qu'on va trouver en dépliant,
+   ce qu'un chevron ne dit pas. */
+.famille__n {
+  grid-row: 1 / 3;
+  align-self: center;
+  min-width: 26px;
+  padding: 2px 8px;
+  border-radius: 99px;
+  background: var(--accent-soft);
+  color: var(--accent-text);
+  font-size: 11.5px;
+  font-weight: 600;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---------- une logique dans la liste ---------- */
+
+.script {
+  display: flex;
+  align-items: stretch;
+  gap: 2px;
+}
+
+.script__corps {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  padding: 8px 10px;
+  border-radius: var(--r-sm);
+  text-align: left;
+}
+.script__corps:hover { background: var(--surface-solid); }
+
+.script__nom { font-size: 13.5px; font-weight: 540; color: var(--text); }
+.script__quoi { font-size: 12px; color: var(--text-3); }
+
+/* APPROFONDIR TIENT EN UN POINT D'INTERROGATION. Chaque logique
+   porte sa règle exacte, et elle est à un appui — c'est ce qui
+   permet de juger une proposition au lieu de la subir. */
+.script__regle {
+  flex: none;
+  width: 28px;
+  border-radius: var(--r-sm);
+  color: var(--text-3);
+  font-size: 13px;
+  font-weight: 620;
+}
+.script__regle:hover { background: var(--accent-soft); color: var(--accent-text); }
+
+/* ---------- les éléments d'un résultat ---------- */
+
+.elements {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-top: 10px;
+  max-height: 260px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.element {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 7px 9px;
+  border-radius: var(--r-sm);
+  text-align: left;
+  transition: background var(--fast) var(--ease);
+}
+.element:hover { background: var(--surface-solid); }
+.element--fixe { cursor: default; }
+
+.element__case {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 19px;
+  height: 19px;
+  border-radius: 6px;
+  border: 1.5px solid var(--border-strong);
+  color: var(--accent-ink);
+}
+.element[data-pris='true'] .element__case {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+.element__corps { min-width: 0; display: flex; flex-direction: column; }
+.element__nom {
+  font-size: 13px;
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.element[data-pris='false'] .element__nom { color: var(--text-3); }
+.element__detail { font-size: 11.5px; color: var(--text-3); }
+
+/* ---------- les raccourcis ---------- */
+
+/* Quatre demandes toutes prêtes. Une conversation qui n'attend qu'une
+   phrase libre laisse devant un champ vide — et devant un champ vide,
+   on ne demande rien. */
+.causerie__raccourcis {
+  display: flex;
+  gap: 6px;
+  padding: 0 12px 2px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.causerie__raccourcis::-webkit-scrollbar { display: none; }
+
+.causerie__puce {
+  flex: none;
+  padding: 6px 11px;
+  border-radius: 99px;
+  border: 1px solid var(--border);
+  background: var(--surface-sunken);
+  color: var(--text-2);
+  font-size: 12.5px;
+  white-space: nowrap;
+  transition: border-color var(--fast) var(--ease), color var(--fast) var(--ease);
+}
+.causerie__puce:hover { border-color: var(--accent-line); color: var(--accent-text); }
+
+/* La conversation porte maintenant des cartes : elle a besoin de plus
+   de place que la fenêtre de 370 px d'origine. */
+@media (min-width: 701px) and (pointer: fine) {
+  .causerie {
+    width: min(440px, calc(100vw - 36px));
+    max-height: min(620px, 78vh);
+  }
+}

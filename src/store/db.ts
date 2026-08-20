@@ -131,6 +131,12 @@ function ecrireRegistre(r: Record<string, number>) {
   }
 }
 
+/** Le registre lui-même — identifiant vers taille. Les scripts en ont
+    besoin pour repérer ce qui est stocké sans être référencé. */
+export function registreImages(): Record<string, number> {
+  return lireRegistre()
+}
+
 /** Place occupée par les images, en octets. */
 export function octetsImages(): number {
   return Object.values(lireRegistre()).reduce((n, v) => n + v, 0)
