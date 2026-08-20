@@ -326,6 +326,100 @@ export async function exporter(posts: Post[], espaces: Espace[]): Promise<Bilan>
   return bilan
 }
 
+/* ================= LE MARKDOWN À COLLER AILLEURS =================
+
+   L'archive .zip est faite pour SURVIVRE : elle emporte les images,
+   un fichier de données fidèle, et se range sur un disque. Ce n'est
+   pas ce qu'on veut quand on veut montrer une note à quelqu'un — ou
+   la donner à lire à un modèle de langage.
+
+   D'où ce second chemin, et la différence tient en une chose : IL
+   N'Y A PAS DE FICHIERS. Un lien `images/img3f2.webp` collé dans une
+   conversation ne mène nulle part et fait du bruit ; on le remplace
+   donc par la légende entre crochets, qui, elle, dit quelque chose.
+
+   Le reste est le même markdown que l'archive — mêmes titres, mêmes
+   listes, mêmes tableaux. Deux rendus différents pour le même
+   contenu finiraient par diverger. */
+
+/** Une carte d'images sans extension : les liens deviendront du texte. */
+const SANS_FICHIERS = new Map<string, string>()
+
+function nettoyerLiens(md: string): string {
+  return (
+    md
+      // ![légende](images/…) → [image : légende], ou [image] si muette
+      .replace(/!\[([^\]]*)\]\(images\/[^)]*\)/g, (_, legende: string) =>
+        legende.trim() ? `[image : ${legende.trim()}]` : '[image]',
+      )
+      .replace(/\n{3,}/g, '\n\n')
+      .trim()
+  )
+}
+
+/** Une note seule, prête à être collée. */
+export function noteEnMarkdown(post: Post): string {
+  return nettoyerLiens(postEnMarkdown(post, SANS_FICHIERS))
+}
+
+/**
+ * Un espace entier : son nom, puis toutes ses notes, de la plus
+ * récente à la plus ancienne.
+ *
+ * L'en-tête dit combien il y en a et à quelle date l'extrait a été
+ * pris. Sans ça, un texte de dix mille mots collé dans une
+ * conversation ne dit pas d'où il vient, et on ne sait plus, trois
+ * jours après, s'il est à jour.
+ */
+export function espaceEnMarkdown(nom: string, posts: Post[]): string {
+  const ordre = [...posts].sort((a, b) => b.createdAt - a.createdAt)
+  const tete = [
+    `# ${nom}`,
+    `*${ordre.length} note${ordre.length > 1 ? 's' : ''} · extrait d’Atlas le ${dateLisible(Date.now())}*`,
+  ]
+  return [...tete, ...ordre.map((p) => nettoyerLiens(postEnMarkdown(p, SANS_FICHIERS)))].join(
+    '\n\n',
+  )
+}
+
+/**
+ * Met le texte dans le presse-papier, et dit si ça a marché.
+ *
+ * `navigator.clipboard` échoue hors HTTPS et hors geste utilisateur.
+ * Le repli par `document.execCommand` est déprécié mais marche encore
+ * partout — et l'alternative serait de perdre le texte en silence.
+ */
+export async function copier(texte: string): Promise<boolean> {
+  try {
+    await navigator.clipboard.writeText(texte)
+    return true
+  } catch {
+    try {
+      const zone = document.createElement('textarea')
+      zone.value = texte
+      zone.style.cssText = 'position:fixed;left:-9999px'
+      document.body.appendChild(zone)
+      zone.select()
+      const ok = document.execCommand('copy')
+      zone.remove()
+      return ok
+    } catch {
+      return false
+    }
+  }
+}
+
+/** Le même texte, en fichier .md — quand le presse-papier ne suffit pas. */
+export function telechargerMarkdown(nom: string, texte: string) {
+  const blob = new Blob([texte], { type: 'text/markdown;charset=utf-8' })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = `${nom.replace(/[^\p{L}\p{N} _-]/gu, '').trim() || 'atlas'}.md`
+  a.click()
+  setTimeout(() => URL.revokeObjectURL(url), 30_000)
+}
+
 export function dernierExport(): number | null {
   try {
     const v = localStorage.getItem('atlas.export')

@@ -206,6 +206,16 @@ export const IconReturn = ({ size = 20, className, style }: Props) => (
   </svg>
 )
 
+/* Le cadre et le chevron du logo markdown, réduits à l'essentiel :
+   c'est un format, et un format se reconnaît à sa marque. */
+export const IconMarkdown = ({ size = 20, className, style }: Props) => (
+  <svg {...base(size)} className={className} style={style} aria-hidden="true">
+    <rect x="2.5" y="5.5" width="19" height="13" rx="2.2" />
+    <path d="M6 15V9l2.6 3L11 9v6" strokeWidth={1.5} />
+    <path d="M15 9v4.5M15 13.5h-1.6L15 15.5l1.6-2H15" strokeWidth={1.5} />
+  </svg>
+)
+
 export const IconMoins = ({ size = 20, className, style }: Props) => (
   <svg {...base(size)} className={className} style={style} aria-hidden="true">
     <path d="M5 12h14" />

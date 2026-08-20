@@ -4,10 +4,12 @@ import { aUneCouleur, SANS_COULEUR, SANS_ESPACE, useAtlas, type Espace } from '.
 import { useCompte } from '../store/compte'
 import { oublierImage, stockerImage } from '../store/db'
 import { lisible, peutAjouterImage, QUOTA_IMAGES } from '../store/quota'
+import { copier, espaceEnMarkdown, telechargerMarkdown } from '../store/exporter'
 import {
   IconClose,
   IconCoche,
   IconImage,
+  IconMarkdown,
   IconPencil,
   IconPlus,
   IconSearch,
@@ -428,7 +430,9 @@ function EspaceEditor({ id, onFermer }: { id: string; onFermer: () => void }) {
 
   if (!espace) return null
 
-  const n = posts.filter((p) => p.espaceId === id).length
+  const dedans = posts.filter((p) => p.espaceId === id)
+  const n = dedans.length
+  const [copie, setCopie] = useState(false)
 
   const importer = async (f: File | undefined) => {
     if (!f) return
@@ -553,6 +557,45 @@ function EspaceEditor({ id, onFermer }: { id: string; onFermer: () => void }) {
               e.target.value = ''
             }}
           />
+        </div>
+
+        {/* TOUT L'ESPACE EN MARKDOWN, d'un seul bloc. C'est le geste
+            qu'on fait pour donner un sujet entier à lire à quelqu'un —
+            ou à un modèle : « voilà tout ce que j'ai écrit sur le
+            Bouquin ». La sauvegarde .zip ne sert pas à ça : elle
+            emporte des fichiers, et un fichier ne se colle pas dans
+            une conversation. */}
+        <div className="field">
+          <span className="field__label">Emporter</span>
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+            <button
+              className="btn"
+              disabled={n === 0}
+              onClick={() => {
+                const md = espaceEnMarkdown(espace.nom, dedans)
+                void copier(md).then((ok) => {
+                  setCopie(ok)
+                  if (ok) window.setTimeout(() => setCopie(false), 2200)
+                  else telechargerMarkdown(espace.nom, md)
+                })
+              }}
+            >
+              {copie ? <IconCoche size={15} /> : <IconMarkdown size={16} />}
+              {copie ? 'Copié' : 'Copier en markdown'}
+            </button>
+            <button
+              className="btn btn--ghost"
+              disabled={n === 0}
+              onClick={() => telechargerMarkdown(espace.nom, espaceEnMarkdown(espace.nom, dedans))}
+            >
+              Fichier .md
+            </button>
+          </div>
+          <span className="sheet__note" style={{ marginTop: 6 }}>
+            {n === 0
+              ? 'Rien à emporter : l’espace est vide.'
+              : `Ses ${n} note${n > 1 ? 's' : ''}, en un seul texte. Les images deviennent leur légende — un lien de fichier ne se colle nulle part.`}
+          </span>
         </div>
 
         <div className="sheet__pied">

@@ -258,3 +258,30 @@
     font-size: 14px;
   }
 }
+
+/* Copier la note en markdown — pour la coller ailleurs. Discret : ce
+   n'est pas le geste du quotidien, mais il doit être trouvable sans
+   fouiller un menu. */
+.note__copier {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  flex: none;
+  height: 32px;
+  padding: 0 11px;
+  border-radius: var(--r-sm);
+  color: var(--text-3);
+  font-size: 12.5px;
+  font-weight: 520;
+  transition:
+    background var(--fast) var(--ease),
+    color var(--fast) var(--ease);
+}
+.note__copier:hover { background: var(--surface-sunken); color: var(--text-2); }
+.note__copier[data-fait] { color: hsl(150 62% 38%); }
+:root[data-theme='dark'] .note__copier[data-fait] { color: hsl(150 62% 62%); }
+
+@media (max-width: 700px) {
+  .note__copier span { display: none; }
+  .note__copier { padding: 0 9px; }
+}

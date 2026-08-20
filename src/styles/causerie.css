@@ -272,3 +272,69 @@
     max-height: min(620px, 78vh);
   }
 }
+
+/* ---------- le mode, toujours à l'écran ---------- */
+
+/* Deux crans, pas un interrupteur : un interrupteur demande de se
+   souvenir de ce que « allumé » veut dire. Ici les deux états sont
+   nommés, et celui qui tourne est teinté. */
+.modes {
+  display: flex;
+  gap: 2px;
+  flex: 1;
+  justify-content: flex-end;
+  padding: 2px;
+  border-radius: 99px;
+  background: var(--surface-sunken);
+  border: 1px solid var(--border);
+}
+
+.modes__item {
+  padding: 3px 10px;
+  border-radius: 99px;
+  color: var(--text-3);
+  font-size: 11px;
+  font-weight: 580;
+  letter-spacing: 0.02em;
+  transition:
+    background var(--fast) var(--ease),
+    color var(--fast) var(--ease);
+}
+.modes__item:hover { color: var(--text-2); }
+
+.modes__item[aria-current='true'] {
+  background: var(--accent);
+  color: var(--accent-ink);
+}
+
+/* Le mode IA choisi sans service derrière : il est ACTIF, et rayé.
+   Le masquer laisserait croire qu'il n'existe pas ; le laisser plein
+   laisserait croire qu'il répond. */
+.modes__item[data-absent] {
+  text-decoration: line-through;
+  text-decoration-thickness: 1px;
+  opacity: 0.75;
+}
+.modes__item[data-absent][aria-current='true'] {
+  background: var(--accent-soft);
+  color: var(--accent-text);
+  opacity: 1;
+}
+
+/* ---------- les suites d'une réponse ---------- */
+
+.ditbloc {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 7px;
+  max-width: 92%;
+}
+.ditbloc .tour { max-width: 100%; }
+
+.suites {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+.suites .causerie__puce { font-size: 12px; padding: 5px 10px; }

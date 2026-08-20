@@ -1,7 +1,13 @@
 import { oublierImage, registreImages } from './db'
 import type { Bloc } from './blocs'
 import { imagesDuPost, texteDesFormes, type Forme, type Ligne } from './formes'
-import { dernierExport } from './exporter'
+import {
+  copier,
+  dernierExport,
+  espaceEnMarkdown,
+  noteEnMarkdown,
+  telechargerMarkdown,
+} from './exporter'
 import { libelleJour, titreDe, useAtlas, type Espace, type Post } from './atlas'
 import { QUOTA_IMAGES, usage } from './quota'
 
@@ -863,7 +869,7 @@ const bilanEcriture: Script = {
   famille: 'compte-rendu',
   quoi: 'Combien tu as écrit cette semaine, et où.',
   regle: 'Les mots des notes créées ou modifiées depuis sept jours, comptés par espace.',
-  cles: 'bilan ecrit mots semaine combien production',
+  cles: 'bilan ecrit mots semaine production',
   chercher() {
     const { posts, espaces } = etat()
     const recentes = posts.filter((p) => jours(p.updatedAt) < 7)
@@ -1185,6 +1191,93 @@ const promouvoirLignes: Script = {
   },
 }
 
+/**
+ * EMPORTER — le markdown qu'on colle ailleurs.
+ *
+ * Ce n'est pas la sauvegarde. Celle-ci emporte des fichiers et se
+ * range sur un disque ; ici on veut du texte, tout de suite, pour le
+ * donner à lire à quelqu'un — ou à un modèle de langage, ce qui est
+ * précisément la raison d'être de ce script tant qu'Atlas n'en a pas
+ * un derrière lui.
+ *
+ * Il détourne un peu la mécanique des propositions : « faire » ne
+ * modifie rien, il copie. D'où l'absence d'annulation — il n'y a
+ * rien à défaire — et l'absence de danger : rien n'est touché.
+ */
+const emporterEspace: Script = {
+  id: 'emporter-espace',
+  nom: 'Emporter un espace en markdown',
+  famille: 'transformer',
+  quoi: 'Tout un sujet en un seul texte, prêt à coller.',
+  regle:
+    'Toutes les notes d’un espace, mises bout à bout en markdown. Les images deviennent leur légende : un lien de fichier ne se colle nulle part.',
+  cles: 'emporter markdown copier coller exporter chatgpt partager texte',
+  chercher() {
+    const { posts, espaces } = etat()
+    const remplis = espaces.filter((e) => posts.some((p) => p.espaceId === e.id))
+    if (!remplis.length) return { sorte: 'rien', mot: 'Aucun espace ne contient de notes.' }
+    return {
+      sorte: 'proposition',
+      titre: 'Quel espace veux-tu emporter ?',
+      pourquoi: 'Je le rends en markdown, dans le presse-papier. Rien n’est modifié.',
+      elements: remplis.map((e) => {
+        const n = posts.filter((p) => p.espaceId === e.id).length
+        return { id: e.id, libelle: e.nom, detail: `${n} note${n > 1 ? 's' : ''}`, pris: false }
+      }),
+      verbe: (n) => (n > 1 ? `Copier les ${n}` : 'Copier en markdown'),
+      faire: (ids) => {
+        const { posts: tous, espaces: liste } = etat()
+        const md = ids
+          .map((id) => {
+            const e = liste.find((x) => x.id === id)
+            return e ? espaceEnMarkdown(e.nom, tous.filter((p) => p.espaceId === id)) : ''
+          })
+          .filter(Boolean)
+          .join('\n\n---\n\n')
+        void copier(md).then((ok) => {
+          if (!ok) telechargerMarkdown('atlas', md)
+        })
+        return null
+      },
+    }
+  },
+}
+
+const emporterRecentes: Script = {
+  id: 'emporter-recentes',
+  nom: 'Emporter les notes récentes',
+  famille: 'transformer',
+  quoi: 'Ce que tu as écrit ces sept derniers jours, en markdown.',
+  regle:
+    'Les notes créées ou modifiées depuis sept jours, en markdown, dans le presse-papier. Rien n’est modifié.',
+  cles: 'emporter recentes semaine markdown copier coller partager',
+  chercher() {
+    const recentes = vivantes()
+      .filter((p) => jours(p.updatedAt) < 7)
+      .sort((a, b) => b.updatedAt - a.updatedAt)
+    if (!recentes.length) return { sorte: 'rien', mot: 'Rien d’écrit cette semaine.' }
+    return {
+      sorte: 'proposition',
+      titre: `${recentes.length} note${recentes.length > 1 ? 's' : ''} cette semaine`,
+      pourquoi: 'Je les rends en markdown, dans le presse-papier. Rien n’est modifié.',
+      elements: recentes.map((p) => elementPost(p)),
+      verbe: (n) => `Copier ${n > 1 ? `les ${n}` : 'la note'}`,
+      faire: (ids) => {
+        const tous = etat().posts
+        const md = ids
+          .map((id) => tous.find((p) => p.id === id))
+          .filter((p): p is Post => Boolean(p))
+          .map(noteEnMarkdown)
+          .join('\n\n---\n\n')
+        void copier(md).then((ok) => {
+          if (!ok) telechargerMarkdown('atlas', md)
+        })
+        return null
+      },
+    }
+  },
+}
+
 /* ================= RETROUVER ================= */
 
 const motsRares: Script = {
@@ -1318,6 +1411,8 @@ export const SCRIPTS: Script[] = [
   eclaterLesLongues,
   friseDepuisDates,
   promouvoirLignes,
+  emporterEspace,
+  emporterRecentes,
 
   motsRares,
   citations,

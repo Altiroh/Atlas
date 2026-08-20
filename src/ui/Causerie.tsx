@@ -11,6 +11,14 @@ import {
   type Resultat,
   type Script,
 } from '../store/scripts'
+import {
+  civilite,
+  incompris,
+  sujet,
+  veutUneExplication,
+  type Reponse,
+} from '../store/conversation'
+import { useCerveau } from '../store/cerveau'
 import { Confirmation } from './Confirmation'
 import { IconChevron, IconClose, IconCoche, IconRestore } from './Icon'
 import { OeilAtlas } from './OeilAtlas'
@@ -44,7 +52,7 @@ import { OeilAtlas } from './OeilAtlas'
 
 type Tour =
   | { k: 'moi'; texte: string }
-  | { k: 'dit'; texte: string }
+  | { k: 'dit'; texte: string; suites?: string[] }
   | { k: 'capacites' }
   | { k: 'famille'; famille: Famille }
   | { k: 'regle'; scriptId: string }
@@ -59,7 +67,10 @@ const RACCOURCIS = [
   { mot: 'Nettoie', envoi: 'nettoyer' },
 ]
 
-const AIDE = /^(\?+|aide|help|que sais.?tu|quoi|capacit|comment|sais.?tu)/i
+/* Volontairement ÉTROIT. Il contenait « comment » et « quoi » : toute
+   question de la forme « comment marche la synchro » tombait donc sur
+   la liste des capacités, alors que la bibliothèque avait la réponse. */
+const AIDE = /^(\?+\s*$|aide$|help$|que sais.?tu|tes capacit|capacites$)/i
 
 export function Causerie({ fermer }: { fermer: () => void }) {
   const [tours, setTours] = useState<Tour[]>(() => [
@@ -71,6 +82,10 @@ export function Causerie({ fermer }: { fermer: () => void }) {
   const champ = useRef<HTMLInputElement>(null)
   const fin = useRef<HTMLDivElement>(null)
 
+  const mode = useCerveau((s) => s.mode)
+  const disponible = useCerveau((s) => s.disponible)
+  const basculer = useCerveau((s) => s.basculer)
+
   useEffect(() => champ.current?.focus(), [])
   useEffect(() => {
     fin.current?.scrollIntoView({ block: 'end', behavior: 'smooth' })
@@ -80,6 +95,15 @@ export function Causerie({ fermer }: { fermer: () => void }) {
 
   /* --- ce qu'on tape --- */
 
+  /* L'ORDRE DE RÉSOLUTION, et chaque cran a sa raison :
+       1. les commandes — aide, annuler ;
+       2. les CIVILITÉS — « bonjour » doit gagner avant qu'une
+          recherche de logique ne s'en empare ;
+       3. une famille nommée en un mot ;
+       4. une logique — parce qu'AGIR PASSE AVANT EXPLIQUER ;
+       5. les SUJETS de la bibliothèque — « comment marche la
+          synchro » n'a de sens que si rien ne peut être fait ;
+       6. l'aveu d'incompréhension, jamais une devinette. */
   const repondre = (demande: string) => {
     const d = demande.trim()
     if (!d) return
@@ -93,24 +117,35 @@ export function Causerie({ fermer }: { fermer: () => void }) {
       return defaire(tours.lastIndexOf(dernier))
     }
 
+    const politesse = civilite(d)
+    if (politesse) return ajouter(bulle(politesse))
+
     /* Un seul mot qui nomme une famille : on déplie la famille plutôt
        que de lancer le premier script qui y ressemble. « Nettoie »
        veut dire « montre-moi le nettoyage », pas « nettoie tout ». */
     const famille = chercherFamille(d)
     if (famille) return ajouter({ k: 'famille', famille })
 
-    const s = chercherScript(d)
-    if (!s) {
-      return ajouter(
-        {
-          k: 'dit',
-          texte:
-            'Je ne comprends pas cette demande — et je préfère te le dire que deviner. Voilà tout ce que je sais faire :',
-        },
-        { k: 'capacites' },
-      )
+    /* « Comment marche la synchro » contient « synchro » : une logique
+       l'attrapait, et Atlas répondait par la file d'envoi à quelqu'un
+       qui demandait une explication. « Agir avant expliquer » est une
+       bonne règle — sauf quand la phrase dit qu'elle veut une
+       explication. */
+    const explique = veutUneExplication(d)
+    if (explique) {
+      const r = sujet(d)
+      if (r) return ajouter(bulle(r))
     }
-    ajouter(...lancer(s.id))
+
+    const s = chercherScript(d)
+    if (s) return ajouter(...lancer(s.id))
+
+    if (!explique) {
+      const r = sujet(d)
+      if (r) return ajouter(bulle(r))
+    }
+
+    ajouter(bulle(incompris(mode, disponible)), { k: 'capacites' })
   }
 
   /* --- exécuter une proposition --- */
@@ -160,7 +195,36 @@ export function Causerie({ fermer }: { fermer: () => void }) {
           <OeilAtlas size={22} mode="cause" flux />
         </button>
         <span className="causerie__nom">Atlas</span>
-        <span className="causerie__etat">{SCRIPTS.length} logiques · sans IA</span>
+
+        {/* LE MODE EST À L'ÉCRAN, TOUJOURS. Une réponse de règle et une
+            réponse de modèle n'ont ni la même fiabilité ni le même
+            prix : lire la même bulle sans savoir laquelle on a en
+            face, c'est accorder la confiance de l'une aux erreurs de
+            l'autre. */}
+        <div className="modes" role="group" aria-label="Mode de réponse">
+          <button
+            className="modes__item"
+            aria-current={mode === 'classique'}
+            onClick={() => basculer('classique')}
+            title="Des règles. Gratuit, hors ligne, sans invention."
+          >
+            Règles
+          </button>
+          <button
+            className="modes__item"
+            aria-current={mode === 'ia'}
+            data-absent={!disponible || undefined}
+            onClick={() => basculer('ia')}
+            title={
+              disponible
+                ? 'Un modèle répond. Chaque phrase coûte.'
+                : 'Aucun service n’est branché pour l’instant.'
+            }
+          >
+            IA
+          </button>
+        </div>
+
         <button className="btn btn--icon" onClick={fermer} aria-label="Fermer">
           <IconClose size={17} />
         </button>
@@ -256,11 +320,31 @@ function TourRendu({
 }) {
   switch (tour.k) {
     case 'moi':
-    case 'dit':
       return (
-        <p className="tour" data-de={tour.k === 'moi' ? 'moi' : 'atlas'}>
+        <p className="tour" data-de="moi">
           {tour.texte}
         </p>
+      )
+
+    case 'dit':
+      return (
+        <div className="ditbloc">
+          <p className="tour" data-de="atlas">
+            {tour.texte}
+          </p>
+          {/* LES SUITES SONT LA CONVERSATION. Sans elles, une réponse
+              honnête est un cul-de-sac : « je ne sais pas écrire » et
+              rien d'autre. Avec elles, elle mène quelque part. */}
+          {tour.suites?.length ? (
+            <div className="suites">
+              {tour.suites.map((s) => (
+                <button key={s} className="causerie__puce" onClick={() => demander(s)}>
+                  {s}
+                </button>
+              ))}
+            </div>
+          ) : null}
+        </div>
       )
 
     case 'capacites':
@@ -473,5 +557,10 @@ function lancer(scriptId: string): Tour[] {
 
 function bandeauAnnulation(a: Annulation): Tour {
   return { k: 'annulation', libelle: a.libelle, defaire: a.defaire }
+}
+
+/** Une réponse de la bibliothèque devient une bulle, avec ses suites. */
+function bulle(r: Reponse): Tour {
+  return { k: 'dit', texte: r.texte, suites: r.suites }
 }
 

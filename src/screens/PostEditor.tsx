@@ -8,6 +8,7 @@ import {
   type TypeForme,
 } from '../store/formes'
 import { oublierImage, stockerImage } from '../store/db'
+import { copier, noteEnMarkdown, telechargerMarkdown } from '../store/exporter'
 import { lisible, peutAjouterImage, QUOTA_IMAGES } from '../store/quota'
 import { Confirmation } from '../ui/Confirmation'
 import {
@@ -15,8 +16,10 @@ import {
   IconBolt,
   IconCarte,
   IconClose,
+  IconCoche,
   IconFrise,
   IconImage,
+  IconMarkdown,
   IconPencil,
   IconPlanche,
   IconPlus,
@@ -81,6 +84,7 @@ export function PostEditor() {
   const [envoi, setEnvoi] = useState(false)
   const [actif, setActif] = useState<string | null>(null)
   const [aSupprimer, setASupprimer] = useState(false)
+  const [copie, setCopie] = useState(false)
   const [ajout, setAjout] = useState(false)
   const [renomme, setRenomme] = useState<string | null>(null)
 
@@ -184,6 +188,26 @@ export function PostEditor() {
           onChange={(e) => majPost(post.id, { titre: e.target.value })}
           aria-label="Titre de la note"
         />
+
+        {/* COPIER LA NOTE EN MARKDOWN — pour la coller ailleurs, dans
+            une conversation avec un modèle par exemple. Ce n'est pas
+            la sauvegarde : celle-ci emporte les images et se range sur
+            un disque. Ici on veut du texte qui se colle, tout de
+            suite, sans fichier. */}
+        <button
+          className="note__copier"
+          data-fait={copie || undefined}
+          onClick={() => {
+            void copier(noteEnMarkdown(post)).then((ok) => {
+              setCopie(ok)
+              if (ok) window.setTimeout(() => setCopie(false), 2200)
+              else telechargerMarkdown(titreDe(post), noteEnMarkdown(post))
+            })
+          }}
+        >
+          {copie ? <IconCoche size={15} /> : <IconMarkdown size={16} />}
+          <span>{copie ? 'Copié' : 'Markdown'}</span>
+        </button>
 
         <button
           className="note__suppr"
