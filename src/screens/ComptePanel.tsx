@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import { libelleHeure, useAtlas } from '../store/atlas'
 import { useBienvenue } from '../store/bienvenue'
 import { useCompte, type Session } from '../store/compte'
@@ -6,7 +6,7 @@ import { oublierImage, stockerImage } from '../store/db'
 import { lisible, peutAjouterImage, QUOTA_IMAGES } from '../store/quota'
 import { DorsaleLocale } from '../store/dorsale-locale'
 import { SUPABASE_CONFIGURE } from '../store/config'
-import { enAttenteDEnvoi, useSync, type EtatSync } from '../store/sync'
+import { enAttenteDEnvoi, imagesEnAttente, useSync, type EtatSync } from '../store/sync'
 import { ChampMotDePasse } from '../ui/ChampMotDePasse'
 import { HauteurFluide } from '../ui/HauteurFluide'
 import { IconImage, IconSync } from '../ui/Icon'
@@ -502,6 +502,21 @@ export function SyncPanel() {
     [...posts, ...tombes.posts].filter((p) => p.sale).length +
     [...espaces, ...tombes.espaces].filter((e) => e.sale).length
 
+  /* LES IMAGES ONT LEUR PROPRE FILE, et il fallait la montrer.
+
+     Elles ne voyagent pas avec les notes : une note part en quelques
+     octets de texte, son image passe par le seau de stockage, sur un
+     autre canal. Le bandeau ne comptait que les notes — il annonçait
+     donc « à jour » pendant qu'une photo dormait encore sur le
+     téléphone, et on ne l'apprenait qu'en ouvrant la note sur
+     l'ordinateur, devant un cadre vide.
+
+     L'état de synchro figure dans les dépendances parce que le registre
+     des images montées vit dans localStorage, hors de Zustand : c'est
+     la fin d'un tour de synchro qui le fait bouger, et donc elle qui
+     doit rafraîchir le chiffre. */
+  const imagesRestantes = useMemo(() => imagesEnAttente(), [posts, espaces, etat])
+
   return (
     <section className="setting glass">
       <div className="setting__label">Synchronisation</div>
@@ -526,7 +541,16 @@ export function SyncPanel() {
             Synchroniser
           </button>
           <span style={{ fontSize: 12, color: 'var(--text-3)' }}>
-            {attente === 0 ? 'Rien en attente' : `${attente} en attente d'envoi`}
+            {attente === 0 && imagesRestantes === 0
+              ? 'Rien en attente'
+              : [
+                  attente > 0 ? `${attente} note${attente > 1 ? 's' : ''}` : null,
+                  imagesRestantes > 0
+                    ? `${imagesRestantes} image${imagesRestantes > 1 ? 's' : ''}`
+                    : null,
+                ]
+                  .filter(Boolean)
+                  .join(' · ') + ' en attente'}
           </span>
         </div>
       </div>

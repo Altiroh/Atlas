@@ -112,7 +112,7 @@ export const useSync = create<SyncStore>((set, get) => ({
          note déjà propre n'auraient sinon plus aucune occasion de
          partir. */
       const tout = useAtlas.getState()
-      await televerserImages(dorsale, tout.posts, tout.espaces)
+      const echecsImages = await televerserImages(dorsale, tout.posts, tout.espaces)
 
       const lot = useAtlas.getState().aEnvoyer()
       if (lot.posts.length || lot.espaces.length) {
@@ -126,7 +126,17 @@ export const useSync = create<SyncStore>((set, get) => ({
 
       ecrireHorloge(distant.horloge)
       await purgerTombes()
-      set({ etat: 'ok', derniereSync: Date.now(), message: null })
+      set({
+        etat: 'ok',
+        derniereSync: Date.now(),
+        /* Les notes sont passées : l'état reste « à jour ». Mais taire
+           des images restées au sol ferait croire à un transfert
+           complet, et c'est exactement le genre de perte qui ne se voit
+           qu'en ouvrant la note ailleurs, devant un cadre vide. */
+        message: echecsImages
+          ? `${echecsImages} image${echecsImages > 1 ? 's' : ''} n’${echecsImages > 1 ? 'ont' : 'a'} pas pu partir`
+          : null,
+      })
     } catch (e) {
       set({
         etat: 'erreur',
@@ -222,13 +232,27 @@ async function rapatrierImages(dorsale: Dorsale) {
  */
 async function televerserImages(dorsale: Dorsale, posts: Post[], espaces: Espace[]) {
   const deja = imagesEnvoyees()
+  let echecs = 0
   for (const id of new Set(imagesReferencees(posts, espaces))) {
     if (deja.has(id)) continue
     const blob = await db.lire<Blob>('images', id)
     if (!blob) continue
-    await dorsale.envoyerImage(id, blob)
-    marquerEnvoyee(id)
+    try {
+      await dorsale.envoyerImage(id, blob)
+      marquerEnvoyee(id)
+    } catch {
+      /* UNE IMAGE QUI ÉCHOUE NE DOIT PAS ARRÊTER LE RESTE.
+
+         Depuis qu'on parcourt toute la base et non plus le seul lot, un
+         fichier définitivement refusé — trop gros, règles du seau
+         absentes, blob illisible — se represente à chaque tour. En
+         laissant remonter l'erreur, il bloquerait POUR TOUJOURS l'envoi
+         des notes, qui passe après lui. On compte, on continue, et on
+         le dit dans le bandeau. */
+      echecs++
+    }
   }
+  return echecs
 }
 
 /* ================= entretien ================= */
@@ -253,6 +277,27 @@ async function purgerTombes() {
       espaces: s.tombes.espaces.filter((e) => !vieux.some(([m, i]) => m === 'espaces' && i === e.id)),
     },
   }))
+}
+
+/**
+ * Combien d'images ne sont pas encore chez l'hébergeur.
+ *
+ * CE COMPTEUR EXISTE PARCE QUE RIEN NE DISAIT OÙ EN ÉTAIENT LES IMAGES.
+ * Le bandeau annonçait « à jour » en ne parlant que des notes : une
+ * photo restée sur le téléphone n'apparaissait nulle part, et on ne
+ * l'apprenait qu'en ouvrant la note sur un autre appareil, devant un
+ * cadre vide.
+ *
+ * Il se lit dans les deux sens, et c'est voulu. Sur l'appareil qui a
+ * importé l'image, c'est ce qui doit encore monter. Sur celui qui
+ * reçoit, c'est ce qui n'est pas encore arrivé — donc ce que l'autre
+ * n'a pas envoyé. Un chiffre qui ne descend pas côté ordinateur dit
+ * qu'il faut aller réveiller le téléphone.
+ */
+export function imagesEnAttente(): number {
+  const { posts, espaces } = useAtlas.getState()
+  const deja = imagesEnvoyees()
+  return [...new Set(imagesReferencees(posts, espaces))].filter((id) => !deja.has(id)).length
 }
 
 /** Nombre d'enregistrements en attente d'envoi. */
