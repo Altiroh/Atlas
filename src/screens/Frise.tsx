@@ -126,8 +126,13 @@ export function Frise({
         <div
           className="frise__grille"
           style={{
+            /* Les largeurs passent par des VARIABLES, pas par des
+               pixels écrits ici : un style en ligne ne peut pas se
+               mettre sous une media query, et la colonne d'insertion
+               doit s'élargir au doigt — à 30 px, le « + » n'offrait
+               que seize pixels de cible. */
             gridTemplateColumns: emplacements
-              .map((e) => (e.type === 'entre' ? '30px' : '218px'))
+              .map((e) => (e.type === 'entre' ? 'var(--frise-entre)' : 'var(--frise-colonne)'))
               .join(' '),
             gridTemplateRows: `repeat(${pistes}, minmax(132px, auto))`,
           }}

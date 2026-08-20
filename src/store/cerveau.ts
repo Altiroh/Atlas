@@ -22,7 +22,23 @@ import { create } from 'zustand'
    la même bulle sans savoir laquelle des deux on a en face, c'est
    accorder la confiance de l'une aux erreurs de l'autre.
 
-   D'où le bouton, en haut de la conversation, toujours à l'écran.
+   D'où le bouton, en haut de la conversation.
+
+   ── MAIS SEULEMENT S'IL Y A DEUX MODES
+
+   Le premier jet montrait l'interrupteur en permanence, le côté IA
+   barré. C'était une faute : un interrupteur qu'on peut actionner
+   sans que rien ne change est pire qu'un mode caché. On appuie, on
+   attend une autre réponse, on n'en obtient pas, et on conclut que
+   l'app est cassée — alors qu'elle n'a jamais promis autre chose.
+
+   TANT QU'AUCUN CERVEAU N'EST BRANCHÉ, IL N'Y A PAS DE CHOIX À
+   FAIRE : l'en-tête dit simplement ce qui tourne. L'interrupteur
+   apparaîtra le jour où appuyer dessus changera quelque chose.
+
+   `modeActif` protège la même règle côté logique : une préférence
+   « IA » gardée d'une version précédente ne peut pas rendre l'app
+   incohérente, puisqu'elle ne compte que si un service répond.
 
    ── LA COUTURE
 
@@ -100,3 +116,14 @@ export const useCerveau = create<ModeStore>((set) => ({
 
   brancher: (cerveau) => set({ cerveau, disponible: cerveau !== AUCUN_CERVEAU }),
 }))
+
+/**
+ * Le mode qui TOURNE VRAIMENT, par opposition à celui qu'on préfère.
+ *
+ * Sans service branché, il n'y a qu'un mode — quoi qu'en dise une
+ * préférence gardée d'une version précédente. Passer par là partout
+ * évite qu'un écran affiche « IA » pendant qu'un autre applique des
+ * règles.
+ */
+export const modeActif = (s: { mode: Mode; disponible: boolean }): Mode =>
+  s.disponible ? s.mode : 'classique'

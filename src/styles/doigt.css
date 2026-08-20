@@ -149,3 +149,159 @@
     font-size: 15px;
   }
 }
+
+/* ========================================================
+   La seconde passe — ce que la première avait laissé.
+
+   Elle traitait l'éditeur de blocs et les boutons génériques.
+   Restaient toutes les commandes ajoutées depuis : les
+   onglets d'une note, les barres de canevas, la sélection
+   multiple, la table, la frise, la planche, la conversation.
+
+   Même règle, sans exception cette fois : RIEN DE CE QU'ON
+   VISE NE DESCEND SOUS 44 px. Une croix de 18 px dans un
+   onglet, c'est un geste qu'on rate une fois sur deux — et
+   qu'on finit par ne plus tenter.
+   ======================================================== */
+
+@media (pointer: coarse), (max-width: 700px) {
+  /* ---------- l'en-tête d'une note ---------- */
+
+  .note__retour,
+  .note__titre,
+  .note__suppr,
+  .note__copier {
+    height: 44px;
+  }
+
+  /* ---------- les onglets ---------- */
+
+  .onglet {
+    height: 44px;
+    padding: 0 14px;
+  }
+
+  /* La croix DÉBORDE sur les marges de l'onglet : on l'agrandit sans
+     élargir l'onglet, qui doit rester lisible en rangée. */
+  .onglet__fermer {
+    width: 30px;
+    height: 30px;
+    margin: -6px -8px -6px 0;
+  }
+
+  .onglet--plus {
+    min-width: 50px;
+    height: 44px;
+    margin-bottom: 0;
+    padding: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .note__onglets { padding-bottom: 0; }
+  .note__barreOnglets { align-items: stretch; }
+
+  /* ---------- les barres de canevas ---------- */
+
+  .canevas__bouton {
+    width: 46px;
+    height: 46px;
+  }
+  .canevas__tiroir .canevas__bouton {
+    width: 44px;
+    height: 44px;
+  }
+
+  /* ---------- la sélection multiple ---------- */
+
+  .selbar { padding: 8px 8px 8px 16px; }
+  .selbar__btn { height: 44px; }
+
+  .item__case { width: 24px; height: 24px; }
+  .esp__case { width: 26px; height: 26px; }
+
+  /* ---------- les espaces ---------- */
+
+  .esp__regler,
+  .esp__quitter {
+    width: 40px;
+    height: 40px;
+  }
+  .esp__creer { min-height: 48px; }
+
+  /* ---------- la table ---------- */
+
+  .table__poignee { width: 34px; height: 40px; }
+  .table__type { padding: 4px 0; font-size: 11.5px; }
+  .table__ajoutColonne { width: 48px; min-width: 48px; }
+  .table__ajoutColonne button { width: 40px; height: 40px; }
+  .table__champ,
+  .table__nomColonne {
+    /* sous 16 px, iOS zoome de lui-même à la mise au point */
+    font-size: 16px;
+    padding: 12px 10px;
+  }
+  .table__case { width: 24px; height: 24px; margin: 10px auto; }
+  .table__etiquettes { padding: 11px 10px; }
+  .table__vignette { width: 46px; height: 46px; }
+  .table__lien { width: 40px; height: 40px; }
+  .table__ajoutLigne { min-height: 46px; }
+
+  /* ---------- la chronologie ---------- */
+
+  .frise__ajout { min-height: 44px; }
+  .jalon { padding: 12px 12px 13px; }
+  .jalon__titre,
+  .jalon__note,
+  .jalon__quand {
+    font-size: 16px;
+  }
+  .jalon__quand { font-size: 12px; }
+
+  /* ---------- la planche ---------- */
+
+  /* La poignée d'une pièce : on la tire, donc on doit l'attraper. */
+  .piece__poignee {
+    right: -13px;
+    bottom: -13px;
+    width: 28px;
+    height: 28px;
+  }
+
+  /* ---------- la carte mentale ---------- */
+
+  .noeud__outils button {
+    width: 40px;
+    height: 40px;
+  }
+
+  /* ---------- la conversation ---------- */
+
+  .modes__item { min-height: 44px; }
+
+  /* « sur quelle règle ? » et « Annuler » sont des liens, donc des
+     cibles d'une ligne de haut. On leur donne du corps. */
+  .carte-atlas .lien,
+  .carte-atlas--annule .lien {
+    display: inline-block;
+    padding: 8px 2px;
+    font-size: 13px;
+  }
+
+  /* ---------- le profil et le flux ---------- */
+
+  .portrait__retirer { padding: 8px 6px; font-size: 12.5px; }
+  .flux__archives { min-height: 46px; }
+}
+
+/* La colonne d'insertion de la frise : 30 px de large moins ses
+   marges intérieures laissaient SEIZE pixels de cible au « + ». On
+   élargit l'intervalle, et la colonne avec — sinon les jalons
+   paraissent serrés entre deux vides. */
+@media (pointer: coarse), (max-width: 700px) {
+  .frise {
+    --frise-entre: 48px;
+    --frise-colonne: 210px;
+  }
+}

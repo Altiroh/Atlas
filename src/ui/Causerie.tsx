@@ -18,7 +18,7 @@ import {
   veutUneExplication,
   type Reponse,
 } from '../store/conversation'
-import { useCerveau } from '../store/cerveau'
+import { modeActif, useCerveau } from '../store/cerveau'
 import { Confirmation } from './Confirmation'
 import { IconChevron, IconClose, IconCoche, IconRestore } from './Icon'
 import { OeilAtlas } from './OeilAtlas'
@@ -82,9 +82,9 @@ export function Causerie({ fermer }: { fermer: () => void }) {
   const champ = useRef<HTMLInputElement>(null)
   const fin = useRef<HTMLDivElement>(null)
 
-  const mode = useCerveau((s) => s.mode)
   const disponible = useCerveau((s) => s.disponible)
   const basculer = useCerveau((s) => s.basculer)
+  const actif = useCerveau(modeActif)
 
   useEffect(() => champ.current?.focus(), [])
   useEffect(() => {
@@ -145,7 +145,7 @@ export function Causerie({ fermer }: { fermer: () => void }) {
       if (r) return ajouter(bulle(r))
     }
 
-    ajouter(bulle(incompris(mode, disponible)), { k: 'capacites' })
+    ajouter(bulle(incompris(actif, disponible)), { k: 'capacites' })
   }
 
   /* --- exécuter une proposition --- */
@@ -196,34 +196,38 @@ export function Causerie({ fermer }: { fermer: () => void }) {
         </button>
         <span className="causerie__nom">Atlas</span>
 
-        {/* LE MODE EST À L'ÉCRAN, TOUJOURS. Une réponse de règle et une
-            réponse de modèle n'ont ni la même fiabilité ni le même
-            prix : lire la même bulle sans savoir laquelle on a en
-            face, c'est accorder la confiance de l'une aux erreurs de
-            l'autre. */}
-        <div className="modes" role="group" aria-label="Mode de réponse">
-          <button
-            className="modes__item"
-            aria-current={mode === 'classique'}
-            onClick={() => basculer('classique')}
-            title="Des règles. Gratuit, hors ligne, sans invention."
-          >
-            Règles
-          </button>
-          <button
-            className="modes__item"
-            aria-current={mode === 'ia'}
-            data-absent={!disponible || undefined}
-            onClick={() => basculer('ia')}
-            title={
-              disponible
-                ? 'Un modèle répond. Chaque phrase coûte.'
-                : 'Aucun service n’est branché pour l’instant.'
-            }
-          >
-            IA
-          </button>
-        </div>
+        {/* L'INTERRUPTEUR N'EXISTE QUE S'IL Y A DEUX MODES.
+
+            Il était affiché en permanence, le côté IA barré : on
+            pouvait donc appuyer sans que rien ne change. C'est pire
+            qu'un mode caché — on appuie, on attend autre chose, on
+            conclut que l'app est cassée alors qu'elle n'a jamais
+            promis autre chose.
+
+            Tant que rien n'est branché, l'en-tête se contente de dire
+            ce qui tourne. */}
+        {disponible ? (
+          <div className="modes" role="group" aria-label="Mode de réponse">
+            <button
+              className="modes__item"
+              aria-current={actif === 'classique'}
+              onClick={() => basculer('classique')}
+              title="Des règles. Gratuit, hors ligne, sans invention."
+            >
+              Règles
+            </button>
+            <button
+              className="modes__item"
+              aria-current={actif === 'ia'}
+              onClick={() => basculer('ia')}
+              title="Un modèle répond. Chaque phrase coûte."
+            >
+              IA
+            </button>
+          </div>
+        ) : (
+          <span className="causerie__etat">{SCRIPTS.length} logiques · sans IA</span>
+        )}
 
         <button className="btn btn--icon" onClick={fermer} aria-label="Fermer">
           <IconClose size={17} />

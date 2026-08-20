@@ -152,6 +152,9 @@
    ======================================================== */
 
 .frise {
+  /* la largeur d'une colonne, et celle de l'intervalle où l'on insère */
+  --frise-colonne: 218px;
+  --frise-entre: 30px;
   position: relative;
   flex: 1;
   min-height: 0;
