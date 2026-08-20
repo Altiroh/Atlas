@@ -17,6 +17,7 @@ import './styles/maj.css'
 import './styles/demarrage.css'
 import './styles/apparition.css'
 import './styles/canevas.css'
+import './styles/formes.css'
 import './styles/oeil.css'
 import './styles/note.css'
 /* EN DERNIER, et c'est structurel : `feuille.css` n'ajoute pas des

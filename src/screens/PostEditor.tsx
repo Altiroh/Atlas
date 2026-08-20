@@ -15,16 +15,22 @@ import {
   IconBolt,
   IconCarte,
   IconClose,
+  IconFrise,
   IconImage,
   IconPencil,
+  IconPlanche,
   IconPlus,
+  IconTable,
   IconTexte,
   IconTrash,
 } from '../ui/Icon'
 import { useImageUrl } from '../ui/useImageUrl'
 import { Dessin } from './Dessin'
 import { Editeur } from './Editeur'
+import { Frise } from './Frise'
 import { carteInitiale, MindMap } from './MindMap'
+import { Planche } from './Planche'
+import { Table } from './Table'
 
 /* ---------------------------------------------------------------
    L'ÉDITEUR DE NOTE.
@@ -49,10 +55,15 @@ import { carteInitiale, MindMap } from './MindMap'
    « Enregistrer », et il n'y en aura jamais.
    --------------------------------------------------------------- */
 
+/* L'ordre est celui de la fréquence d'usage, pas celui du modèle :
+   on écrit tous les jours, on tient une chronologie trois fois par an. */
 const AJOUTS: { t: TypeForme; icone: typeof IconTexte; quoi: string }[] = [
   { t: 'texte', icone: IconTexte, quoi: 'Écrire au fil de la plume.' },
   { t: 'carte', icone: IconCarte, quoi: 'Ramifier une idée en branches.' },
   { t: 'dessin', icone: IconPencil, quoi: 'Croquer, annoter, surligner.' },
+  { t: 'planche', icone: IconPlanche, quoi: 'Poser des images, les empiler, voir.' },
+  { t: 'table', icone: IconTable, quoi: 'Lister des personnages, des lieux, des sources.' },
+  { t: 'frise', icone: IconFrise, quoi: 'Mettre des événements dans l’ordre.' },
 ]
 
 export function PostEditor() {
@@ -269,6 +280,31 @@ export function PostEditor() {
           papier={forme.papier ?? 'points'}
           ecrire={(dessin) => majForme(forme.id, { dessin })}
           setPapier={(papier) => majForme(forme.id, { papier })}
+        />
+      ) : forme?.t === 'planche' ? (
+        <Planche
+          pieces={forme.planche ?? []}
+          ecrire={(planche) => majForme(forme.id, { planche })}
+        />
+      ) : forme?.t === 'frise' ? (
+        <Frise
+          evenements={forme.frise ?? []}
+          ecrire={(frise) => majForme(forme.id, { frise })}
+        />
+      ) : forme?.t === 'table' ? (
+        <Table
+          colonnes={forme.colonnes ?? []}
+          lignes={forme.lignes ?? []}
+          ecrire={(patch) => majForme(forme.id, patch)}
+          /* La promotion crée une VRAIE note, avec son espace hérité :
+             une fiche de personnage rangée hors du Bouquin serait à
+             reclasser à la main dès sa naissance. */
+          promouvoir={(nom) => {
+            const id = creerPost('', post.espaceId)
+            majPost(id, { titre: nom || 'Sans titre' })
+            return id
+          }}
+          ouvrir={(id) => select(id)}
         />
       ) : (
         <div className="scroll">

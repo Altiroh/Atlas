@@ -409,6 +409,96 @@
   color: var(--text-2);
 }
 
+/* ---------- galerie ----------
+
+   Plusieurs images dans le fil du texte. Ce n'est PAS une planche :
+   ça s'aligne, ça ne s'empile pas, et ça se lit entre deux
+   paragraphes. La différence doit se voir au premier coup d'œil,
+   sinon les deux entrées du catalogue se confondent.
+
+   La grille s'ajuste toute seule : `auto-fill` avec une largeur
+   minimale plutôt qu'un nombre de colonnes fixé. Deux images
+   remplissent la ligne, six font trois rangées, et la même galerie
+   se relit sur un téléphone sans qu'on ait rien réglé. */
+
+.ed__galerie {
+  padding: 6px 0;
+  margin: 0 auto;
+}
+
+.ed__vignettes {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.ed__vignette {
+  position: relative;
+  margin: 0;
+}
+
+.ed__vignette img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+  border-radius: var(--r-sm);
+  border: 1px solid var(--border);
+}
+
+.ed__vignetteVide {
+  display: block;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  border-radius: var(--r-sm);
+  background: var(--surface-sunken);
+  border: 1px solid var(--border);
+}
+
+.ed__vignetteActions {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  display: flex;
+  gap: 4px;
+  opacity: 0;
+  transition: opacity var(--fast) var(--ease);
+}
+.ed__vignette:hover .ed__vignetteActions,
+.ed__vignette:focus-within .ed__vignetteActions {
+  opacity: 1;
+}
+.ed__vignetteActions button:disabled { opacity: 0.35; }
+
+/* Au doigt il n'y a pas de survol : les commandes restent là, en
+   retrait, plutôt que d'être introuvables. */
+@media (pointer: coarse) {
+  .ed__vignetteActions { opacity: 0.75; }
+}
+
+.ed__vignette figcaption input {
+  width: 100%;
+  border: 0;
+  background: none;
+  color: var(--text-3);
+  font: inherit;
+  font-size: 12px;
+  text-align: center;
+  padding: 6px 2px 0;
+}
+.ed__vignette figcaption input:focus {
+  outline: none;
+  color: var(--text-2);
+}
+
+/* Le dépôt d'une galerie déjà remplie n'a plus à crier : il redevient
+   une ligne discrète sous les images. */
+.ed__depot--galerie {
+  padding: 12px;
+  font-size: 13px;
+}
+
 /* ---------- tableau ---------- */
 
 .ed__tableau {

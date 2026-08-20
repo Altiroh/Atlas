@@ -1,0 +1,600 @@
+/* ========================================================
+   LES TROIS NOUVELLES FORMES — planche, chronologie, table.
+
+   Un seul fichier pour les trois : elles partagent la même
+   mécanique de canevas que la carte mentale (un calque, un
+   `transform`, la barre d'outils en colonne à droite), et
+   les séparer en trois fichiers ferait trois endroits où
+   répéter les mêmes quatre règles.
+
+   Ce qu'elles ont en commun, et qui n'est pas décoratif :
+   · aucune n'a de fond opaque — le papier de l'app reste
+     visible, c'est lui qui dit qu'on est toujours dans la
+     même note ;
+   · toutes laissent la colonne de droite libre pour la
+     barre d'outils ;
+   · toutes ont un état vide qui DIT QUOI FAIRE. Un canevas
+     vide ne signale pas qu'on peut y poser quelque chose :
+     il signale qu'il ne s'est rien passé.
+   ======================================================== */
+
+/* ========================================================
+   1. La planche
+   ======================================================== */
+
+.planche {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  /* SUR TOUT LE CADRE : un pincement commencé sur une pièce repartait
+     au navigateur, et c'est la page entière qui zoomait. */
+  touch-action: none;
+}
+
+.planche__surface {
+  position: absolute;
+  inset: 0;
+  cursor: grab;
+  touch-action: none;
+  /* Un fond plus discret que celui de la carte : sur une planche, ce
+     sont les images qui doivent porter le regard, pas la trame. */
+  background-image: radial-gradient(circle at 1px 1px, var(--border) 1px, transparent 0);
+  background-size: 32px 32px;
+}
+.planche__surface:active { cursor: grabbing; }
+
+.planche__monde {
+  position: absolute;
+  top: 0;
+  left: 0;
+  transform-origin: 0 0;
+  will-change: transform;
+}
+
+/* Une pièce : posée, pas alignée. L'ombre est plus marquée que
+   partout ailleurs dans Atlas — c'est elle qui donne l'empilement,
+   et l'empilement est tout le propos de la forme. */
+.piece {
+  position: absolute;
+  top: 0;
+  left: 0;
+  transform-origin: 50% 50%;
+  cursor: grab;
+  border-radius: var(--r-sm);
+  box-shadow: 0 1px 2px rgba(16, 24, 40, 0.12), 0 10px 26px rgba(16, 24, 40, 0.16);
+  transition: box-shadow var(--fast) var(--ease);
+}
+:root[data-theme='dark'] .piece {
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.5), 0 14px 34px rgba(0, 0, 0, 0.55);
+}
+.piece:active { cursor: grabbing; }
+
+.piece[data-actif='true'] {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+
+.piece__image {
+  display: block;
+  width: 100%;
+  height: auto;
+  border-radius: var(--r-sm);
+  /* le liseré blanc du tirage papier : c'est ce qui fait la planche
+     plutôt qu'une grille d'images */
+  border: 5px solid var(--surface-solid);
+  pointer-events: none;
+  -webkit-user-drag: none;
+  user-select: none;
+}
+
+.piece__attente {
+  display: block;
+  width: 100%;
+  height: 150px;
+  border-radius: var(--r-sm);
+  background: var(--surface-sunken);
+  border: 1px solid var(--border);
+}
+
+/* Une étiquette : un mot posé sur la planche. Fond légèrement teinté
+   pour qu'elle ne se confonde jamais avec une image claire. */
+.piece[data-mot] {
+  background: var(--surface-solid);
+  border: 1px solid var(--border);
+  padding: 12px 14px;
+}
+
+.piece__mot {
+  display: block;
+  font-size: 15px;
+  line-height: 1.4;
+  font-weight: 520;
+  letter-spacing: -0.01em;
+  color: var(--text);
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+.piece__mot:empty::after { content: '…'; color: var(--text-3); }
+
+.piece__champ {
+  display: block;
+  width: 100%;
+  min-height: 66px;
+  border: 0;
+  background: none;
+  resize: none;
+  color: var(--text);
+  font: inherit;
+  font-size: 15px;
+  line-height: 1.4;
+  font-weight: 520;
+}
+.piece__champ:focus { outline: none; }
+
+/* La poignée est au coin bas-droit, DANS la pièce : posée dehors,
+   elle sortirait du cadre dès que la pièce est inclinée. */
+.piece__poignee {
+  position: absolute;
+  right: -7px;
+  bottom: -7px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--accent);
+  border: 2px solid var(--surface-solid);
+  cursor: nwse-resize;
+  touch-action: none;
+}
+
+/* ========================================================
+   2. La chronologie
+   ======================================================== */
+
+.frise {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  display: flex;
+}
+
+/* Le défilement est HORIZONTAL, et c'est le seul endroit d'Atlas où
+   il l'est. Une frise qui se lit de haut en bas n'est plus une frise :
+   c'est une liste, et on en a déjà une. */
+.frise__defile {
+  flex: 1;
+  min-width: 0;
+  overflow: auto;
+  overscroll-behavior-x: contain;
+  -webkit-overflow-scrolling: touch;
+  padding: 22px 0 26px;
+  /* la barre d'outils occupe la droite : on lui laisse la place */
+  padding-right: calc(64px + var(--safe-right));
+}
+
+.frise__grille {
+  display: grid;
+  align-items: start;
+  min-width: min-content;
+  padding-left: 16px;
+}
+
+/* Chaque case peint SON bout d'axe ; les cases étant contiguës dans
+   une rangée, les segments se rejoignent et l'axe paraît continu.
+   Une ligne unique en position absolue devrait connaître la hauteur
+   des rangées — qui dépend du contenu. */
+.frise__case {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 26px 7px 8px;
+  min-width: 0;
+}
+.frise__case::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 15px;
+  height: 1px;
+  background: var(--border-strong);
+}
+
+/* Le « + » d'insertion ne se montre qu'au survol : trente croix
+   affichées en permanence, c'est un damier, pas une chronologie.
+   Au doigt, il reste visible — il n'y a pas de survol. */
+.frise__ajout {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  min-height: 34px;
+  border-radius: var(--r-xs);
+  border: 1px dashed transparent;
+  color: var(--text-3);
+  opacity: 0;
+  transition:
+    opacity var(--fast) var(--ease),
+    border-color var(--fast) var(--ease);
+}
+.frise__case:hover .frise__ajout {
+  opacity: 1;
+  border-color: var(--border-strong);
+}
+.frise__ajout:hover { color: var(--accent-text); }
+
+@media (pointer: coarse) {
+  .frise__ajout { opacity: 0.5; }
+}
+
+.jalon {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 10px 11px 11px;
+  border-radius: var(--r-sm);
+  background: var(--surface-solid);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-sm);
+}
+.jalon[data-actif] {
+  border-color: var(--accent-line);
+  box-shadow: 0 0 0 1px var(--accent-line), var(--shadow-sm);
+}
+
+/* Le point sur l'axe : c'est lui qui rattache la carte à la ligne.
+   Sans lui, les cartes flottent au-dessus d'un trait qui ne les
+   concerne pas. */
+.jalon__point {
+  position: absolute;
+  top: -18px;
+  left: 50%;
+  width: 9px;
+  height: 9px;
+  margin-left: -4.5px;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 0 3px var(--bg);
+}
+
+.jalon__quand,
+.jalon__titre,
+.jalon__note {
+  width: 100%;
+  border: 0;
+  background: none;
+  color: var(--text);
+  font: inherit;
+  padding: 1px 0;
+}
+.jalon__quand:focus,
+.jalon__titre:focus,
+.jalon__note:focus { outline: none; }
+
+.jalon__quand {
+  font-size: 11px;
+  font-weight: 580;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: var(--accent-text);
+}
+.jalon__quand::placeholder { color: var(--text-3); text-transform: none; letter-spacing: 0; }
+
+.jalon__titre {
+  font-size: 14px;
+  font-weight: 540;
+  letter-spacing: -0.008em;
+}
+
+.jalon__note {
+  margin-top: 3px;
+  resize: none;
+  font-size: 12.5px;
+  line-height: 1.45;
+  color: var(--text-2);
+}
+
+/* ========================================================
+   3. La table
+   ======================================================== */
+
+.table {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  display: flex;
+}
+
+.table__defile {
+  flex: 1;
+  min-width: 0;
+  overflow: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: 18px 16px 40px;
+}
+
+.table__grille {
+  border-collapse: separate;
+  border-spacing: 0;
+  min-width: 100%;
+}
+
+.table__grille th,
+.table__grille td {
+  border-bottom: 1px solid var(--border);
+  border-right: 1px solid var(--border);
+  padding: 0;
+  vertical-align: middle;
+}
+.table__grille tr > *:last-child { border-right: 0; }
+
+/* L'en-tête reste visible pendant qu'on descend : passé quinze
+   personnages, une colonne sans nom ne veut plus rien dire. */
+.table__grille thead th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: var(--bg);
+  border-bottom: 1px solid var(--border-strong);
+}
+
+.table__entete {
+  position: relative;
+  min-width: 168px;
+  padding: 7px 9px 8px !important;
+  text-align: left;
+}
+
+.table__nomColonne {
+  width: 100%;
+  border: 0;
+  background: none;
+  color: var(--text);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 580;
+  letter-spacing: -0.006em;
+  padding: 1px 0;
+}
+.table__nomColonne:focus { outline: none; }
+
+.table__type {
+  font-size: 10.5px;
+  font-weight: 560;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--text-3);
+  padding: 1px 0;
+}
+.table__type:hover { color: var(--accent-text); }
+
+.table__gouttiere {
+  position: relative;
+  width: 30px;
+  min-width: 30px;
+  text-align: center;
+}
+
+.table__poignee {
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 26px;
+  margin: 0 auto;
+  border-radius: var(--r-xs);
+  color: var(--text-3);
+  opacity: 0;
+  transition: opacity var(--fast) var(--ease);
+}
+tr:hover .table__poignee,
+tr[data-actif] .table__poignee { opacity: 1; }
+.table__poignee:hover { background: var(--surface-sunken); color: var(--text); }
+
+@media (pointer: coarse) {
+  .table__poignee { opacity: 0.6; }
+}
+
+.table__ajoutColonne {
+  width: 38px;
+  min-width: 38px;
+}
+.table__ajoutColonne button {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  margin: 0 auto;
+  border-radius: var(--r-xs);
+  color: var(--text-3);
+}
+.table__ajoutColonne button:hover { background: var(--surface-sunken); color: var(--text); }
+
+.table__cellule { min-width: 168px; }
+.table__cellule--fin { min-width: 38px; width: 38px; text-align: center; }
+
+.table__champ {
+  width: 100%;
+  border: 0;
+  background: none;
+  color: var(--text);
+  font: inherit;
+  font-size: 13.5px;
+  padding: 9px 9px;
+}
+.table__champ:focus {
+  outline: none;
+  background: var(--surface-sunken);
+}
+.table__champ--nombre { text-align: right; font-variant-numeric: tabular-nums; }
+
+.table__case {
+  display: grid;
+  place-items: center;
+  width: 19px;
+  height: 19px;
+  margin: 7px auto;
+  border-radius: 6px;
+  border: 1.5px solid var(--border-strong);
+  color: var(--accent-ink);
+}
+.table__case[aria-checked='true'] {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+.table__etiquettes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  width: 100%;
+  padding: 7px 9px;
+  text-align: left;
+}
+.table__etiquette {
+  padding: 2px 8px;
+  border-radius: 99px;
+  background: var(--accent-soft);
+  color: var(--accent-text);
+  font-size: 11.5px;
+  font-weight: 540;
+}
+.table__creux { color: var(--text-3); font-size: 13px; }
+
+.table__vignette {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  margin: 5px auto;
+  border-radius: var(--r-xs);
+  border: 1px solid var(--border);
+  background: var(--surface-sunken);
+  color: var(--text-3);
+  overflow: hidden;
+}
+.table__vignette img { width: 100%; height: 100%; object-fit: cover; }
+
+.table__vignetteRetrait {
+  display: block;
+  margin: 0 auto 5px;
+  color: var(--text-3);
+  font-size: 11px;
+}
+.table__vignetteRetrait:hover { color: var(--text); }
+
+.table__lien {
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  margin: 0 auto;
+  border-radius: var(--r-xs);
+  color: var(--accent-text);
+}
+.table__lien:hover { background: var(--accent-soft); }
+
+.table__ajoutLigne {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 10px;
+  padding: 8px 10px;
+  border-radius: var(--r-sm);
+  color: var(--text-3);
+  font-size: 13px;
+}
+.table__ajoutLigne:hover { background: var(--surface-sunken); color: var(--text-2); }
+
+/* Le menu d'une colonne ou d'une ligne. Il est posé DANS la cellule,
+   en absolu : un portail lui ferait perdre son ancrage au premier
+   défilement horizontal, qui est justement ce qu'on fait tout le
+   temps dans une table. */
+.table__menu {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  z-index: 20;
+  width: 250px;
+  padding: 8px;
+  border-radius: var(--r);
+  background: var(--surface-solid);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow);
+  text-align: left;
+  font-weight: 400;
+  animation: table-menu 140ms var(--ease) both;
+}
+
+@keyframes table-menu {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: none; }
+}
+
+/* Le voile ferme le menu au premier clic dehors, sans écouteur global
+   à poser et à retirer. */
+.table__voile {
+  position: fixed;
+  inset: 0;
+  z-index: 19;
+}
+
+.table__menu .menu__item { width: 100%; }
+.table__menu .menu__item[aria-pressed='true'] { background: var(--surface-sunken); }
+
+.menu__sep {
+  height: 1px;
+  margin: 6px 2px;
+  background: var(--border);
+}
+
+/* ========================================================
+   4. Les états vides — les trois se ressemblent, et c'est voulu
+   ======================================================== */
+
+.planche__vide,
+.frise__vide,
+.table__vide {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  max-width: 320px;
+  padding: 26px 28px;
+  text-align: center;
+  color: var(--text-3);
+  pointer-events: none;
+}
+.planche__vide button,
+.frise__vide button,
+.table__vide button { pointer-events: auto; }
+
+.planche__vide p,
+.frise__vide p,
+.table__vide p {
+  font-size: 15px;
+  font-weight: 540;
+  color: var(--text-2);
+}
+
+.planche__vide span,
+.frise__vide span,
+.table__vide span {
+  font-size: 12.5px;
+  line-height: 1.5;
+}
+
+/* ========================================================
+   5. Au doigt
+   ======================================================== */
+
+@media (max-width: 700px), (pointer: coarse) {
+  .frise__defile { padding-right: calc(60px + var(--safe-right)); }
+  .table__defile { padding: 14px 12px 40px; }
+  .table__entete,
+  .table__cellule { min-width: 148px; }
+}

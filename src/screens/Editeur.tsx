@@ -20,11 +20,14 @@ import {
   type Bloc,
   type EntreeCatalogue,
   type TypeBloc,
+  type Vignette,
 } from '../store/blocs'
 import { oublierImage, stockerImage } from '../store/db'
 import { lisible, peutAjouterImage, QUOTA_IMAGES } from '../store/quota'
 import {
+  IconChevron,
   IconClose,
+  IconGalerie,
   IconImage,
   IconPlus,
   IconTrash,
@@ -535,6 +538,8 @@ function Contenu({
       return <Etiquettes bloc={bloc} outils={outils} />
     case 'image':
       return <BlocImage bloc={bloc} outils={outils} />
+    case 'galerie':
+      return <BlocGalerie bloc={bloc} outils={outils} />
     case 'tableau':
       return <Tableau bloc={bloc} outils={outils} />
     case 'colonnes':
@@ -933,6 +938,152 @@ function BlocImage({ bloc, outils }: { bloc: Bloc; outils: Outils }) {
         </button>
       )}
     </div>
+  )
+}
+
+/* ================= galerie ================= */
+
+/**
+ * Plusieurs images alignées, chacune avec sa légende.
+ *
+ * POURQUOI UN BLOC ET PAS UNE FORME. Une planche a besoin d'un plan,
+ * d'un zoom et d'une barre d'outils : elle mérite son onglet. Une
+ * galerie se lit dans le fil du texte, entre deux paragraphes, et
+ * n'aurait rien à faire d'un onglet — la sortir du texte lui coûterait
+ * précisément ce qui la rend utile.
+ *
+ * Chaque vignette porte SON PROPRE identifiant, distinct de celui de
+ * l'image : on peut poser deux fois le même cliché sans que retirer
+ * l'un retire l'autre.
+ */
+function BlocGalerie({ bloc, outils }: { bloc: Bloc; outils: Outils }) {
+  const vignettes = bloc.vignettes ?? []
+  const fichier = useRef<HTMLInputElement>(null)
+  const [envoi, setEnvoi] = useState(false)
+
+  const ecrire = (suite: Vignette[]) => outils.maj(bloc.id, { vignettes: suite })
+
+  const importer = async (fichiers: File[]) => {
+    if (!fichiers.length) return
+    setEnvoi(true)
+    try {
+      let suite = vignettes
+      for (const f of fichiers) {
+        // le plafond se dit AVANT le travail de réduction, pas après
+        if (!peutAjouterImage(f.size)) {
+          alert(`Plafond d'images atteint (${lisible(QUOTA_IMAGES)}). Écrire, en revanche, n'est jamais bloqué.`)
+          break
+        }
+        suite = [...suite, { id: idBloc(), imageId: await stockerImage(f), legende: '' }]
+      }
+      if (suite !== vignettes) ecrire(suite)
+    } finally {
+      setEnvoi(false)
+    }
+  }
+
+  const retirer = (v: Vignette) => {
+    if (v.imageId) oublierImage(v.imageId)
+    ecrire(vignettes.filter((x) => x.id !== v.id))
+  }
+
+  /** Réordonner d'un cran : sans ça, l'ordre est celui de l'import, définitif. */
+  const decaler = (i: number, sens: -1 | 1) => {
+    const j = i + sens
+    if (j < 0 || j >= vignettes.length) return
+    const suite = [...vignettes]
+    ;[suite[i], suite[j]] = [suite[j], suite[i]]
+    ecrire(suite)
+  }
+
+  return (
+    <div className="ed__galerie" style={{ width: `${bloc.largeur ?? 100}%` }}>
+      <input
+        ref={fichier}
+        type="file"
+        accept="image/*"
+        multiple
+        hidden
+        onChange={(e) => {
+          void importer([...(e.target.files ?? [])])
+          e.target.value = ''
+        }}
+      />
+
+      {vignettes.length > 0 && (
+        <div className="ed__vignettes">
+          {vignettes.map((v, i) => (
+            <VignetteGalerie
+              key={v.id}
+              vignette={v}
+              premiere={i === 0}
+              derniere={i === vignettes.length - 1}
+              legender={(legende) =>
+                ecrire(vignettes.map((x) => (x.id === v.id ? { ...x, legende } : x)))
+              }
+              decaler={(sens) => decaler(i, sens)}
+              retirer={() => retirer(v)}
+            />
+          ))}
+        </div>
+      )}
+
+      <button className="ed__depot ed__depot--galerie" onClick={() => fichier.current?.click()} disabled={envoi}>
+        <IconImage size={17} />
+        {envoi ? 'Import…' : vignettes.length ? 'Ajouter des images' : 'Choisir des images'}
+      </button>
+    </div>
+  )
+}
+
+function VignetteGalerie({
+  vignette,
+  premiere,
+  derniere,
+  legender,
+  decaler,
+  retirer,
+}: {
+  vignette: Vignette
+  premiere: boolean
+  derniere: boolean
+  legender: (v: string) => void
+  decaler: (sens: -1 | 1) => void
+  retirer: () => void
+}) {
+  const url = useImageUrl(vignette.imageId)
+  return (
+    <figure className="ed__vignette">
+      {url ? <img src={url} alt={vignette.legende || ''} /> : <span className="ed__vignetteVide" />}
+      <div className="ed__vignetteActions">
+        <button
+          className="btn btn--icon btn--onImage"
+          aria-label="Vers la gauche"
+          disabled={premiere}
+          onClick={() => decaler(-1)}
+        >
+          <IconChevron size={14} />
+        </button>
+        <button
+          className="btn btn--icon btn--onImage"
+          aria-label="Vers la droite"
+          disabled={derniere}
+          onClick={() => decaler(1)}
+        >
+          <IconChevron size={14} style={{ transform: 'rotate(180deg)' }} />
+        </button>
+        <button className="btn btn--icon btn--onImage" aria-label="Retirer" onClick={retirer}>
+          <IconTrash size={14} />
+        </button>
+      </div>
+      <figcaption>
+        <input
+          value={vignette.legende ?? ''}
+          placeholder="Légende"
+          onChange={(e) => legender(e.target.value)}
+        />
+      </figcaption>
+    </figure>
   )
 }
 
@@ -1371,6 +1522,8 @@ function IconType({ t, niveau }: { t: TypeBloc; niveau?: number }) {
       )
     case 'image':
       return <IconImage size={s} />
+    case 'galerie':
+      return <IconGalerie size={s} />
     case 'tableau':
       return (
         <svg {...trait(s)} aria-hidden="true">
