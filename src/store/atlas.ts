@@ -1,7 +1,7 @@
 import { create } from 'zustand'
 import { db, oublierImage } from './db'
 import { versTexte, type Bloc } from './blocs'
-import { normaliserFormes, texteDesFormes, type Forme } from './formes'
+import { imagesDuPost, normaliserFormes, texteDesFormes, type Forme } from './formes'
 
 /* ---------------------------------------------------------------
    État applicatif — persisté (jalon 2) et synchronisable (jalon 3).
@@ -154,26 +154,47 @@ function normaliserEspace(e: Partial<Espace> & { id: string }): Espace {
 
 /* --- écriture différée : on ne va pas frapper la base à chaque touche --- */
 
-const enAttente = new Map<string, number>()
+/**
+ * Ce qui attend d'être écrit : le minuteur, ET la valeur à écrire.
+ *
+ * La valeur était absente, et c'est ce qui rendait `viderLesAttentes`
+ * mensongère (voir plus bas).
+ */
+type EnAttente = { minuteur: number; magasin: 'posts' | 'espaces'; valeur: Post | Espace }
+
+const enAttente = new Map<string, EnAttente>()
 
 function poserPlusTard(magasin: 'posts' | 'espaces', valeur: Post | Espace, delai = 400) {
   const cle = `${magasin}:${valeur.id}`
-  window.clearTimeout(enAttente.get(cle))
-  enAttente.set(
-    cle,
-    window.setTimeout(() => {
-      enAttente.delete(cle)
-      void db.poser(magasin, valeur)
-    }, delai),
-  )
+  window.clearTimeout(enAttente.get(cle)?.minuteur)
+  const minuteur = window.setTimeout(() => {
+    enAttente.delete(cle)
+    void db.poser(magasin, valeur)
+  }, delai)
+  enAttente.set(cle, { minuteur, magasin, valeur })
 }
 
-/** Force l'écriture immédiate de tout ce qui attendait (avant un envoi). */
+/**
+ * Force l'écriture immédiate de tout ce qui attendait, avant un envoi.
+ *
+ * ELLE NE FORÇAIT RIEN : elle annulait les minuteurs et vidait la
+ * table, sans jamais écrire. Les modifications des dernières
+ * fractions de seconde ne rejoignaient donc jamais IndexedDB.
+ *
+ * Le plus souvent ça ne se voyait pas — `marquerPropre` réécrit tout
+ * ce qui vient de partir, et rattrapait donc l'oubli. Mais quand
+ * l'envoi ÉCHOUE (hors ligne, serveur muet), `marquerPropre` n'est
+ * jamais appelée : la modification n'était ni sur le serveur, ni sur
+ * le disque. Elle ne vivait plus que dans la mémoire de l'onglet, et
+ * disparaissait au premier rechargement. « Rien ne se perd »
+ * (docs/01 § 9) ne souffre pas d'exception, surtout pas celle-là.
+ */
 export async function viderLesAttentes() {
-  const cles = [...enAttente.values()]
-  cles.forEach((t) => window.clearTimeout(t))
+  const attentes = [...enAttente.values()]
+  attentes.forEach((a) => window.clearTimeout(a.minuteur))
   enAttente.clear()
-  await Promise.resolve()
+  // on attend vraiment les écritures : l'envoi part après, pas pendant
+  await Promise.all(attentes.map((a) => db.poser(a.magasin, a.valeur).catch(() => {})))
 }
 
 /* --- store --- */
@@ -211,6 +232,12 @@ type AtlasStore = {
   supprimerPost: (id: string) => void
   archiver: (id: string) => void
   restaurer: (id: string) => void
+
+  /* les mêmes gestes, sur une sélection — une seule écriture d'état */
+  supprimerPosts: (ids: string[]) => void
+  archiverPosts: (ids: string[]) => void
+  restaurerPosts: (ids: string[]) => void
+  supprimerEspaces: (ids: string[]) => void
 
   creerEspace: () => string
   majEspace: (id: string, patch: Partial<Espace>) => void
@@ -355,38 +382,97 @@ export const useAtlas = create<AtlasStore>((set, get) => ({
   /* Une suppression devient une pierre tombale : l'enregistrement quitte
      l'interface mais reste en base pour que les autres appareils
      l'apprennent. Les tombes sont purgées après 90 jours (voir sync.ts). */
-  supprimerPost: (idPost) => {
-    const post = get().posts.find((p) => p.id === idPost)
-    if (!post) return
-    if (post.coverId) oublierImage(post.coverId)
-    const tombe: Post = {
-      ...post,
-      coverId: null,
-      carte: null,
-      dessin: null,
-      texte: '',
-      titre: '',
-      supprime: true,
-      sale: true,
-      updatedAt: Date.now(),
-    }
+  /* Une seule note passe par le chemin du lot. Ce n'est pas de
+     l'économie de lignes : la version unitaire n'oubliait que l'image
+     de COUVERTURE, et laissait les images posées dans les fiches et
+     les planches occuper le quota pour toujours — invisibles, puisque
+     la note qui les portait n'existait plus. */
+  supprimerPost: (idPost) => get().supprimerPosts([idPost]),
+
+  /* ── LES GESTES EN LOT ──────────────────────────────────────────
+
+     Ils ne bouclent pas sur la version unitaire, et c'est ce qui les
+     justifie. Cinquante appels à `supprimerPost` font cinquante
+     écritures d'état, donc cinquante rendus de la liste — sur un
+     téléphone, la sélection multiple s'y arrêterait net. Ici c'est UNE
+     transformation, un seul rendu, et la base reçoit ses écritures
+     ensuite.
+
+     Ils gardent tout ce que fait la version unitaire : la pierre
+     tombale, l'image oubliée, la sélection courante relâchée. Une
+     suppression en lot n'est pas une suppression au rabais. */
+
+  supprimerPosts: (ids) => {
+    const jeu = new Set(ids)
+    const now = Date.now()
+    const vises = get().posts.filter((p) => jeu.has(p.id))
+    if (!vises.length) return
+
+    const tombes = vises.map((post) => {
+      // les images d'une note supprimée n'ont plus de raison d'occuper la place
+      for (const img of imagesDuPost(post)) oublierImage(img)
+      return {
+        ...post,
+        coverId: null,
+        formes: null,
+        blocs: null,
+        carte: null,
+        dessin: null,
+        texte: '',
+        titre: '',
+        supprime: true,
+        sale: true,
+        updatedAt: now,
+      } satisfies Post
+    })
+
     set((s) => ({
-      posts: s.posts.filter((p) => p.id !== idPost),
-      tombes: { ...s.tombes, posts: [...s.tombes.posts, tombe] },
-      selectedId: s.selectedId === idPost ? null : s.selectedId,
+      posts: s.posts.filter((p) => !jeu.has(p.id)),
+      tombes: { ...s.tombes, posts: [...s.tombes.posts, ...tombes] },
+      selectedId: s.selectedId && jeu.has(s.selectedId) ? null : s.selectedId,
     }))
-    void db.poser('posts', tombe)
+    tombes.forEach((t) => void db.poser('posts', t))
   },
 
-  archiver: (idPost) => {
-    get().majPost(idPost, { etat: 'archivee' })
-    if (get().selectedId === idPost) set({ selectedId: null })
+  archiverPosts: (ids) => {
+    const jeu = new Set(ids)
+    const now = Date.now()
+    let touches: Post[] = []
+    set((s) => {
+      const posts = s.posts.map((p) => {
+        if (!jeu.has(p.id) || p.etat === 'archivee') return p
+        const modifie: Post = { ...p, etat: 'archivee', updatedAt: now, sale: true }
+        touches.push(modifie)
+        return modifie
+      })
+      return { posts, selectedId: s.selectedId && jeu.has(s.selectedId) ? null : s.selectedId }
+    })
+    touches.forEach((p) => void db.poser('posts', p))
   },
 
-  restaurer: (idPost) => {
-    const post = get().posts.find((p) => p.id === idPost)
-    if (post) get().majPost(idPost, { etat: post.espaceId ? 'classee' : 'libre' })
+  restaurerPosts: (ids) => {
+    const jeu = new Set(ids)
+    const now = Date.now()
+    let touches: Post[] = []
+    set((s) => ({
+      posts: s.posts.map((p) => {
+        if (!jeu.has(p.id) || p.etat !== 'archivee') return p
+        const modifie: Post = {
+          ...p,
+          etat: p.espaceId ? 'classee' : 'libre',
+          updatedAt: now,
+          sale: true,
+        }
+        touches.push(modifie)
+        return modifie
+      }),
+    }))
+    touches.forEach((p) => void db.poser('posts', p))
   },
+
+  archiver: (idPost) => get().archiverPosts([idPost]),
+
+  restaurer: (idPost) => get().restaurerPosts([idPost]),
 
   creerEspace: () => {
     const espaces = get().espaces
@@ -439,6 +525,35 @@ export const useAtlas = create<AtlasStore>((set, get) => ({
       espaceActif: s.espaceActif === idEspace ? null : s.espaceActif,
     }))
     void db.poser('espaces', tombe)
+    orphelins.forEach((p) => void db.poser('posts', p))
+  },
+
+  /* Supprimer plusieurs espaces d'un coup. Les notes qu'ils tenaient
+     redeviennent libres — jamais supprimées avec eux, comme pour un
+     espace seul. C'est la garantie qui rend le geste acceptable en
+     lot : on peut se tromper de sélection sans rien perdre. */
+  supprimerEspaces: (ids) => {
+    const jeu = new Set(ids)
+    const now = Date.now()
+    const vises = get().espaces.filter((e) => jeu.has(e.id))
+    if (!vises.length) return
+
+    const tombes = vises.map((espace) => {
+      if (espace.imageId) oublierImage(espace.imageId)
+      return { ...espace, imageId: null, supprime: true, sale: true, updatedAt: now }
+    })
+
+    const orphelins = get()
+      .posts.filter((p) => p.espaceId && jeu.has(p.espaceId))
+      .map((p) => ({ ...p, espaceId: null, etat: 'libre' as Etat, updatedAt: now, sale: true }))
+
+    set((s) => ({
+      espaces: s.espaces.filter((e) => !jeu.has(e.id)),
+      tombes: { ...s.tombes, espaces: [...s.tombes.espaces, ...tombes] },
+      posts: s.posts.map((p) => orphelins.find((o) => o.id === p.id) ?? p),
+      espaceActif: s.espaceActif && jeu.has(s.espaceActif) ? null : s.espaceActif,
+    }))
+    tombes.forEach((t) => void db.poser('espaces', t))
     orphelins.forEach((p) => void db.poser('posts', p))
   },
 

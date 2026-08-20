@@ -99,12 +99,26 @@
 
 /* ---------- les onglets ---------- */
 
+/* La rangée défile ; le « + » ne défile pas.
+
+   Le trait du bas est porté par le CONTENEUR et non par la rangée :
+   posé sur la rangée, il s'arrêterait là où le défilement s'arrête, et
+   laisserait le bouton flotter au-dessus de rien. */
+.note__barreOnglets {
+  display: flex;
+  align-items: flex-end;
+  flex: none;
+  border-bottom: 1px solid var(--border);
+  padding-right: calc(10px + var(--safe-right));
+}
+
 .note__onglets {
   display: flex;
   align-items: center;
   gap: 3px;
-  flex: none;
-  padding: 0 14px 8px;
+  flex: 1;
+  min-width: 0;
+  padding: 0 4px 8px 14px;
   /* IL DÉFILE, et sans barre visible : c'est une rangée d'onglets, pas
      une zone de contenu. `pan-x` garde le geste horizontal au doigt
      tout en laissant le défilement vertical de la page tranquille. */
@@ -113,7 +127,6 @@
   scrollbar-width: none;
   touch-action: pan-x;
   overscroll-behavior-x: contain;
-  border-bottom: 1px solid var(--border);
 }
 .note__onglets::-webkit-scrollbar {
   display: none;
@@ -185,9 +198,19 @@
   outline: none;
 }
 
+/* Toujours visible, jamais emporté par le défilement de la rangée.
+   Le liseré à gauche le détache des onglets qui passent dessous. */
 .onglet--plus {
+  flex: none;
   padding: 0 10px;
+  margin-bottom: 8px;
   color: var(--text-3);
+  border-left: 1px solid var(--border);
+  border-radius: 0;
+}
+.onglet--plus:hover {
+  color: var(--text);
+  background: var(--surface-sunken);
 }
 
 /* ---------- l'image de couverture, reléguée ---------- */

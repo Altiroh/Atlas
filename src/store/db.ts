@@ -56,11 +56,20 @@ export const db = {
   effacer: (magasin: Magasin, cle: IDBValidKey) =>
     tx<undefined>(magasin, 'readwrite', (s) => s.delete(cle)),
 
-  /** Vide tout le contenu local. Utilisé au changement de compte. */
+  /**
+   * Vide tout le contenu local — changement de compte, ou remise à
+   * zéro de l'appareil depuis les réglages.
+   *
+   * LE REGISTRE DES TAILLES PART AVEC. Il vit dans `localStorage`, pas
+   * dans IndexedDB : l'oublier laissait la jauge annoncer douze
+   * méga-octets d'images sur une base qui n'en contient plus aucune,
+   * et le plafond pouvait rester « atteint » alors que tout était vide.
+   */
   vider: async () => {
     for (const m of ['posts', 'espaces', 'images'] as Magasin[]) {
       await tx<undefined>(m, 'readwrite', (s) => s.clear())
     }
+    oublierToutesLesImages()
   },
 }
 
@@ -162,6 +171,13 @@ export async function urlImage(id: string): Promise<string | null> {
   const url = URL.createObjectURL(blob)
   urls.set(id, url)
   return url
+}
+
+/** Le registre et les URL d'objet, remis à zéro d'un coup. */
+export function oublierToutesLesImages() {
+  for (const url of urls.values()) URL.revokeObjectURL(url)
+  urls.clear()
+  ecrireRegistre({})
 }
 
 export function oublierImage(id: string) {

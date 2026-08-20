@@ -8,15 +8,57 @@
    un fond qui bouge.
    ======================================================== */
 
+/* ---------- UN BANDEAU EN HAUT, PAS UNE BOÎTE AU MILIEU ----------
+
+   Tout ce qui parle de l'app elle-même — la mise à jour, une question
+   à laquelle il faut répondre — descend du haut et occupe toute la
+   largeur. Une seule direction, une seule forme : on reconnaît le
+   registre avant d'avoir lu.
+
+   La hauteur vaut 15 % de l'écran, mais en MINIMUM et non en valeur
+   fixe. Une confirmation nomme ce qu'elle va détruire ; sur un
+   téléphone, « Supprimer les 12 notes sélectionnées » plus le détail
+   dépassent parfois les cent vingt pixels, et rogner ce texte-là
+   serait rogner précisément ce qui permet de répondre. La bande fait
+   donc 15 % le plus souvent, et davantage quand la phrase l'exige.
+
+   Le voile ne prend pas tout l'écran non plus : il reste sous la
+   bande pour attraper le clic d'annulation. */
+
+.sheet--bandeau {
+  display: block;
+  padding: 0;
+}
+
 .confirme {
+  display: flex;
+  align-items: center;
+  gap: 16px;
   width: 100%;
-  max-width: 340px;
-  padding: 22px 22px 18px;
-  border-radius: var(--r-xl);
-  border: 1px solid var(--border);
+  min-height: 15dvh;
+  padding: 16px 20px;
+  padding-top: calc(16px + var(--safe-top));
+  border-bottom: 1px solid var(--border);
   background: var(--surface-solid);
   box-shadow: var(--shadow);
-  text-align: center;
+  text-align: left;
+  animation: bandeau-descend 300ms var(--ease) both;
+}
+
+@keyframes bandeau-descend {
+  from {
+    opacity: 0;
+    transform: translateY(-100%);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.confirme__dit {
+  flex: 1;
+  min-width: 0;
 }
 
 /* Le sceau : la couleur du danger annoncée avant la phrase. Un halo
@@ -24,9 +66,9 @@
 .confirme__sceau {
   display: grid;
   place-items: center;
+  flex: none;
   width: 44px;
   height: 44px;
-  margin: 0 auto 14px;
   border-radius: 50%;
   color: hsl(2 74% 50%);
   background: hsl(2 74% 50% / 0.11);
@@ -60,7 +102,8 @@
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 8px;
-  margin-top: 20px;
+  flex: none;
+  width: 240px;
 }
 
 .confirme__btn {
@@ -68,6 +111,19 @@
   height: 40px;
   font-size: 14px;
   font-weight: 560;
+}
+
+/* Sous 560 px, les deux boutons côte à côte laissent quatre-vingts
+   pixels au texte. La bande passe alors en deux étages — le sceau et
+   la phrase, puis les boutons — et grandit d'autant. */
+@media (max-width: 560px) {
+  .confirme {
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+  .confirme__actions {
+    width: 100%;
+  }
 }
 
 :root[data-theme='dark'] .confirme__sceau {
@@ -78,7 +134,8 @@
 
 @media (max-width: 380px) {
   .confirme {
-    padding: 20px 16px 16px;
+    padding: 14px 14px;
+    padding-top: calc(14px + var(--safe-top));
   }
 }
 

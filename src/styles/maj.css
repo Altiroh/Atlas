@@ -13,24 +13,30 @@
    plutôt qu'une croix de douze.
    ======================================================== */
 
+/* PLEINE LARGEUR, comme la confirmation. C'était une pastille centrée
+   de 340 px ; les deux formes disaient la même chose — « ceci parle de
+   l'app » — dans deux langages différents. Une seule bande, un seul
+   registre, et le geste pour l'écarter est le même des deux côtés.
+
+   La hauteur suit la même règle : 15 % de l'écran en minimum, jamais
+   en plafond. */
 .maj {
   position: fixed;
   z-index: 70;
-  top: calc(max(var(--safe-top), 10px) + 8px);
-  left: 50%;
+  top: 0;
+  left: 0;
+  right: 0;
   display: flex;
   align-items: center;
-  gap: 10px;
-  max-width: min(340px, calc(100vw - 24px));
-  padding: 8px 12px 8px 10px;
-  border-radius: 99px;
-  border: 1px solid var(--border);
+  gap: 14px;
+  min-height: 15dvh;
+  padding: 16px 20px;
+  padding-top: calc(16px + var(--safe-top));
+  border-bottom: 1px solid var(--border);
   background: var(--surface-solid);
   box-shadow: var(--shadow);
   text-align: left;
   cursor: pointer;
-  /* le centrage en X est porté PAR L'ANIMATION, jamais par une règle
-     séparée : deux `transform` sur le même élément s'écrasent */
   animation: maj-descend 380ms var(--ease) both;
 }
 
@@ -41,25 +47,25 @@
 @keyframes maj-descend {
   from {
     opacity: 0;
-    transform: translate(-50%, -140%);
+    transform: translateY(-100%);
   }
   60% {
     opacity: 1;
   }
   to {
     opacity: 1;
-    transform: translate(-50%, 0);
+    transform: none;
   }
 }
 
 @keyframes maj-remonte {
   from {
     opacity: 1;
-    transform: translate(-50%, 0);
+    transform: none;
   }
   to {
     opacity: 0;
-    transform: translate(-50%, -140%);
+    transform: translateY(-100%);
   }
 }
 
@@ -150,7 +156,7 @@
   .maj,
   .maj[data-sort='true'] {
     animation: none;
-    transform: translateX(-50%);
+    transform: none;
   }
   .maj__coche[data-active='true'] svg {
     animation: none;

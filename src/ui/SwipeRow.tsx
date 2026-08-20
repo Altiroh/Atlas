@@ -37,15 +37,18 @@ export function SwipeRow({
   onOuvrir,
   gauche,
   droite,
+  fige,
   children,
 }: {
   id: string
   ouvertId: string | null
   onOuvrir: (id: string | null) => void
   /** panneau du bord gauche, révélé en tirant vers la droite */
-  gauche?: Action
+  gauche?: Action[]
   /** panneau du bord droit, révélé en tirant vers la gauche */
-  droite?: Action
+  droite?: Action[]
+  /** en sélection multiple, le balayage n'a plus de sens : on coche */
+  fige?: boolean
   children: ReactNode
 }) {
   const [dx, setDx] = useState(0)
@@ -73,13 +76,15 @@ export function SwipeRow({
     if (ouvertId !== id && dxVif.current !== 0 && !glisse) poser(0)
   }, [ouvertId, id, glisse])
 
-  const borne = (v: number) => {
-    const max = gauche ? LARGEUR : 0
-    const min = droite ? -LARGEUR : 0
-    return Math.max(min, Math.min(max, v))
-  }
+  /* Un panneau vaut la largeur de ce qu'il contient : un bouton, ou
+     deux quand la ligne propose un choix. */
+  const largeurG = (gauche?.length ?? 0) * LARGEUR
+  const largeurD = (droite?.length ?? 0) * LARGEUR
+
+  const borne = (v: number) => Math.max(-largeurD, Math.min(largeurG, v))
 
   const down = (e: React.PointerEvent) => {
+    if (fige) return
     depart.current = { x: e.clientX, y: e.clientY, dx0: dx }
     axe.current = '?'
     aGlisse.current = false
@@ -119,17 +124,22 @@ export function SwipeRow({
     setGlisse(false)
 
     const val = brutVif.current
-    const action = val > 0 ? gauche : droite
+    const panneau = val > 0 ? gauche : droite
+    const largeur = val > 0 ? largeurG : largeurD
 
-    if (action && Math.abs(val) >= SEUIL_DECLENCHE) {
-      // balayage franc : l'action part directement
+    /* LE BALAYAGE FRANC NE DÉCLENCHE QUE S'IL N'Y A QU'UNE ACTION.
+       Dès qu'un panneau en propose deux, un geste vif ne dit pas
+       laquelle — et comme l'une des deux supprime, deviner serait la
+       pire réponse possible. Le geste ouvre alors le panneau, et c'est
+       le doigt qui choisit. */
+    if (panneau?.length === 1 && Math.abs(val) >= SEUIL_DECLENCHE) {
       poser(0)
       onOuvrir(null)
-      action.faire()
+      panneau[0].faire()
       return
     }
-    if (action && Math.abs(val) >= SEUIL_OUVRE) {
-      poser(val > 0 ? LARGEUR : -LARGEUR)
+    if (panneau?.length && Math.abs(val) >= SEUIL_OUVRE) {
+      poser(val > 0 ? largeur : -largeur)
       onOuvrir(id)
       return
     }
@@ -157,39 +167,47 @@ export function SwipeRow({
           il est entièrement à l'extérieur, donc rien ne transparaît sous la
           ligne, qui est translucide. C'est un simple déplacement — jamais
           une largeur qui s'anime, qui coûterait une mise en page par image. */}
-      {gauche && (
-        <button
-          className="swipe__act swipe__act--g"
-          style={{
-            transform: `translate3d(${Math.min(0, dx - LARGEUR)}px, 0, 0)`,
-            background: `hsl(${gauche.ton} / 0.16)`,
-            color: `hsl(${gauche.ton})`,
-          }}
+      {gauche?.length ? (
+        <div
+          className="swipe__panneau swipe__panneau--g"
+          style={{ transform: `translate3d(${Math.min(0, dx - largeurG)}px, 0, 0)` }}
           aria-hidden={dx <= 0}
-          tabIndex={dx > 0 ? 0 : -1}
-          onClick={() => executer(gauche)}
         >
-          {gauche.icone}
-          {gauche.label}
-        </button>
-      )}
+          {gauche.map((a) => (
+            <button
+              key={a.label}
+              className="swipe__act"
+              style={{ background: `hsl(${a.ton} / 0.16)`, color: `hsl(${a.ton})` }}
+              tabIndex={dx > 0 ? 0 : -1}
+              onClick={() => executer(a)}
+            >
+              {a.icone}
+              {a.label}
+            </button>
+          ))}
+        </div>
+      ) : null}
 
-      {droite && (
-        <button
-          className="swipe__act swipe__act--d"
-          style={{
-            transform: `translate3d(${Math.max(0, dx + LARGEUR)}px, 0, 0)`,
-            background: `hsl(${droite.ton} / 0.16)`,
-            color: `hsl(${droite.ton})`,
-          }}
+      {droite?.length ? (
+        <div
+          className="swipe__panneau swipe__panneau--d"
+          style={{ transform: `translate3d(${Math.max(0, dx + largeurD)}px, 0, 0)` }}
           aria-hidden={dx >= 0}
-          tabIndex={dx < 0 ? 0 : -1}
-          onClick={() => executer(droite)}
         >
-          {droite.icone}
-          {droite.label}
-        </button>
-      )}
+          {droite.map((a) => (
+            <button
+              key={a.label}
+              className="swipe__act"
+              style={{ background: `hsl(${a.ton} / 0.16)`, color: `hsl(${a.ton})` }}
+              tabIndex={dx < 0 ? 0 : -1}
+              onClick={() => executer(a)}
+            >
+              {a.icone}
+              {a.label}
+            </button>
+          ))}
+        </div>
+      ) : null}
 
       {/* Le garde-fou anti-clic est posé sur la LIGNE, pas sur le conteneur :
           sinon il avalerait aussi le tout premier appui sur un bouton d'action. */}

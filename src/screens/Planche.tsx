@@ -6,6 +6,7 @@ import {
   IconClose,
   IconFocus,
   IconImage,
+  IconMoins,
   IconPlanche,
   IconPlus,
   IconTexte,
@@ -47,6 +48,8 @@ const ZOOM_MIN = 0.25
 const ZOOM_MAX = 3
 const LARGEUR_DEFAUT = 260
 const LARGEUR_MIN = 60
+/** Au-delà, la pièce couvre tout le plan et on ne voit plus la planche. */
+const LARGEUR_MAX = 1400
 
 type Vue = { x: number; y: number; k: number }
 
@@ -475,6 +478,36 @@ export function Planche({
               }
             >
               <IconPlanche size={17} style={{ opacity: 0.5, transform: 'scaleX(-1)' }} />
+            </OutilCanevas>
+            {/* AGRANDIR ET RÉDUIRE AU BOUTON, en plus de la poignée.
+
+                La poignée demande de viser un cercle de dix-huit
+                pixels posé au coin d'une pièce inclinée, puis de tirer
+                droit : c'est un geste précis, et il l'est d'autant
+                moins que la pièce est petite — c'est-à-dire exactement
+                quand on veut l'agrandir. Deux boutons font le même
+                travail sans rien viser, et par pas réguliers.
+
+                Le pas est MULTIPLICATIF (un cinquième), pas additif :
+                vingt pixels ne veulent pas dire la même chose sur une
+                vignette de soixante et sur une image de six cents. */}
+            <OutilCanevas
+              titre="Réduire"
+              desactive={choisie.l <= LARGEUR_MIN}
+              onClick={() =>
+                maj(choisie.id, { l: Math.max(LARGEUR_MIN, Math.round(choisie.l / 1.2)) })
+              }
+            >
+              <IconMoins size={17} />
+            </OutilCanevas>
+            <OutilCanevas
+              titre="Agrandir"
+              desactive={choisie.l >= LARGEUR_MAX}
+              onClick={() =>
+                maj(choisie.id, { l: Math.min(LARGEUR_MAX, Math.round(choisie.l * 1.2)) })
+              }
+            >
+              <IconPlus size={17} />
             </OutilCanevas>
             <OutilCanevas
               titre="Pivoter"

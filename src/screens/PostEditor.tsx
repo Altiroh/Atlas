@@ -195,7 +195,17 @@ export function PostEditor() {
         </button>
       </div>
 
-      {/* ── deuxième ligne : les formes ── */}
+      {/* ── deuxième ligne : les formes ──
+
+          LE « + » EST HORS DU DÉFILEMENT. Il vivait dans la rangée, à la
+          suite des onglets : passé cinq ou six formes il sortait du
+          cadre, et il fallait faire défiler pour trouver le bouton qui
+          sert justement à en ajouter une de plus. Le geste devenait de
+          plus en plus long à mesure qu'on s'en servait davantage.
+
+          La rangée défile donc seule, et le bouton reste posé à côté
+          d'elle, toujours au même endroit. */}
+      <div className="note__barreOnglets">
       <div className="note__onglets" role="tablist" aria-label="Formes de la note">
         {formes.map((f) =>
           renomme === f.id ? (
@@ -245,11 +255,12 @@ export function PostEditor() {
           ),
         )}
 
-        <button className="onglet onglet--plus" onClick={() => setAjout(true)} aria-label="Ajouter une forme">
-          <IconPlus size={15} />
-        </button>
-
         <span className="note__onglets-fin" aria-hidden="true" />
+      </div>
+
+      <button className="onglet onglet--plus" onClick={() => setAjout(true)} aria-label="Ajouter une forme">
+        <IconPlus size={15} />
+      </button>
       </div>
 
       <input

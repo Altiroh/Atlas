@@ -69,15 +69,13 @@ function Version() {
     <section className="setting glass">
       <div className="setting__label">Version</div>
       <div className="setting__body">
+        {/* Le paragraphe qui expliquait d'où vient le repère a été retiré :
+            il décrivait la mécanique de construction à quelqu'un qui veut
+            seulement vérifier qu'il tourne sur la bonne version. */}
         <div className="version">
           <span className="version__num">{versionCourte()}</span>
           <span className="version__date">mise en ligne du {dateConstruction()}</span>
         </div>
-        <p className="quota__note" style={{ marginTop: 10 }}>
-          Le repère vient du dépôt au moment de la construction : dernier tag, distance parcourue
-          depuis, empreinte du commit. Un suffixe <code>-dirty</code> signalerait une mise en ligne
-          faite sur un dossier non commité.
-        </p>
       </div>
     </section>
   )

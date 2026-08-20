@@ -206,6 +206,12 @@ export const IconReturn = ({ size = 20, className, style }: Props) => (
   </svg>
 )
 
+export const IconMoins = ({ size = 20, className, style }: Props) => (
+  <svg {...base(size)} className={className} style={style} aria-hidden="true">
+    <path d="M5 12h14" />
+  </svg>
+)
+
 export const IconCoche = ({ size = 20, className, style }: Props) => (
   <svg {...base(size)} strokeWidth={2.6} className={className} style={style} aria-hidden="true">
     <path d="m5 12.5 4.5 4.5L19 7" />

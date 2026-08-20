@@ -3,7 +3,9 @@
   "configurations": [
     {
       "name": "atlas",
-      "url": "http://localhost:3870"
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev"],
+      "port": 3870
     }
   ]
 }

@@ -14,10 +14,14 @@ import {
   IconArchive,
   IconBolt,
   IconClose,
+  IconCoche,
   IconFolder,
   IconRestore,
   IconSearch,
+  IconTrash,
 } from '../ui/Icon'
+import { Confirmation } from '../ui/Confirmation'
+import { BarreSelection, useAppuiLong, useSelection } from '../ui/Selection'
 import { SwipeRow } from '../ui/SwipeRow'
 import { useImageUrl } from '../ui/useImageUrl'
 
@@ -28,8 +32,12 @@ import { useImageUrl } from '../ui/useImageUrl'
 
    Le balayage est le geste de tri promis pour l'iPad, étendu aux
    trois supports :
-   · vers la droite → Classer, le tri « tiré par le projet » ;
-   · vers la gauche → Archiver, qui ne supprime jamais rien.
+   · vers la droite → Archiver ou Supprimer — « je n'en veux plus
+     ici », avec le choix de ce que ça coûte ;
+   · vers la gauche → Classer, le tri « tiré par le projet ».
+
+   Et l'APPUI LONG ouvre la sélection multiple, ici comme dans les
+   archives et les espaces. Un même geste, trois listes.
    --------------------------------------------------------------- */
 
 /* ---------------------------------------------------------------
@@ -99,14 +107,26 @@ export function FluxPanel({ onPick }: { onPick?: (id: string) => void }) {
   const restaurer = useAtlas((s) => s.restaurer)
   const setNav = useAtlas((s) => s.setNav)
 
+  const supprimerPosts = useAtlas((s) => s.supprimerPosts)
+  const archiverPosts = useAtlas((s) => s.archiverPosts)
+  const restaurerPosts = useAtlas((s) => s.restaurerPosts)
+
   const [archives, setArchives] = useState(false)
   const [ouvertId, setOuvertId] = useState<string | null>(null)
   const [aClasser, setAClasser] = useState<string | null>(null)
+  /** les notes dont on vient de demander la suppression — une ou cinquante */
+  const [aSupprimer, setASupprimer] = useState<string[] | null>(null)
+  const sel = useSelection()
 
-  const groupes = useMemo(
-    () => grouperParJour(filtrer(posts, query, espaceActif, archives)),
+  /* Ce que la liste montre à cet instant — filtre, recherche et
+     archives compris. « Tout sélectionner » ne doit jamais dépasser
+     ce que l'écran affiche : cocher des notes qu'on ne voit pas, puis
+     les supprimer, serait un piège. */
+  const visibles = useMemo(
+    () => filtrer(posts, query, espaceActif, archives),
     [posts, query, espaceActif, archives],
   )
+  const groupes = useMemo(() => grouperParJour(visibles), [visibles])
   const espace = espaceOf(espaces, espaceActif)
   const nbArchives = posts.filter((p) => p.etat === 'archivee').length
 
@@ -216,7 +236,14 @@ export function FluxPanel({ onPick }: { onPick?: (id: string) => void }) {
                   id={p.id}
                   ouvertId={ouvertId}
                   onOuvrir={setOuvertId}
-                  gauche={
+                  fige={sel.actif}
+                  /* TIRER VERS LA DROITE PROPOSE LE CHOIX : sortir la
+                     note du flux, ou l'effacer pour de bon. Les deux
+                     gestes se ressemblent dans l'intention — « je n'en
+                     veux plus ici » — et se distinguent par ce qu'ils
+                     coûtent. Les mettre côte à côte, c'est poser la
+                     question au moment où on se la pose. */
+                  gauche={[
                     archives
                       ? {
                           label: 'Restaurer',
@@ -225,28 +252,42 @@ export function FluxPanel({ onPick }: { onPick?: (id: string) => void }) {
                           faire: () => restaurer(p.id),
                         }
                       : {
-                          label: 'Classer',
-                          icone: <IconFolder size={19} />,
-                          ton: 'var(--accent-h) var(--accent-s) 45%',
-                          faire: () => setAClasser(p.id),
-                        }
-                  }
-                  droite={
-                    archives
-                      ? undefined
-                      : {
                           label: 'Archiver',
                           icone: <IconArchive size={19} />,
                           ton: '36 80% 45%',
                           faire: () => archiver(p.id),
-                        }
+                        },
+                    {
+                      label: 'Supprimer',
+                      icone: <IconTrash size={18} />,
+                      ton: '2 74% 50%',
+                      faire: () => setASupprimer([p.id]),
+                    },
+                  ]}
+                  /* Classer part de l'autre bord : ce n'est pas le même
+                     mouvement d'esprit — on range, on ne se débarrasse
+                     pas. Les archives n'ont rien à y ranger. */
+                  droite={
+                    archives
+                      ? undefined
+                      : [
+                          {
+                            label: 'Classer',
+                            icone: <IconFolder size={19} />,
+                            ton: 'var(--accent-h) var(--accent-s) 45%',
+                            faire: () => setAClasser(p.id),
+                          },
+                        ]
                   }
                 >
                   <ItemPost
                     post={p}
                     actif={selectedId === p.id}
+                    coche={sel.actif ? sel.ids.has(p.id) : undefined}
                     espace={espaceOf(espaces, p.espaceId)}
+                    appuiLong={() => sel.basculer(p.id)}
                     onClick={() => {
+                      if (sel.actif) return sel.basculer(p.id)
                       select(p.id)
                       onPick?.(p.id)
                     }}
@@ -257,16 +298,98 @@ export function FluxPanel({ onPick }: { onPick?: (id: string) => void }) {
           ))
         )}
 
-        {(nbArchives > 0 || archives) && (
-          <button className="flux__archives" onClick={() => setArchives(!archives)}>
-            <IconArchive size={15} />
-            {archives ? 'Revenir au flux' : `Archives (${nbArchives})`}
-          </button>
-        )}
+        {/* TOUJOURS LÀ, même à zéro archive. Le bouton n'apparaissait
+            qu'une fois quelque chose archivé : on ne pouvait donc pas
+            savoir que les archives existaient avant d'y avoir mis
+            quelque chose, ni vérifier qu'on n'y avait rien laissé.
+            Un lieu dont l'entrée n'est visible qu'une fois qu'on y est
+            entré n'est pas un lieu. */}
+        <button
+          className="flux__archives"
+          onClick={() => {
+            sel.vider()
+            setArchives(!archives)
+          }}
+        >
+          <IconArchive size={15} />
+          {archives ? 'Revenir au flux' : nbArchives ? `Archives (${nbArchives})` : 'Archives'}
+        </button>
       </div>
 
       {aClasser && (
         <ChoixEspace id={aClasser} onFermer={() => setAClasser(null)} />
+      )}
+
+      {sel.actif && (
+        <BarreSelection
+          n={sel.ids.size}
+          total={visibles.length}
+          onTout={() => sel.tout(visibles.map((p) => p.id))}
+          onVider={sel.vider}
+        >
+          {archives ? (
+            <button
+              className="selbar__btn"
+              onClick={() => {
+                restaurerPosts([...sel.ids])
+                sel.vider()
+              }}
+            >
+              <IconRestore size={15} />
+              <span className="selbar__mot">Restaurer</span>
+            </button>
+          ) : (
+            <button
+              className="selbar__btn"
+              onClick={() => {
+                archiverPosts([...sel.ids])
+                sel.vider()
+              }}
+            >
+              <IconArchive size={15} />
+              <span className="selbar__mot">Archiver</span>
+            </button>
+          )}
+          <button className="selbar__btn selbar__btn--danger" onClick={() => setASupprimer([...sel.ids])}>
+            <IconTrash size={15} />
+            <span className="selbar__mot">Supprimer</span>
+          </button>
+        </BarreSelection>
+      )}
+
+      {/* UNE SEULE CONFIRMATION POUR LES DEUX CHEMINS — le balayage sur
+          une ligne et la sélection multiple. Supprimer cinquante notes
+          ne doit pas être plus facile qu'en supprimer une ; c'est même
+          le seul endroit où la question se pose vraiment. */}
+      {aSupprimer && (
+        <Confirmation
+          titre={
+            aSupprimer.length > 1
+              ? `Supprimer ${aSupprimer.length} notes ?`
+              : 'Supprimer cette note ?'
+          }
+          detail={
+            aSupprimer.length > 1 ? (
+              <>
+                Elles partent avec leur contenu et leurs images, sur tous tes appareils. C'est le
+                seul geste qu'Atlas ne sait pas défaire — <strong>archiver</strong>, lui, ne perd
+                rien.
+              </>
+            ) : (
+              <>
+                <strong>{titreDe(posts.find((p) => p.id === aSupprimer[0]) ?? ({} as Post))}</strong>{' '}
+                part avec son contenu et ses images, sur tous tes appareils.
+              </>
+            )
+          }
+          action="Supprimer"
+          onConfirmer={() => {
+            supprimerPosts(aSupprimer)
+            setASupprimer(null)
+            sel.vider()
+          }}
+          onAnnuler={() => setASupprimer(null)}
+        />
       )}
     </>
   )
@@ -275,19 +398,36 @@ export function FluxPanel({ onPick }: { onPick?: (id: string) => void }) {
 function ItemPost({
   post,
   actif,
+  coche,
   espace,
+  appuiLong,
   onClick,
 }: {
   post: Post
   actif: boolean
+  /** `undefined` hors sélection : la case n'existe même pas */
+  coche?: boolean
   espace: { nom: string; hue: number } | null
+  appuiLong: () => void
   onClick: () => void
 }) {
   const vignette = useImageUrl(post.coverId)
   const extrait = post.titre.trim() ? post.texte : post.texte.split('\n').slice(1).join(' ')
+  const long = useAppuiLong(appuiLong)
 
   return (
-    <button className="item" aria-current={actif} onClick={onClick}>
+    <button
+      className="item"
+      aria-current={actif}
+      data-coche={coche}
+      onClick={onClick}
+      {...long}
+    >
+      {coche !== undefined && (
+        <span className="item__case" aria-hidden="true">
+          {coche && <IconCoche size={13} />}
+        </span>
+      )}
       {vignette && <img className="item__vignette" src={vignette} alt="" />}
       <div className="item__corps">
         <div className="item__titre">{titreDe(post)}</div>

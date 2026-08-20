@@ -18,6 +18,18 @@ export type Session = {
   id: string
   email: string
   nom: string
+  /**
+   * Le portrait. C'est un IDENTIFIANT D'IMAGE dans la base locale, pas
+   * une URL : exactement comme la couverture d'une note et l'image
+   * d'un espace. Le fichier est donc réduit et réencodé comme les
+   * autres, il compte dans le quota comme les autres, et il partira
+   * dans la sauvegarde comme les autres.
+   *
+   * Il ne se synchronise pas encore — ça demanderait une table de
+   * profils côté serveur. Sur un deuxième appareil, le portrait est
+   * donc à reposer. C'est dit dans l'écran, pas caché.
+   */
+  imageId?: string | null
   depuis: number
 }
 
@@ -31,6 +43,39 @@ export interface Authentification {
   connecter(email: string, motDePasse: string): Promise<Demande>
   deconnecter(): Promise<void>
   majProfil(nom: string): Promise<Session>
+}
+
+/* ================= le portrait, gardé sur l'appareil =================
+
+   Il vit à côté de la session plutôt que dedans, et la raison est
+   pratique : la session Supabase est rendue par le serveur à chaque
+   reprise, et écraserait un champ qu'il ne connaît pas. Une clé
+   séparée, indexée par identifiant de compte, survit à ça — et reste
+   juste si deux comptes se partagent l'appareil. */
+
+const CLE_PORTRAITS = 'atlas.compte.portraits'
+
+function lirePortraits(): Record<string, string> {
+  try {
+    return JSON.parse(localStorage.getItem(CLE_PORTRAITS) ?? '{}') as Record<string, string>
+  } catch {
+    return {}
+  }
+}
+
+export function portraitDe(id: string): string | null {
+  return lirePortraits()[id] ?? null
+}
+
+export function ecrirePortrait(id: string, imageId: string | null) {
+  const tous = lirePortraits()
+  if (imageId) tous[id] = imageId
+  else delete tous[id]
+  try {
+    localStorage.setItem(CLE_PORTRAITS, JSON.stringify(tous))
+  } catch {
+    /* navigation privée : le portrait ne survivra pas, tant pis */
+  }
 }
 
 /* ================= validations partagées ================= */
@@ -180,7 +225,14 @@ type CompteStore = {
   connecter: (email: string, mdp: string) => Promise<Session | null>
   deconnecter: () => Promise<void>
   renommer: (nom: string) => Promise<void>
+  /** pose ou retire le portrait — un identifiant d'image locale */
+  portraiturer: (imageId: string | null) => void
   oublierErreur: () => void
+}
+
+/** La session, complétée du portrait gardé sur cet appareil. */
+function avecPortrait(session: Session | null): Session | null {
+  return session ? { ...session, imageId: portraitDe(session.id) } : null
 }
 
 export const useCompte = create<CompteStore>((set, get) => ({
@@ -193,7 +245,7 @@ export const useCompte = create<CompteStore>((set, get) => ({
   occupe: false,
 
   reprendre: async () => {
-    const session = await get().auth.session()
+    const session = avecPortrait(await get().auth.session())
     set({ session })
     return session
   },
@@ -207,8 +259,15 @@ export const useCompte = create<CompteStore>((set, get) => ({
   },
 
   renommer: async (nom) => {
-    const session = await get().auth.majProfil(nom)
+    const session = avecPortrait(await get().auth.majProfil(nom))
     set({ session })
+  },
+
+  portraiturer: (imageId) => {
+    const session = get().session
+    if (!session) return
+    ecrirePortrait(session.id, imageId)
+    set({ session: { ...session, imageId } })
   },
 
   oublierErreur: () => set({ erreur: null }),
@@ -223,8 +282,9 @@ async function tenter(
   try {
     const r = await action()
     if ('session' in r) {
-      set({ session: r.session, occupe: false })
-      return r.session
+      const session = avecPortrait(r.session)!
+      set({ session, occupe: false })
+      return session
     }
     set({ confirmationEnvoyee: 'oui', occupe: false })
     return null

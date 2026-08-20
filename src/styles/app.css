@@ -1442,10 +1442,23 @@
    il est intégralement à l'extérieur, et `.swipe` (overflow: hidden) le rogne.
    Rien ne transparaît donc sous la ligne, qui est translucide — et l'entrée
    en scène est un simple déplacement, sans mise en page à recalculer. */
-.swipe__act {
+/* Le panneau porte le déplacement, les boutons se rangent dedans :
+   un panneau peut en tenir un — « Classer » — ou deux, quand la ligne
+   propose un choix entre archiver et supprimer. */
+.swipe__panneau {
   position: absolute;
   top: 0;
   bottom: 0;
+  display: flex;
+  will-change: transform;
+  transition: transform var(--mid) var(--ease);
+}
+.swipe__panneau--g { left: 0; }
+.swipe__panneau--d { right: 0; }
+
+.swipe[data-glisse='true'] .swipe__panneau { transition: none; }
+
+.swipe__act {
   width: 94px;
   display: flex;
   flex-direction: column;
@@ -1458,11 +1471,6 @@
   will-change: transform;
   transition: transform var(--mid) var(--ease);
 }
-
-.swipe[data-glisse='true'] .swipe__act { transition: none; }
-
-.swipe__act--g { left: 0; }
-.swipe__act--d { right: 0; }
 
 .flux__archives {
   display: flex;
@@ -3412,3 +3420,286 @@
 }
 
 .version__date { font-size: 12px; color: var(--text-3); }
+
+/* ========================================================
+   50. La sélection multiple
+
+   Un appui long ouvre le mode, la barre du bas porte les
+   actions. Trois listes s'en servent — le flux, les archives,
+   les espaces — avec la même barre et les mêmes gestes : le
+   mode ne doit pas se réapprendre d'un écran à l'autre.
+   ======================================================== */
+
+.item__case {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 21px;
+  height: 21px;
+  align-self: center;
+  border-radius: 7px;
+  border: 1.5px solid var(--border-strong);
+  color: var(--accent-ink);
+  transition:
+    background var(--fast) var(--ease),
+    border-color var(--fast) var(--ease);
+}
+
+.item[data-coche='true'] .item__case {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+/* La ligne cochée est TEINTÉE, pas seulement marquée d'une case :
+   en balayant la liste du regard on doit voir ce qui est pris sans
+   viser les cases une par une. */
+.item[data-coche='true'] {
+  background: var(--accent-soft);
+}
+
+/* La barre d'actions. Posée en bas, au-dessus de la navigation :
+   c'est là que sont les pouces, et c'est le seul endroit qui ne
+   recouvre pas ce qu'on est en train de choisir. */
+.selbar {
+  position: fixed;
+  left: 50%;
+  bottom: calc(16px + var(--safe-bottom));
+  z-index: 54;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: min(520px, calc(100vw - 28px));
+  padding: 9px 10px 9px 16px;
+  border-radius: 99px;
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow);
+  animation: selbar-monte 220ms var(--ease) both;
+}
+
+@keyframes selbar-monte {
+  from { opacity: 0; transform: translate(-50%, 14px); }
+  to { opacity: 1; transform: translate(-50%, 0); }
+}
+
+/* En coquille compacte, la barre d'onglets occupe déjà le bas. */
+.app[data-shell='compact'] .selbar {
+  bottom: calc(92px + var(--safe-bottom));
+}
+
+.selbar__compte {
+  flex: 1;
+  min-width: 0;
+  font-size: 12.5px;
+  color: var(--text-2);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.selbar__compte strong {
+  color: var(--text);
+  font-weight: 620;
+  font-variant-numeric: tabular-nums;
+}
+
+.selbar__actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex: none;
+}
+
+.selbar__btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 34px;
+  padding: 0 12px;
+  border-radius: 99px;
+  color: var(--text-2);
+  font-size: 13px;
+  font-weight: 540;
+  white-space: nowrap;
+  transition:
+    background var(--fast) var(--ease),
+    color var(--fast) var(--ease);
+}
+.selbar__btn:hover:not(:disabled) {
+  background: var(--surface-sunken);
+  color: var(--text);
+}
+.selbar__btn:disabled { opacity: 0.35; }
+
+.selbar__btn--danger { color: hsl(2 74% 48%); }
+.selbar__btn--danger:hover:not(:disabled) {
+  background: hsl(2 74% 50% / 0.12);
+  color: hsl(2 74% 44%);
+}
+:root[data-theme='dark'] .selbar__btn--danger { color: hsl(2 92% 70%); }
+
+/* Au doigt, quatre libellés mangent toute la barre. Seules les actions
+   qui PORTENT UNE ICÔNE perdent leur mot — « Tout » et « Annuler »
+   n'en ont pas, et disparaîtraient entièrement. */
+@media (max-width: 460px) {
+  .selbar { gap: 8px; padding-left: 13px; }
+  .selbar__btn { padding: 0 10px; }
+  .selbar__mot { display: none; }
+}
+
+/* La formule, dite à côté du plafond : « gratuite » explique le
+   chiffre au lieu de le subir. */
+.formule {
+  margin-left: 10px;
+  padding: 2px 9px;
+  border-radius: 99px;
+  background: var(--accent-soft);
+  color: var(--accent-text);
+  font-size: 11px;
+  font-weight: 580;
+  letter-spacing: 0.01em;
+  vertical-align: 1px;
+}
+
+.stock__vider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+}
+.stock__vider span {
+  font-size: 12px;
+  color: var(--text-3);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---------- le portrait ---------- */
+
+.portrait {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  flex: none;
+}
+
+/* Le bouton EST le jeton : on ne pose pas une icône « modifier » à
+   côté d'une pastille de 42 px, on rend la pastille cliquable. Le
+   voile ne paraît qu'au survol, ou tout le temps au doigt — il n'y a
+   pas de survol sur un téléphone. */
+.portrait__bouton {
+  position: relative;
+  overflow: hidden;
+  padding: 0;
+  border: 0;
+}
+.portrait__bouton img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.portrait__voile {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: rgba(8, 10, 14, 0.45);
+  color: #fff;
+  opacity: 0;
+  transition: opacity var(--fast) var(--ease);
+}
+.portrait__bouton:hover .portrait__voile,
+.portrait__bouton:focus-visible .portrait__voile {
+  opacity: 1;
+}
+@media (pointer: coarse) {
+  .portrait__voile { opacity: 0.001; }
+  .portrait__bouton:active .portrait__voile { opacity: 1; }
+}
+
+.portrait__retirer {
+  font-size: 11px;
+  color: var(--text-3);
+}
+.portrait__retirer:hover { color: var(--text); }
+
+/* ========================================================
+   51. L'ouverture — le tout premier écran
+
+   L'œil, le nom, et une phrase qui s'écrit. Rien d'autre :
+   pas de bouton, pas de carte, pas de formulaire. C'est le
+   seul écran d'Atlas qui ne demande rien.
+   ======================================================== */
+
+.ouverture {
+  cursor: pointer;
+  user-select: none;
+}
+
+.ouverture__corps {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  text-align: center;
+  animation: ouverture-parait 700ms var(--ease) both;
+}
+
+@keyframes ouverture-parait {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: none; }
+}
+
+/* Le nom de l'app, sous l'œil. Espacé large : c'est une signature,
+   pas un titre de section. */
+.ouverture__nom {
+  margin-top: 6px;
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: 0.34em;
+  text-indent: 0.34em;
+  text-transform: uppercase;
+  color: var(--text-2);
+}
+
+.ouverture__phrase {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  min-height: 42px;
+  font-size: 27px;
+  font-weight: 300;
+  letter-spacing: -0.02em;
+  color: var(--text);
+}
+
+/* Le curseur clignote PENDANT la frappe et disparaît avec elle : un
+   curseur qui reste après la dernière lettre laisse croire qu'on
+   attend une saisie. */
+.ouverture__curseur {
+  display: inline-block;
+  width: 2px;
+  height: 1.05em;
+  border-radius: 1px;
+  background: var(--accent);
+  animation: curseur-bat 1s steps(1, end) infinite;
+}
+
+@keyframes curseur-bat {
+  0%, 55% { opacity: 1; }
+  56%, 100% { opacity: 0; }
+}
+
+@media (max-width: 420px) {
+  .ouverture__phrase { font-size: 23px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ouverture__curseur { animation: none; opacity: 0; }
+}

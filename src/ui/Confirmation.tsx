@@ -1,4 +1,5 @@
 import { useEffect, useRef, type ReactNode } from 'react'
+import { createPortal } from 'react-dom'
 import { IconTrash } from './Icon'
 
 /* ---------------------------------------------------------------
@@ -45,15 +46,27 @@ export function Confirmation({
      une bouillie où plus rien ne se lit. Une surface pleine, un médaillon
      qui dit la couleur du danger, et deux boutons de même largeur —
      personne ne doit viser. */
-  return (
-    <div className="sheet" role="dialog" aria-modal="true" onClick={onAnnuler}>
-      <div className="confirme rise" onClick={(e) => e.stopPropagation()}>
+  /* PORTALISÉE DANS LE CORPS DE PAGE, et ce n'est pas un raffinement :
+     un `position: fixed` ne se mesure sur la fenêtre que si aucun
+     ancêtre ne porte `transform`, `filter` ou `backdrop-filter`. Or le
+     verre d'Atlas EST un `backdrop-filter`, et la confirmation naît
+     toujours à l'intérieur d'un panneau en verre. Rendue sur place,
+     elle prenait la largeur de ce panneau — 437 px sur un écran de
+     1280 — en croyant prendre celle de l'écran.
+
+     Le symptôme est traître parce que le CSS est juste : c'est le
+     référentiel qui ne l'est pas. */
+  return createPortal(
+    <div className="sheet sheet--bandeau" role="dialog" aria-modal="true" onClick={onAnnuler}>
+      <div className="confirme" onClick={(e) => e.stopPropagation()}>
         <span className="confirme__sceau" aria-hidden="true">
           <IconTrash size={20} />
         </span>
 
-        <h3 className="confirme__titre">{titre}</h3>
-        {detail && <p className="confirme__detail">{detail}</p>}
+        <div className="confirme__dit">
+          <h3 className="confirme__titre">{titre}</h3>
+          {detail && <p className="confirme__detail">{detail}</p>}
+        </div>
 
         <div className="confirme__actions">
           <button ref={annuler} className="btn confirme__btn" onClick={onAnnuler}>
@@ -64,6 +77,7 @@ export function Confirmation({
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   )
 }

@@ -1,13 +1,16 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { libelleHeure, useAtlas } from '../store/atlas'
 import { useBienvenue } from '../store/bienvenue'
 import { useCompte, type Session } from '../store/compte'
+import { oublierImage, stockerImage } from '../store/db'
+import { lisible, peutAjouterImage, QUOTA_IMAGES } from '../store/quota'
 import { DorsaleLocale } from '../store/dorsale-locale'
 import { SUPABASE_CONFIGURE } from '../store/config'
 import { enAttenteDEnvoi, useSync, type EtatSync } from '../store/sync'
 import { ChampMotDePasse } from '../ui/ChampMotDePasse'
 import { HauteurFluide } from '../ui/HauteurFluide'
-import { IconSync } from '../ui/Icon'
+import { IconImage, IconSync } from '../ui/Icon'
+import { useImageUrl } from '../ui/useImageUrl'
 
 /* ---------------------------------------------------------------
    Compte et synchronisation.
@@ -192,16 +195,21 @@ function Profil({ session }: { session: Session }) {
     <section className="setting glass">
       <div className="setting__label">Compte</div>
       <div className="setting__body">
+        {/* LE PORTRAIT ET LE NOM SONT LE PROFIL, et c'est tout ce qu'il
+            y a à régler. Atlas s'adresse à toi par ce nom-là — dans le
+            bonjour du flux, dans l'écran de bienvenue, et demain quand
+            il parlera. Un champ qu'on peut changer d'un mot vaut mieux
+            qu'un prénom déduit d'une adresse e-mail une fois pour
+            toutes. */}
         <div className="profil">
-          <span className="profil__jeton" aria-hidden="true">
-            {session.nom.slice(0, 1).toUpperCase()}
-          </span>
+          <Portrait session={session} />
           <div style={{ minWidth: 0 }}>
             <input
               className="profil__nom"
               value={session.nom}
               onChange={(e) => void renommer(e.target.value)}
-              aria-label="Ton prénom"
+              placeholder="Comment je t'appelle ?"
+              aria-label="Comment Atlas t'appelle"
             />
             <div className="profil__mail">{session.email}</div>
           </div>
@@ -224,6 +232,78 @@ function Profil({ session }: { session: Session }) {
         </div>
       </div>
     </section>
+  )
+}
+
+/**
+ * Le portrait — poser une image, la remplacer, la retirer.
+ *
+ * Il passe par le MÊME chemin que toutes les images d'Atlas :
+ * `stockerImage` le réduit et le réencode en WebP, il compte dans le
+ * quota, et il s'efface avec `oublierImage`. Une pastille de profil
+ * qui garderait un JPEG de quatre méga-octets en base64 dans
+ * `localStorage` — la tentation évidente — remplirait le quota du
+ * navigateur à elle seule.
+ */
+function Portrait({ session }: { session: Session }) {
+  const portraiturer = useCompte((s) => s.portraiturer)
+  const url = useImageUrl(session.imageId)
+  const fichier = useRef<HTMLInputElement>(null)
+  const [envoi, setEnvoi] = useState(false)
+
+  const importer = async (f: File | undefined) => {
+    if (!f) return
+    // le plafond se dit AVANT le travail de réduction, pas après
+    if (!peutAjouterImage(f.size)) {
+      alert(`Plafond d'images atteint (${lisible(QUOTA_IMAGES)}). Écrire, en revanche, n'est jamais bloqué.`)
+      return
+    }
+    setEnvoi(true)
+    try {
+      if (session.imageId) oublierImage(session.imageId)
+      portraiturer(await stockerImage(f))
+    } finally {
+      setEnvoi(false)
+    }
+  }
+
+  return (
+    <div className="portrait">
+      <input
+        ref={fichier}
+        type="file"
+        accept="image/*"
+        hidden
+        onChange={(e) => {
+          void importer(e.target.files?.[0])
+          e.target.value = ''
+        }}
+      />
+
+      <button
+        className="profil__jeton portrait__bouton"
+        onClick={() => fichier.current?.click()}
+        disabled={envoi}
+        aria-label={session.imageId ? 'Changer ton portrait' : 'Choisir un portrait'}
+      >
+        {url ? <img src={url} alt="" /> : session.nom.slice(0, 1).toUpperCase()}
+        <span className="portrait__voile" aria-hidden="true">
+          <IconImage size={16} />
+        </span>
+      </button>
+
+      {session.imageId && (
+        <button
+          className="portrait__retirer"
+          onClick={() => {
+            oublierImage(session.imageId!)
+            portraiturer(null)
+          }}
+        >
+          Retirer
+        </button>
+      )}
+    </div>
   )
 }
 

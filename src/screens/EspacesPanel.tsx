@@ -4,7 +4,17 @@ import { aUneCouleur, SANS_COULEUR, SANS_ESPACE, useAtlas, type Espace } from '.
 import { useCompte } from '../store/compte'
 import { oublierImage, stockerImage } from '../store/db'
 import { lisible, peutAjouterImage, QUOTA_IMAGES } from '../store/quota'
-import { IconClose, IconImage, IconPencil, IconPlus, IconSearch, IconTrash } from '../ui/Icon'
+import {
+  IconClose,
+  IconCoche,
+  IconImage,
+  IconPencil,
+  IconPlus,
+  IconSearch,
+  IconTrash,
+} from '../ui/Icon'
+import { Confirmation } from '../ui/Confirmation'
+import { BarreSelection, useAppuiLong, useSelection } from '../ui/Selection'
 import { useImageUrl } from '../ui/useImageUrl'
 
 /* ---------------------------------------------------------------
@@ -59,9 +69,13 @@ export function EspacesPanel() {
   const setEspaceActif = useAtlas((s) => s.setEspaceActif)
   const session = useCompte((s) => s.session)
 
+  const supprimerEspaces = useAtlas((s) => s.supprimerEspaces)
+
   const [edite, setEdite] = useState<string | null>(null)
   const [vue, setVue] = useState<Vue>(vueGardee)
   const [q, setQ] = useState('')
+  const [aSupprimer, setASupprimer] = useState(false)
+  const sel = useSelection()
 
   const changerVue = (v: Vue) => {
     setVue(v)
@@ -149,25 +163,21 @@ export function EspacesPanel() {
 
       <div className="scroll">
       <div className={vue === 'grille' ? 'esp__grille' : 'esp__liste'}>
-        {visibles.map((e) =>
-          vue === 'grille' ? (
-            <CarteEspace
-              key={e.id}
-              espace={e}
-              n={parEspace.m.get(e.id) ?? 0}
-              onOuvrir={() => ouvrir(e.id)}
-              onEditer={() => setEdite(e.id)}
-            />
+        {visibles.map((e) => {
+          const commun = {
+            espace: e,
+            n: parEspace.m.get(e.id) ?? 0,
+            coche: sel.actif ? sel.ids.has(e.id) : undefined,
+            appuiLong: () => sel.basculer(e.id),
+            onOuvrir: () => (sel.actif ? sel.basculer(e.id) : ouvrir(e.id)),
+            onEditer: () => setEdite(e.id),
+          }
+          return vue === 'grille' ? (
+            <CarteEspace key={e.id} {...commun} />
           ) : (
-            <LigneEspace
-              key={e.id}
-              espace={e}
-              n={parEspace.m.get(e.id) ?? 0}
-              onOuvrir={() => ouvrir(e.id)}
-              onEditer={() => setEdite(e.id)}
-            />
-          ),
-        )}
+            <LigneEspace key={e.id} {...commun} />
+          )
+        })}
 
       </div>
 
@@ -206,6 +216,44 @@ export function EspacesPanel() {
         </button>
       </div>
 
+      {sel.actif && (
+        <BarreSelection
+          n={sel.ids.size}
+          total={visibles.length}
+          onTout={() => sel.tout(visibles.map((e) => e.id))}
+          onVider={sel.vider}
+        >
+          <button className="selbar__btn selbar__btn--danger" onClick={() => setASupprimer(true)}>
+            <IconTrash size={15} />
+            <span className="selbar__mot">Supprimer</span>
+          </button>
+        </BarreSelection>
+      )}
+
+      {/* Supprimer des espaces ne perd AUCUNE note : elles redeviennent
+          libres. C'est ce que dit la confirmation, parce que c'est
+          exactement la peur qu'on a le doigt au-dessus du bouton. */}
+      {aSupprimer && (
+        <Confirmation
+          titre={
+            sel.ids.size > 1 ? `Supprimer ${sel.ids.size} espaces ?` : 'Supprimer cet espace ?'
+          }
+          detail={
+            <>
+              Les notes qu'ils contiennent <strong>ne sont pas supprimées</strong> : elles
+              redeviennent libres et repartent dans le flux.
+            </>
+          }
+          action="Supprimer"
+          onConfirmer={() => {
+            supprimerEspaces([...sel.ids])
+            setASupprimer(false)
+            sel.vider()
+          }}
+          onAnnuler={() => setASupprimer(false)}
+        />
+      )}
+
       {edite && <EspaceEditor id={edite} onFermer={() => setEdite(null)} />}
     </div>
   )
@@ -240,29 +288,49 @@ function NonTries({ n, onOuvrir }: { n: number; onOuvrir: () => void }) {
 function CarteEspace({
   espace,
   n,
+  coche,
+  appuiLong,
   onOuvrir,
   onEditer,
 }: {
   espace: Espace
   n: number
+  coche?: boolean
+  appuiLong: () => void
   onOuvrir: () => void
   onEditer: () => void
 }) {
   const image = useImageUrl(espace.imageId)
+  const long = useAppuiLong(appuiLong)
 
   return (
-    <div className={classeCarte(espace.hue, 'esp__carte')} style={teinte(espace.hue)}>
+    <div
+      className={classeCarte(espace.hue, 'esp__carte')}
+      style={teinte(espace.hue)}
+      data-coche={coche}
+    >
       {/* Le halo est un élément à part, sous le contenu : c'est lui qui
           porte la couleur, et il peut donc grandir au survol sans que
           rien d'autre ne bouge — une transformation, pas une mise en page. */}
       {aUneCouleur(espace.hue) && <span className="esp__halo" aria-hidden="true" />}
       {image && <img className="esp__img" src={image} alt="" />}
 
-      <button className="esp__hit" onClick={onOuvrir} aria-label={`Ouvrir ${espace.nom}`} />
+      <button
+        className="esp__hit"
+        onClick={onOuvrir}
+        aria-label={`Ouvrir ${espace.nom}`}
+        {...long}
+      />
 
-      <span className="esp__filigrane" aria-hidden="true">
-        {n}
-      </span>
+      {coche !== undefined ? (
+        <span className="esp__case" data-coche={coche} aria-hidden="true">
+          {coche && <IconCoche size={13} />}
+        </span>
+      ) : (
+        <span className="esp__filigrane" aria-hidden="true">
+          {n}
+        </span>
+      )}
 
       <span className="esp__corps">
         <span className="esp__nom">{espace.nom}</span>
@@ -271,9 +339,13 @@ function CarteEspace({
         </span>
       </span>
 
-      <button className="esp__regler" onClick={onEditer} aria-label={`Régler ${espace.nom}`}>
-        <IconPencil size={15} />
-      </button>
+      {/* Régler n'a pas de sens pendant qu'on désigne : le bouton
+          disparaît plutôt que de rester là, actif, à côté de cases. */}
+      {coche === undefined && (
+        <button className="esp__regler" onClick={onEditer} aria-label={`Régler ${espace.nom}`}>
+          <IconPencil size={15} />
+        </button>
+      )}
     </div>
   )
 }
@@ -283,29 +355,51 @@ function CarteEspace({
 function LigneEspace({
   espace,
   n,
+  coche,
+  appuiLong,
   onOuvrir,
   onEditer,
 }: {
   espace: Espace
   n: number
+  coche?: boolean
+  appuiLong: () => void
   onOuvrir: () => void
   onEditer: () => void
 }) {
   const image = useImageUrl(espace.imageId)
+  const long = useAppuiLong(appuiLong)
 
   return (
-    <div className={classeCarte(espace.hue, 'esp__ligne')} style={teinte(espace.hue)}>
-      <button className="esp__hit" onClick={onOuvrir} aria-label={`Ouvrir ${espace.nom}`} />
+    <div
+      className={classeCarte(espace.hue, 'esp__ligne')}
+      style={teinte(espace.hue)}
+      data-coche={coche}
+    >
+      <button
+        className="esp__hit"
+        onClick={onOuvrir}
+        aria-label={`Ouvrir ${espace.nom}`}
+        {...long}
+      />
 
-      {/* Le jeton reprend la couleur en dégradé, et l'image en vignette
-          quand il y en a une : en liste, c'est le seul endroit où la
-          couleur a la place d'exister. */}
-      <span
-        className={aUneCouleur(espace.hue) ? 'esp__jeton' : 'esp__jeton esp__jeton--neutre'}
-        aria-hidden="true"
-      >
-        {image ? <img src={image} alt="" /> : espace.nom.slice(0, 1).toUpperCase()}
-      </span>
+      {/* En sélection, la case PREND LA PLACE du jeton. Les poser côte à
+          côte ferait deux ronds de même taille, dont un seul se coche. */}
+      {coche !== undefined ? (
+        <span className="esp__case" data-coche={coche} aria-hidden="true">
+          {coche && <IconCoche size={13} />}
+        </span>
+      ) : (
+        /* Le jeton reprend la couleur en dégradé, et l'image en vignette
+           quand il y en a une : en liste, c'est le seul endroit où la
+           couleur a la place d'exister. */
+        <span
+          className={aUneCouleur(espace.hue) ? 'esp__jeton' : 'esp__jeton esp__jeton--neutre'}
+          aria-hidden="true"
+        >
+          {image ? <img src={image} alt="" /> : espace.nom.slice(0, 1).toUpperCase()}
+        </span>
+      )}
 
       <span className="esp__corps">
         <span className="esp__nom">{espace.nom}</span>
@@ -313,9 +407,11 @@ function LigneEspace({
 
       <span className="esp__compte esp__compte--aligne">{n}</span>
 
-      <button className="esp__regler" onClick={onEditer} aria-label={`Régler ${espace.nom}`}>
-        <IconPencil size={15} />
-      </button>
+      {coche === undefined && (
+        <button className="esp__regler" onClick={onEditer} aria-label={`Régler ${espace.nom}`}>
+          <IconPencil size={15} />
+        </button>
+      )}
     </div>
   )
 }
