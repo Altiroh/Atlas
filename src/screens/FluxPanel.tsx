@@ -1,4 +1,5 @@
 import { useMemo, useState, type CSSProperties } from 'react'
+import { createPortal } from 'react-dom'
 import {
   aUneCouleur,
   espaceOf,
@@ -469,7 +470,21 @@ function ChoixEspace({ id, onFermer }: { id: string; onFermer: () => void }) {
     onFermer()
   }
 
-  return (
+  /* ELLE SORT DE L'ÉCRAN QUI L'OUVRE, PAR UN PORTAIL.
+
+     Une feuille est `position: fixed` avec `z-index: 60`, contre 20
+     pour le rail de navigation : sur le papier elle passe devant, et
+     à l'écran elle passait derrière. Le CSS n'est pas en cause — le
+     RÉFÉRENTIEL l'est. Rendue dans le panneau, elle hérite du contexte
+     d'empilement que le verre de ce panneau crée (`backdrop-filter`
+     en fabrique un, comme `transform` et `filter`), et son 60 ne vaut
+     plus que DANS ce contexte-là. Le rail, lui, compare son 20 à
+     l'échelle de la page — et gagne.
+
+     C'est le même piège que pour la confirmation, et il se répare de
+     la même façon : on rend dans `document.body`, où le z-index veut
+     enfin dire ce qu'il dit. */
+  return createPortal(
     <div className="sheet" role="dialog" aria-label="Classer dans un espace" onClick={onFermer}>
       <div className="sheet__panel rise" onClick={(e) => e.stopPropagation()}>
         <div className="sheet__head">
@@ -505,6 +520,7 @@ function ChoixEspace({ id, onFermer }: { id: string; onFermer: () => void }) {
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   )
 }

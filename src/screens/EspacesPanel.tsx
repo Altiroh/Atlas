@@ -1,5 +1,6 @@
 import type { CSSProperties } from 'react'
 import { useMemo, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { aUneCouleur, SANS_COULEUR, SANS_ESPACE, useAtlas, type Espace } from '../store/atlas'
 import { useCompte } from '../store/compte'
 import { oublierImage, stockerImage } from '../store/db'
@@ -66,13 +67,15 @@ const classeCarte = (hue: number, base: string) =>
 export function EspacesPanel() {
   const espaces = useAtlas((s) => s.espaces)
   const posts = useAtlas((s) => s.posts)
-  const creerEspace = useAtlas((s) => s.creerEspace)
   const setNav = useAtlas((s) => s.setNav)
   const setEspaceActif = useAtlas((s) => s.setEspaceActif)
   const session = useCompte((s) => s.session)
 
   const supprimerEspaces = useAtlas((s) => s.supprimerEspaces)
 
+  /* La valeur d'`edite` quand on est en train d'en fabriquer un.
+     Un identifiant qui ne peut appartenir à aucun espace réel : ils
+     commencent tous par « e » suivi d'un condensé. */
   const [edite, setEdite] = useState<string | null>(null)
   const [vue, setVue] = useState<Vue>(vueGardee)
   const [q, setQ] = useState('')
@@ -210,7 +213,7 @@ export function EspacesPanel() {
           est une action qu'on ne trouve pas — et c'est justement la
           seule de cet écran. */}
       <div className="esp__pied">
-        <button className="esp__creer" onClick={() => setEdite(creerEspace())}>
+        <button className="esp__creer" onClick={() => setEdite(NOUVEAU)}>
           <span className="esp__plus" aria-hidden="true">
             <IconPlus size={17} />
           </span>
@@ -420,19 +423,77 @@ function LigneEspace({
 
 /* ================= feuille de réglage ================= */
 
+/* ---------------------------------------------------------------
+   UN ESPACE NE NAÎT PLUS AVANT D'ÊTRE VOULU.
+
+   « Nouvel espace » appelait `creerEspace()` puis ouvrait la feuille
+   sur l'enregistrement déjà écrit. Fermer sans rien saisir laissait
+   donc un espace « Sans nom » dans la grille — et personne ne ferme
+   une feuille en se disant qu'il vient de créer quelque chose. Pire,
+   un tour de synchronisation tombant au milieu de l'hésitation
+   l'envoyait sur le serveur, puis envoyait sa suppression.
+
+   La feuille travaille désormais sur un BROUILLON, en mémoire. Rien
+   n'est écrit tant qu'on n'a pas dit « Créer », et « Annuler » ne
+   laisse aucune trace — pas même l'image qu'on aurait choisie, qui
+   est oubliée explicitement.
+
+   Le même composant sert aux deux cas : `valeurs` dit ce qu'on
+   montre, `poser` dit où ça va. Un formulaire dupliqué serait deux
+   formulaires à corriger le jour où l'on ajoute un champ. */
+const NOUVEAU = '§nouveau'
+
+type Valeurs = { nom: string; hue: number; imageId: string | null }
+
 function EspaceEditor({ id, onFermer }: { id: string; onFermer: () => void }) {
+  const nouveau = id === NOUVEAU
   const espace = useAtlas((s) => s.espaces.find((e) => e.id === id))
   const posts = useAtlas((s) => s.posts)
   const majEspace = useAtlas((s) => s.majEspace)
+  const creerEspace = useAtlas((s) => s.creerEspace)
   const supprimerEspace = useAtlas((s) => s.supprimerEspace)
-  const image = useImageUrl(espace?.imageId)
   const fichier = useRef<HTMLInputElement>(null)
 
-  if (!espace) return null
-
-  const dedans = posts.filter((p) => p.espaceId === id)
-  const n = dedans.length
+  /* TOUS LES HOOKS AVANT LE PREMIER `return`, sans exception.
+     `useState(copie)` vivait sous un `if (!espace) return null` : le
+     jour où un espace disparaît pendant qu'on l'édite — une
+     suppression venue d'un autre appareil suffit — React voit le
+     nombre de hooks changer d'un rendu à l'autre et lâche l'écran
+     entier. Ça n'était jamais arrivé, ce qui ne le rendait pas moins
+     faux. */
   const [copie, setCopie] = useState(false)
+  const [brouillon, setBrouillon] = useState<Valeurs>({ nom: '', hue: 200, imageId: null })
+
+  const valeurs: Valeurs = nouveau
+    ? brouillon
+    : { nom: espace?.nom ?? '', hue: espace?.hue ?? 200, imageId: espace?.imageId ?? null }
+
+  const image = useImageUrl(valeurs.imageId)
+
+  if (!nouveau && !espace) return null
+
+  const poser = (patch: Partial<Valeurs>) => {
+    if (nouveau) setBrouillon((b) => ({ ...b, ...patch }))
+    else majEspace(id, patch)
+  }
+
+  const dedans = nouveau ? [] : posts.filter((p) => p.espaceId === id)
+  const n = dedans.length
+
+  /* Annuler doit NE RIEN LAISSER. L'image importée pendant l'hésitation
+     est déjà dans la base locale et compte dans le quota : la garder
+     serait un fichier qui occupe de la place sans être affiché nulle
+     part, donc introuvable. */
+  const abandonner = () => {
+    if (nouveau && brouillon.imageId) oublierImage(brouillon.imageId)
+    onFermer()
+  }
+
+  const valider = () => {
+    const vrai = creerEspace()
+    majEspace(vrai, brouillon)
+    onFermer()
+  }
 
   const importer = async (f: File | undefined) => {
     if (!f) return
@@ -441,16 +502,35 @@ function EspaceEditor({ id, onFermer }: { id: string; onFermer: () => void }) {
       alert(`Plafond d'images atteint (${lisible(QUOTA_IMAGES)}). Écrire, en revanche, n'est jamais bloqué.`)
       return
     }
-    if (espace.imageId) oublierImage(espace.imageId)
-    majEspace(id, { imageId: await stockerImage(f) })
+    if (valeurs.imageId) oublierImage(valeurs.imageId)
+    poser({ imageId: await stockerImage(f) })
   }
 
-  return (
-    <div className="sheet" role="dialog" aria-label={`Réglages de ${espace.nom}`} onClick={onFermer}>
+  /* ELLE SORT DE L'ÉCRAN QUI L'OUVRE, PAR UN PORTAIL.
+
+     Une feuille est `position: fixed` avec `z-index: 60`, contre 20
+     pour le rail de navigation : sur le papier elle passe devant, et
+     à l'écran elle passait derrière. Le CSS n'est pas en cause — le
+     RÉFÉRENTIEL l'est. Rendue dans le panneau, elle hérite du contexte
+     d'empilement que le verre de ce panneau crée (`backdrop-filter`
+     en fabrique un, comme `transform` et `filter`), et son 60 ne vaut
+     plus que DANS ce contexte-là. Le rail, lui, compare son 20 à
+     l'échelle de la page — et gagne.
+
+     C'est le même piège que pour la confirmation, et il se répare de
+     la même façon : on rend dans `document.body`, où le z-index veut
+     enfin dire ce qu'il dit. */
+  return createPortal(
+    <div
+      className="sheet"
+      role="dialog"
+      aria-label={nouveau ? 'Nouvel espace' : `Réglages de ${valeurs.nom}`}
+      onClick={abandonner}
+    >
       <div className="sheet__panel rise" onClick={(e) => e.stopPropagation()}>
         <div className="sheet__head">
-          <h3 className="sheet__titre">Espace</h3>
-          <button className="btn btn--icon" onClick={onFermer} aria-label="Fermer">
+          <h3 className="sheet__titre">{nouveau ? 'Nouvel espace' : 'Espace'}</h3>
+          <button className="btn btn--icon" onClick={abandonner} aria-label="Fermer">
             <IconClose size={18} />
           </button>
         </div>
@@ -458,16 +538,16 @@ function EspaceEditor({ id, onFermer }: { id: string; onFermer: () => void }) {
         {/* L'aperçu vaut mieux qu'un nuancier : on règle en voyant le
             résultat, pas en imaginant ce qu'il donnera. */}
         <div
-          className={`esp__apercu ${classeCarte(espace.hue, 'esp__carte')}`}
-          style={teinte(espace.hue)}
+          className={`esp__apercu ${classeCarte(valeurs.hue, 'esp__carte')}`}
+          style={teinte(valeurs.hue)}
         >
-          {aUneCouleur(espace.hue) && <span className="esp__halo" aria-hidden="true" />}
+          {aUneCouleur(valeurs.hue) && <span className="esp__halo" aria-hidden="true" />}
           {image && <img className="esp__img" src={image} alt="" />}
           <span className="esp__filigrane" aria-hidden="true">
             {n}
           </span>
           <span className="esp__corps">
-            <span className="esp__nom">{espace.nom || 'Sans nom'}</span>
+            <span className="esp__nom">{valeurs.nom || 'Sans nom'}</span>
             <span className="esp__compte">
               {n} note{n > 1 ? 's' : ''}
             </span>
@@ -478,8 +558,8 @@ function EspaceEditor({ id, onFermer }: { id: string; onFermer: () => void }) {
           <span className="field__label">Nom</span>
           <input
             className="field__input"
-            value={espace.nom}
-            onChange={(e) => majEspace(id, { nom: e.target.value })}
+            value={valeurs.nom}
+            onChange={(e) => poser({ nom: e.target.value })}
             autoFocus
           />
         </label>
@@ -493,35 +573,35 @@ function EspaceEditor({ id, onFermer }: { id: string; onFermer: () => void }) {
           <div className="seg" role="group" aria-label="Couleur de l'espace" style={{ marginBottom: 12 }}>
             <button
               className="seg__item"
-              aria-current={aUneCouleur(espace.hue)}
-              onClick={() => aUneCouleur(espace.hue) || majEspace(id, { hue: 200 })}
+              aria-current={aUneCouleur(valeurs.hue)}
+              onClick={() => aUneCouleur(valeurs.hue) || poser({ hue: 200 })}
             >
               Teintée
             </button>
             <button
               className="seg__item"
-              aria-current={!aUneCouleur(espace.hue)}
-              onClick={() => majEspace(id, { hue: SANS_COULEUR })}
+              aria-current={!aUneCouleur(valeurs.hue)}
+              onClick={() => poser({ hue: SANS_COULEUR })}
             >
               Sans couleur
             </button>
           </div>
 
-          {aUneCouleur(espace.hue) && (
+          {aUneCouleur(valeurs.hue) && (
             <div className="hue-row">
               <input
                 className="hue"
                 type="range"
                 min={0}
                 max={359}
-                value={espace.hue}
+                value={valeurs.hue}
                 aria-label="Teinte de l'espace"
-                onChange={(e) => majEspace(id, { hue: Number(e.target.value) })}
-                style={{ '--accent': `hsl(${espace.hue} 80% 56%)` } as CSSProperties}
+                onChange={(e) => poser({ hue: Number(e.target.value) })}
+                style={{ '--accent': `hsl(${valeurs.hue} 80% 56%)` } as CSSProperties}
               />
               <span
                 className="hue-row__dot"
-                style={{ background: `hsl(${espace.hue} 80% 56%)` }}
+                style={{ background: `hsl(${valeurs.hue} 80% 56%)` }}
                 aria-hidden="true"
               />
             </div>
@@ -539,8 +619,8 @@ function EspaceEditor({ id, onFermer }: { id: string; onFermer: () => void }) {
               <button
                 className="btn btn--ghost"
                 onClick={() => {
-                  oublierImage(espace.imageId!)
-                  majEspace(id, { imageId: null })
+                  oublierImage(valeurs.imageId!)
+                  poser({ imageId: null })
                 }}
               >
                 Retirer
@@ -572,11 +652,11 @@ function EspaceEditor({ id, onFermer }: { id: string; onFermer: () => void }) {
               className="btn"
               disabled={n === 0}
               onClick={() => {
-                const md = espaceEnMarkdown(espace.nom, dedans)
+                const md = espaceEnMarkdown(valeurs.nom, dedans)
                 void copier(md).then((ok) => {
                   setCopie(ok)
                   if (ok) window.setTimeout(() => setCopie(false), 2200)
-                  else telechargerMarkdown(espace.nom, md)
+                  else telechargerMarkdown(valeurs.nom, md)
                 })
               }}
             >
@@ -586,7 +666,7 @@ function EspaceEditor({ id, onFermer }: { id: string; onFermer: () => void }) {
             <button
               className="btn btn--ghost"
               disabled={n === 0}
-              onClick={() => telechargerMarkdown(espace.nom, espaceEnMarkdown(espace.nom, dedans))}
+              onClick={() => telechargerMarkdown(valeurs.nom, espaceEnMarkdown(valeurs.nom, dedans))}
             >
               Fichier .md
             </button>
@@ -598,25 +678,41 @@ function EspaceEditor({ id, onFermer }: { id: string; onFermer: () => void }) {
           </span>
         </div>
 
-        <div className="sheet__pied">
-          <button
-            className="btn btn--ghost btn--danger"
-            onClick={() => {
-              supprimerEspace(id)
-              onFermer()
-            }}
-          >
-            <IconTrash size={16} />
-            Supprimer l'espace
-          </button>
-          <span className="sheet__note">
-            {n === 0
-              ? 'Il est vide : rien ne sera perdu.'
-              : `Les ${n} note${n > 1 ? 's' : ''} qu'il contient repassent en non triées.`}
-          </span>
-        </div>
+        {nouveau ? (
+          /* DEUX RÉPONSES, ET L'ACTION À DROITE. Même règle que dans les
+             cartes d'Atlas : la sortie se trouve avant l'entrée. Créer
+             reste possible sans nom — « Sans nom » se renomme, et
+             bloquer sur un champ vide serait un formulaire. */
+          <div className="sheet__pied sheet__pied--actes">
+            <button className="btn btn--ghost" onClick={abandonner}>
+              Annuler
+            </button>
+            <button className="btn btn--accent" onClick={valider}>
+              Créer l'espace
+            </button>
+          </div>
+        ) : (
+          <div className="sheet__pied">
+            <button
+              className="btn btn--ghost btn--danger"
+              onClick={() => {
+                supprimerEspace(id)
+                onFermer()
+              }}
+            >
+              <IconTrash size={16} />
+              Supprimer l'espace
+            </button>
+            <span className="sheet__note">
+              {n === 0
+                ? 'Il est vide : rien ne sera perdu.'
+                : `Les ${n} note${n > 1 ? 's' : ''} qu'il contient repassent en non triées.`}
+            </span>
+          </div>
+        )}
       </div>
-    </div>
+    </div>,
+    document.body,
   )
 }
 

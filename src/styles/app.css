@@ -1185,6 +1185,20 @@
   border-top: 1px solid var(--border);
 }
 
+/* Les deux réponses d'une création : la sortie à gauche et sans
+   couleur, l'action à droite et pleine — la même règle que dans les
+   cartes d'Atlas, pour que le geste s'apprenne une fois. */
+.sheet__pied--actes {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+}
+.sheet__pied--actes .btn {
+  min-height: 44px;
+  padding-inline: 18px;
+}
+
 .sheet__note { display: block; margin-top: 6px; font-size: 12px; color: var(--text-3); }
 
 .field { display: block; margin-bottom: 18px; }
