@@ -142,15 +142,18 @@ elle ne se voit pas.
 |---|---|---|
 | Prix affiché (TTC) | 12,50 € | 24,99 € |
 | Recette réelle (HT, TVA 20 %) | **10,42 €** | **20,83 €** |
-| Coût IA (mixte) | 0,21 € | 0,79 € |
+| Coût IA — *compagnon seul, sans conversation* | 0,21 € | 0,79 € |
 | Hébergement (part) | 0,05 € | 0,10 € |
 | Frais de paiement (1,5 % + 0,25 €) | **0,44 €** | **0,62 €** |
-| **Coût total** | **0,70 €** | **1,51 €** |
 | **Marge brute** | **9,72 € — 93 %** | **19,31 € — 93 %** |
 
-**Le fait le plus utile de tout ce document :** au tarif Compagnon, **les frais de paiement
-coûtent deux fois plus cher que l'intelligence artificielle.** Même en passant tout sur
-Opus, la marge reste à 89 %. L'IA n'est pas le sujet financier — l'acquisition l'est.
+> ⚠️ **Ce tableau décrit le compagnon SANS la table de travail.** Avec la conversation
+> ancrée, les mémoires d'espace et les écritures de cache, le coût IA passe à **2,58 €** et
+> **8,77 €**, et la marge à **71 %** et **54 %**. Le compte à jour est au § 2.7.
+
+**Ce qui reste vrai des deux côtés :** au tarif Compagnon, les frais de paiement pèsent
+autant qu'une part notable de l'IA, et le poste qui décide vraiment n'est ni l'un ni
+l'autre — **c'est l'acquisition.**
 
 ### 2.6 Le seul vrai risque : l'usage extrême
 
@@ -175,26 +178,80 @@ Trois gardes, par ordre d'efficacité :
 3. **Le plan proposé plafonné à N par jour**, avec un message qui le dit avant de le
    refuser.
 
-### 2.7 Le prévisionnel
+### 2.7 Le prévisionnel — *corrigé*
 
-Hypothèse **prudente** : 8 % des inscrits prennent Compagnon, 2 % prennent Créatif.
-*(Le § 5 de [08](08-economie.md) tablait sur 18 % à 3 € ; à 12,50 €, la conversion baisse.)*
+> ⚠️ **Ce paragraphe donnait 117 €/mois à 100 inscrits. C'était faux, d'un facteur deux.**
+> Il datait d'avant la table de travail : l'IA y coûtait 0,21 € par abonné. Avec la
+> conversation, les mémoires d'espace et les écritures de cache
+> ([11](11-la-table-de-travail.md)), elle en coûte **2,58 €**. Voici le vrai compte.
 
-| Inscrits | Compagnon | Créatif | Recette TTC | Recette HT | IA | Paiement | Hébergement | **Marge / mois** |
-|---:|---:|---:|---:|---:|---:|---:|---:|---:|
-| 100 | 8 | 2 | 150 € | 125 € | 3 € | 5 € | 0 € | **117 €** |
-| 500 | 40 | 10 | 750 € | 625 € | 16 € | 24 € | 23 € | **562 €** |
-| 1 000 | 80 | 20 | 1 500 € | 1 250 € | 33 € | 48 € | 23 € | **1 147 €** |
-| 2 500 | 200 | 50 | 3 750 € | 3 125 € | 82 € | 119 € | 46 € | **2 878 €** |
-| 5 000 | 400 | 100 | 7 499 € | 6 249 € | 163 € | 238 € | 92 € | **5 756 €** |
+#### Ce que rapporte un abonné, net
 
-Hypothèse **favorable** (15 % / 4 %), à 1 000 inscrits : recette HT 2 396 €, coûts 216 €,
-**marge ≈ 2 180 €/mois**.
+| | Compagnon | Créatif |
+|---|---:|---:|
+| Prix affiché | 12,50 € | 24,99 € |
+| Recette réelle (HT) | 10,42 € | 20,82 € |
+| Coût IA *(conversation, mémoires, cache compris)* | −2,58 € | −8,77 € |
+| Frais de paiement | −0,44 € | −0,62 € |
+| **Net par abonné** | **7,40 €** | **11,43 €** |
 
-**Le seuil de rentabilité est ridiculement bas :** l'hébergement payant coûte ~23 €/mois,
-un abonné Compagnon en rapporte 9,72 € net. **Trois abonnés couvrent toute l'infrastructure.**
-Et le palier gratuit tient jusqu'à une cinquantaine d'utilisateurs intenses — donc les
-premiers mois ne coûtent littéralement rien.
+> **Le Créatif coûte deux fois plus cher et ne rapporte que 1,54 fois plus.** C'est
+> mécanique : son prix double, mais sa consommation quadruple. **Le Compagnon a la
+> meilleure économie unitaire du catalogue** — et ça devrait décider vers quoi on pousse
+> les gens.
+
+#### Les charges fixes, quel que soit le nombre
+
+| | |
+|---|---:|
+| Hébergement (palier payant : sauvegardes, pas de mise en veille) | 23,00 € |
+| Nom de domaine | 1,20 € |
+| Trafic des comptes gratuits | 2,00 € |
+| **Total** | **26,20 €/mois** |
+
+**Quatre abonnés Compagnon les couvrent.** En dessous, le projet coûte de l'argent ;
+au-dessus, il en gagne. Le seuil est à **4 % de conversion sur 100 inscrits.**
+
+#### Sur 100 inscrits
+
+| Scénario | Abonnés | Recette TTC | Recette HT | IA | Paiement | Fixes | **Résultat** |
+|---|---|---:|---:|---:|---:|---:|---:|
+| **Prudent** (5 % / 1 %) | 5 + 1 | 87 € | 73 € | 22 € | 3 € | 26 € | **22 €/mois** |
+| **Attendu** (8 % / 2 %) | 8 + 2 | 150 € | 125 € | 38 € | 5 € | 26 € | **56 €/mois** |
+| **Favorable** (15 % / 4 %) | 15 + 4 | 287 € | 240 € | 74 € | 9 € | 26 € | **131 €/mois** |
+
+#### Ce que ça veut dire, sans enjoliver
+
+**Cent inscrits, c'est un projet qui se paie tout seul — et rien de plus.** Cinquante-six
+euros par mois couvrent l'hébergement, le domaine, et il reste de quoi offrir un café. Ce
+n'est pas un revenu, et il ne faut pas le présenter comme tel.
+
+Trois conséquences à assumer :
+
+1. **Le chiffre intéressant n'est pas 100, il est 1 000.** Chaque tranche de cent inscrits
+   supplémentaires rapporte **82 €** une fois les charges fixes couvertes. Pour dégager
+   **1 000 €/mois net, il faut environ 1 250 inscrits.**
+2. **C'est avant de se payer.** Si le projet demande vingt heures par mois, cinquante-six
+   euros font **2,80 € de l'heure.** À cent utilisateurs, on ne travaille pas pour de
+   l'argent — on travaille pour savoir si ça prend.
+3. **Cent inscrits ne restent pas cent.** Aucune de ces lignes ne tient compte du départ des
+   abonnés. Sur un outil personnel, en perdre 3 à 5 % par mois est ordinaire : il faut donc
+   **recruter en permanence rien que pour ne pas reculer.**
+
+#### Le levier le plus direct
+
+Le quota de la table de travail décide seul de la moitié du coût du Créatif :
+
+| Échanges / mois | Coût IA | Net par abonné |
+|---:|---:|---:|
+| 600 | 8,77 € | 11,43 € |
+| 500 | 7,77 € | **12,43 €** |
+| 400 | 6,76 € | **13,44 €** |
+
+**Cent échanges en moins, c'est un euro de plus par abonné et par mois** — soit, à 100
+inscrits en scénario attendu, deux euros. À 1 000 inscrits, vingt. Ça ne se joue pas à cent
+utilisateurs ; ça se prépare maintenant, parce qu'un quota se réduit très mal une fois
+annoncé.
 
 ### 2.8 Ce que ça change pour la vie privée
 
@@ -206,8 +263,11 @@ conséquences à assumer, et à écrire noir sur blanc :
    lit pour les résumer.
 2. **Le compagnon doit être coupable espace par espace.** Quelqu'un qui écrit un journal
    intime et un scénario dans le même Atlas ne veut pas le même traitement pour les deux.
-3. **Le chiffrement des espaces et le compagnon s'excluent.** On ne peut pas résumer ce
-   qu'on ne peut pas lire. C'est un arbitrage par espace, pas un réglage global.
+3. **Le chiffrement des espaces et le compagnon s'excluent — sur un même espace.** On ne
+   résume pas ce qu'on ne peut pas lire. Ce n'est donc pas un arbitrage à trancher une fois,
+   mais **un interrupteur par espace** : le chiffrement s'active exactement là où l'IA est
+   coupée. Voir [12-avec-ou-sans-ia.md](12-avec-ou-sans-ia.md), qui en fait un mode
+   revendiqué plutôt qu'un compromis subi.
 
 ---
 
@@ -285,9 +345,10 @@ révocable**. C'est ce qui en fait le bon premier pas.
 1. **Atlas tient le comparatif** sur la forme, les fondations et la direction artistique —
    mais son prix ne tient que si le compagnon existe, et son vrai handicap est de ne pas
    être une application native.
-2. **Le compagnon coûte 0,21 € par abonné et par mois** en modèle mixte, avec le lot et le
-   cache — soit moins que les frais bancaires. La marge est de 93 %, et trois abonnés
-   couvrent l'infrastructure entière.
+2. **Un abonné Compagnon rapporte 7,40 € net, un Créatif 11,43 €** — le second coûte deux
+   fois plus cher et ne rapporte que 1,54 fois plus. Quatre abonnés couvrent toutes les
+   charges fixes ; **cent inscrits font vivre le projet et rien d'autre, il en faut mille
+   deux cent cinquante pour en tirer un revenu.**
 3. **La coopération est envisageable par paliers** : le partage en lecture en quelques
    jours, la fusion par élément en quelques semaines — et cette dernière améliore d'abord
    l'usage solo, ce qui en fait le meilleur investissement des deux.

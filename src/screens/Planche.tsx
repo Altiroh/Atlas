@@ -6,6 +6,7 @@ import {
   IconFocus,
   IconImage,
   IconLien,
+  IconMain,
   IconMoins,
   IconPivoter,
   IconPlanche,
@@ -86,6 +87,22 @@ export function Planche({
      nets font le même travail sans rien viser, et se rattrapent d'un
      appui sur le fond. */
   const [relierDepuis, setRelierDepuis] = useState<string | null>(null)
+
+  /* SE DÉPLACER SANS RIEN BOUGER.
+
+     Le panoramique ne partait que du FOND : poser le doigt sur une
+     image la déplaçait, forcément, puisque c'est ce que fait un
+     glissé sur une pièce. Or une planche remplie n'a plus de fond —
+     c'est justement quand elle devient intéressante qu'on ne peut
+     plus s'y promener. On tirait alors une image sans le vouloir
+     pour découvrir qu'on voulait juste voir plus loin.
+
+     Un mode, donc, plutôt qu'une subtilité de geste. La règle du
+     « premier appui sélectionne, le second déplace » aurait évité le
+     bouton — au prix d'un glissé sur deux qui ne fait rien, et sans
+     jamais dire pourquoi. Ici l'état se voit, se nomme, et se quitte
+     par où l'on est entré. */
+  const [main, setMain] = useState(false)
 
   /* LES HAUTEURS, MESURÉES ET NON DÉDUITES.
 
@@ -330,7 +347,10 @@ export function Planche({
   const pince = useRef<{ d: number; k: number; x: number; y: number } | null>(null)
 
   const fondDown = (e: React.PointerEvent) => {
-    if (e.target !== e.currentTarget) return
+    /* Hors mode déplacement, on n'écoute QUE le fond : un appui sur une
+       pièce lui appartient. En mode déplacement, on prend tout ce qui
+       remonte — les pièces laissent passer, c'est tout l'intérêt. */
+    if (!main && e.target !== e.currentTarget) return
     setSelection(null)
     setEdition(null)
     setRelierDepuis(null)
@@ -375,6 +395,13 @@ export function Planche({
 
   const pieceDown = (e: React.PointerEvent, p: Piece) => {
     if (edition === p.id) return
+
+    /* ON NE RETIENT PAS L'ÉVÉNEMENT : il doit remonter jusqu'au fond,
+       qui fera défiler la vue. C'est la seule ligne qui rend le mode
+       possible — sans elle, la pièce mangerait l'appui et le fond ne
+       verrait jamais rien. */
+    if (main) return
+
     e.stopPropagation()
 
     /* EN MODE RELIER, LA PIÈCE NE SE DÉPLACE PAS. Laisser le glissé
@@ -498,6 +525,7 @@ export function Planche({
       <div
         ref={surface}
         className="planche__surface"
+        data-main={main || undefined}
         onPointerDown={fondDown}
         onPointerMove={fondMove}
         onPointerUp={fondUp}
@@ -586,6 +614,13 @@ export function Planche({
           fait un appui sur une pièce : il doit donc se voir, dire ce
           qu'il attend, et dire comment en sortir — les trois dans la
           même phrase. */}
+      {main && (
+        <div className="planche__consigne" role="status">
+          Déplacement : tu fais glisser la planche, les images ne bougent pas. Reviens par le même
+          bouton.
+        </div>
+      )}
+
       {relierDepuis && (
         <div className="planche__consigne" role="status">
           Touche la pièce à relier. Un appui sur le fond annule ; sur une pièce déjà reliée, le
@@ -605,6 +640,22 @@ export function Planche({
         >
           <IconImage size={17} />
         </OutilCanevas>
+        {/* Il vit AVANT les outils de pièce, avec ceux qui parlent de la
+            planche entière : c'est un mode de la surface, pas une action
+            sur ce qu'on a choisi. */}
+        <OutilCanevas
+          titre={main ? 'Revenir au déplacement des pièces' : 'Se déplacer sans rien bouger'}
+          actif={main}
+          onClick={() => {
+            setMain(!main)
+            setSelection(null)
+            setRelierDepuis(null)
+          }}
+        >
+          <IconMain size={17} />
+        </OutilCanevas>
+        <SeparateurCanevas />
+
         <OutilCanevas titre="Ajouter une étiquette" onClick={() => {
           const p = poser({ texte: '', l: 240, imageId: null })
           setEdition(p.id)

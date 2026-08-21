@@ -143,15 +143,30 @@ bac à sable — essayer avant d'ouvrir un compte reste le meilleur chemin.
 
 | | Bricoleur | Compagnon | Créatif |
 |---|---|---|---|
-| Prix | 0 € | 12,50 €/mois · 125 €/an | 24,99 €/mois, bientôt |
-| Notes | 2 000 | 20 000 | illimité |
-| Images | 20 Mo | 500 Mo | 5 Go |
-| Définition | 1600 px | 1600 px | 3000 px |
-| Atlas prend la parole | — | briefing, rapprochements, relances | + dictée transcrite, plan proposé |
+| Prix | 0 € | 12,50 €/mois · 125 €/an | 24,99 €/mois |
+| Disponibilité | **maintenant** | bientôt | bientôt |
+| Notes · images | 2 000 · 20 Mo | 20 000 · 500 Mo | illimité · 5 Go |
+| Atlas regarde | — | briefing, rapprochements, relances | + mémoire d'espace, Emporter |
+| Table de travail | — | 150 échanges/mois | 600 échanges/mois |
+| Notes récapitulatives | — | 4/mois | 20/mois |
 
-Les chiffres sont repris de `docs/08-economie.md` : une note pèse ~500 octets, une image
-~10 Ko une fois allégée. Ils se modifient à trois endroits de `tarifs.html` — les cartes,
-le tableau, et le bloc « Les chiffres ».
+Les chiffres viennent de [docs/09 § 2.7](../docs/09-ia-marche-et-cooperation.md) et
+[docs/11](../docs/11-la-table-de-travail.md). Ils se modifient à trois endroits de
+`tarifs.html` : les cartes, le tableau, et la FAQ.
+
+## Le cadrage de l'IA sur le site
+
+Trois décisions à ne pas défaire sans relire [docs/11](../docs/11-la-table-de-travail.md)
+et [docs/12](../docs/12-avec-ou-sans-ia.md) :
+
+1. **Les deux plans payants portent « bientôt ».** L'IA n'existe pas encore. Présenter un
+   plan payant comme disponible alors qu'il ne l'est pas serait la seule ligne malhonnête
+   du site — et le gratuit, lui, est disponible et complet, ce qui se dit très bien.
+2. **Le gratuit se vend par ce qu'il est**, pas par ce qui lui manque : « Atlas en entier,
+   sans intelligence artificielle ». C'est un mode revendiqué.
+3. **Atlas ne rédige pas.** La phrase sous les plans le dit en clair — *« Atlas ne fait pas
+   le travail, il fait penser »* — et la page produit lui consacre sa huitième section, avec
+   les deux regards côte à côte : l'œil ouvert et l'œil qui dort.
 
 ## Mise en ligne
 
@@ -206,3 +221,63 @@ Il est sombre dans les deux thèmes, mais **pas de la même valeur** : en thème
 , en thème nuit à . Reprendre la même valeur qu'en clair le rendrait
 invisible sur un fond de page déjà noir — le pied redeviendrait alors ce qu'on vient de
 corriger.
+
+## Le responsive
+
+Vérifié à **375 px** (téléphone) et **768 px** (tablette) sur les quatre pages : aucun
+débordement horizontal, aucun texte sous 11,5 px, aucune cible tactile sous 44 px.
+
+Quatre décisions structurent le petit écran :
+
+**1. Les écrans montrés défilent au lieu de rétrécir.** Un dessin prévu pour 1 100 px
+ramené à 335 met son texte à quatre pixels. Chaque maquette a donc une largeur plancher
+proportionnelle à son propre dessin — `min-width: calc(var(--mq-w) * 0.8px)` — et c'est le
+cadre qui défile en dessous. **La règle s'annule toute seule** quand il y a la place : sur
+un grand écran le plancher est plus petit que la colonne, et rien ne change.
+
+**2. Une colonne plutôt que deux étroites.** Sous 900 px, `.duo` et `.plans` passent en
+colonne unique. Deux colonnes de 300 px, ce sont deux colonnes illisibles — et un
+comparatif de prix en « deux et un » est plus mal rangé qu'une pile.
+
+**3. Le pointeur décide, pas la largeur.** Les cibles à 44 px sont sous
+`@media (hover: none), (max-width: 900px)` : une tablette large se touche aussi, et une
+petite fenêtre de bureau se clique très bien.
+
+**4. `min-width: 0` sur les enfants de grille.** C'est le piège qui coûte le plus cher à
+trouver : un enfant de grille refuse par défaut d'être plus étroit que son contenu, donc
+une maquette qui défile force **la colonne** à grandir et c'est la page entière qui
+déborde. Le correctif est une ligne, le diagnostic une demi-heure.
+
+Deux détails qui ne se voient qu'à l'usage : le champ du bac à sable reste à **17 px**
+minimum, sous quoi iOS zoome à la mise au point et décale toute la page ; et
+`.contenu` prend `max(clamp(…), env(safe-area-inset-*))` pour l'encoche en paysage.
+
+## En ligne
+
+**https://atlas-site-gamma.vercel.app**
+
+Projet Vercel **`atlas-site`**, séparé de celui de l'app (`atlas`, sur
+`atlas-kappa-flax.vercel.app`). Racine `site/`, **aucune compilation** — ce sont des
+fichiers, il n'y a rien à bâtir.
+
+```bash
+cd site && npx vercel deploy --prod
+```
+
+`vercel.json` pose trois choses :
+
+- **`cleanUrls`** — `/tarifs` sert `tarifs.html`. `atlas.js` compare les noms de page sans
+  extension, donc l'onglet courant se marque quand même.
+- **Le cache à deux vitesses.** Les polices et les icônes sont **immuables un an** : leur
+  contenu ne change jamais sous le même nom. Les feuilles et les scripts, eux, changent
+  sous le même nom — il n'y a pas d'empreinte dans les noms de fichiers — donc ils sont
+  **revalidés à chaque visite**. Sans ça, une correction mettrait une semaine à arriver
+  chez quelqu'un qui a déjà visité.
+- **Les en-têtes de sécurité**, repris de ceux de l'app.
+
+> ⚠️ **Vercel refuse les clés de commentaire `//` dans `vercel.json`.** Le schéma est
+> strict : toute propriété inconnue fait échouer le déploiement avec
+> *« Schema verification failed »*. Les explications vivent donc ici, pas dans le fichier.
+
+Le renommage du projet se fait depuis le tableau de bord Vercel ; l'adresse
+`atlas-site-gamma.vercel.app` suivrait.

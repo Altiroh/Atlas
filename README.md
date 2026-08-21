@@ -7,9 +7,32 @@ Projet **personnel**, mono-utilisateur.
 
 | Document | Contenu |
 |---|---|
-| [01-scope.md](docs/01-scope.md) | Le produit : les 3 moments d'usage, les non-objectifs, le phasage |
+| **Le produit** | |
+| [01-scope.md](docs/01-scope.md) | Les 3 moments d'usage, les non-objectifs, le phasage |
 | [02-architecture-v0.md](docs/02-architecture-v0.md) | Les écrans, les 3 coquilles, le plan en 8 jalons |
 | [03-organisation-et-DA.md](docs/03-organisation-et-DA.md) | Les 3 axes de classement, les 6 types de contenu, la direction artistique |
+| [06-idees.md](docs/06-idees.md) | Atlas comme entité : le regard, les autorisations, le ton |
+| [07-atlas-bureau.md](docs/07-atlas-bureau.md) | La piste d'une application de bureau |
+| **La technique** | |
+| [04-synchronisation.md](docs/04-synchronisation.md) | Le moteur : file d'attente, pierres tombales, fusion au plus récent |
+| [05-mise-en-ligne.md](docs/05-mise-en-ligne.md) | Le déploiement, le service worker, les contraintes iOS |
+| [schema.sql](docs/schema.sql) | La base, et les trois gardes côté serveur |
+| **L'économie et l'IA** | |
+| [08-economie.md](docs/08-economie.md) | Ce que coûte un utilisateur. Les quotas déduits, jamais inventés |
+| [09-ia-marche-et-cooperation.md](docs/09-ia-marche-et-cooperation.md) | Le comparatif, **le prévisionnel à 100 et 1 000 inscrits**, la faisabilité du travail à plusieurs |
+| [10-le-compagnon.md](docs/10-le-compagnon.md) | Les surfaces d'IA, les 5 panels d'usage, **les 6 façons de casser ou surfacturer** |
+| [11-la-table-de-travail.md](docs/11-la-table-de-travail.md) | La conversation ancrée : les 4 verbes, **les 3 mémoires d'un espace**, une conversation par espace, le compteur |
+| [12-avec-ou-sans-ia.md](docs/12-avec-ou-sans-ia.md) | L'interrupteur. Atlas marche entièrement sans IA, et c'est revendiqué |
+| [13-le-plan-d-affaires.md](docs/13-le-plan-d-affaires.md) | **Le potentiel annuel**, les cinq trous du plan, et ce que coûteraient les versions natives |
+
+> Les documents 09 à 12 se corrigent les uns les autres dans l'ordre : **11 remplace la
+> conclusion du 10**, et **le § 2.7 du 09 porte le prévisionnel à jour**. Chaque correction
+> est signalée là où elle s'applique.
+
+| Le site | |
+|---|---|
+| [site/README.md](site/README.md) | La vitrine : quatre pages statiques, la DA reprise de l'app, les écrans redessinés en HTML |
+| **En ligne** | [atlas-site-gamma.vercel.app](https://atlas-site-gamma.vercel.app) — projet Vercel `atlas-site`, séparé de l'app |
 
 ---
 

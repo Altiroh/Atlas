@@ -1641,3 +1641,266 @@ table.tableau { width: 100%; min-width: 680px; border-collapse: collapse; font-s
   background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.12) 30%,
     rgba(255, 255, 255, 0.12) 70%, transparent);
 }
+
+/* ========================================================
+   32. L'œil qui dort — l'IA coupée
+
+   Reprise de src/styles/oeil.css. La paupière descend ET Y RESTE :
+   on ne suspend pas le clignement — une animation figée à mi-course
+   donnerait un œil MI-CLOS, pas un œil fermé. Le feu, lui, continue
+   de tourner, plus lentement : Atlas est là, il ne regarde pas.
+   ======================================================== */
+
+.oeil--dort .oeil__paupiere { animation: paupiere-baisse 180ms var(--ease) both; }
+
+@keyframes paupiere-baisse { to { transform: translateY(106px); } }
+
+.oeil--dort .oeil__regard,
+.oeil--dort .oeil__voile,
+.oeil--dort .oeil__lueur { animation-play-state: paused; }
+
+.oeil--dort .oeil__langue,
+.oeil--dort .oeil__braise { animation-duration: 5.5s !important; }
+
+/* les deux états, côte à côte */
+.regards { display: flex; gap: clamp(18px, 4vw, 44px); justify-content: center; align-items: center; }
+.regard { display: grid; justify-items: center; gap: 14px; }
+.regard__mot {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--text-3);
+}
+.regard__mot--vif { color: var(--accent-text); }
+
+/* ========================================================
+   33. Le petit écran
+
+   Trois règles, dans cet ordre :
+
+   1. RIEN NE DÉBORDE. Ce qui est trop large défile dans sa propre
+      boîte — jamais la page.
+   2. RIEN N'EST TROP PETIT. Onze pixels et demi de plancher pour le
+      texte, quarante-quatre pour ce qui se touche. C'est la règle
+      que l'app s'impose déjà ; le site n'a pas de raison d'y couper.
+   3. UNE COLONNE PLUTÔT QUE DEUX ÉTROITES. Deux colonnes de trois
+      cents pixels, ce sont deux colonnes illisibles.
+   ======================================================== */
+
+/* --- l'encoche et les bords arrondis, en paysage --- */
+.contenu {
+  padding-left: max(clamp(20px, 5vw, 44px), env(safe-area-inset-left));
+  padding-right: max(clamp(20px, 5vw, 44px), env(safe-area-inset-right));
+}
+.entete__barre {
+  padding-left: max(clamp(20px, 5vw, 44px), env(safe-area-inset-left));
+  padding-right: max(clamp(20px, 5vw, 44px), env(safe-area-inset-right));
+}
+
+/* L'œil garde ses proportions s'il doit rétrécir : sans `height`,
+   un SVG à largeur contrainte s'écrase. */
+.oeil { max-width: 100%; height: auto; }
+
+/* ---------- tablette et en dessous ---------- */
+
+@media (max-width: 900px) {
+  /* Un duo à deux colonnes de trois cents pixels ne se lit pas :
+     le texte y tient quarante signes et l'écran montré n'y tient
+     plus du tout. */
+  .duo { grid-template-columns: 1fr; }
+  .duo + .duo { margin-top: clamp(40px, 7vw, 72px); }
+
+  /* Trois plans côte à côte deviennent « deux et un » : plus mal
+     rangé que la colonne unique. */
+  .plans { grid-template-columns: 1fr; }
+  .plan { max-width: 560px; margin-inline: auto; width: 100%; }
+}
+
+/* ---------- téléphone ---------- */
+
+@media (max-width: 700px) {
+  /* Les planchers des titres sont calculés pour un écran large :
+     à 375 px, quarante-quatre pixels font déborder un mot long. */
+  .titre-affiche { font-size: clamp(34px, 9vw, 96px); letter-spacing: -0.04em; }
+  .titre-section { font-size: clamp(25px, 6.5vw, 46px); letter-spacing: -0.032em; }
+  .cite { font-size: clamp(22px, 6vw, 40px); max-width: none; }
+
+  /* Onze pixels et demi de plancher pour tout ce qui se lit. */
+  .legende,
+  .pied__titre,
+  .index,
+  .hero__sur,
+  .regard__mot,
+  .tableau thead th,
+  .tableau .groupe th { font-size: 11.5px; }
+  .mention { font-size: 11px; }
+  .point__clef { font-size: 11.5px; width: 30px; }
+
+  /* Les respirations se resserrent : sur un écran haut et étroit,
+     cent trente pixels de vide font perdre le fil. */
+  .section { padding-block: clamp(44px, 12vw, 72px); }
+  .section--ample { padding-block: clamp(56px, 16vw, 96px); }
+
+  /* Le titre de l'ouverture ne se coupe plus au milieu d'un mot. */
+  .hero__grille { gap: 24px; }
+  .hero__oeil { margin-left: -12px; }
+
+  /* Les six formes : deux colonnes, pas trois. */
+  .formes { grid-template-columns: repeat(2, 1fr); }
+
+  /* Le réglage de couleur cesse d'être une gélule dès qu'il passe
+     à la ligne : une gélule sur deux rangs n'est plus une gélule. */
+  .reglage { border-radius: var(--r-lg); gap: 14px; }
+
+  /* Le mot géant du pied déborderait sur un écran très étroit. */
+  .pied__geant { font-size: clamp(72px, 26vw, 330px); }
+}
+
+/* ---------- ce qui se touche : 44 px ---------- */
+
+/* La condition porte sur le POINTEUR, pas sur la largeur : une
+   tablette large se touche aussi, et une petite fenêtre de bureau
+   se clique très bien. */
+@media (hover: none), (max-width: 700px) {
+  .btn { height: 46px; }
+  .btn--grand { height: 52px; }
+  .btn--icone { width: 44px; height: 44px; }
+
+  .theme { padding: 4px; }
+  .theme__seg { height: 40px; padding: 0 13px; }
+  .theme__seg svg { width: 17px; height: 17px; }
+
+  .teinte { width: 40px; height: 40px; }
+  .roue { height: 38px; }
+  .roue::-webkit-slider-thumb { width: 28px; height: 28px; }
+  .roue::-moz-range-thumb { width: 28px; height: 28px; }
+
+  /* Un lien de pied fait dix-sept pixels de haut : impossible à
+     viser au pouce. On lui rend de la marge sans changer son air. */
+  .pied__liste { gap: 4px; }
+  .pied__liste a,
+  .pied__liste button { display: inline-block; padding-block: 11px; }
+
+  .nav__lien { padding-block: 15px; }
+  .question > summary { padding-block: 24px; }
+}
+
+/* ---------- les onglets des six formes ---------- */
+
+@media (max-width: 700px) {
+  /* Six gélules qui passent à la ligne dans une gélule : on en fait
+     une grille franche de trois par deux. */
+  .formes-vives__onglets {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 6px;
+    border-radius: var(--r-lg);
+    align-self: stretch;
+  }
+  .formes-vives__onglet { padding: 13px 6px; text-align: center; font-size: 14px; }
+}
+
+/* ---------- très petits écrans ---------- */
+
+@media (max-width: 400px) {
+  .formes { grid-template-columns: 1fr; }
+  .mesures { grid-template-columns: 1fr; }
+  .hero__actions .btn,
+  .final .hero__actions .btn { width: 100%; }
+}
+
+/* ---------- paysage court ---------- */
+
+/* Un téléphone couché n'a que 380 px de haut : l'en-tête collante
+   et les grandes respirations y mangent tout l'écran. */
+@media (max-height: 480px) and (orientation: landscape) {
+  .entete { position: static; }
+  .section { padding-block: 40px; }
+  .hero { padding-block: 32px 24px; }
+}
+
+/* ========================================================
+   34. Ce qui empêche une grille de déborder
+
+   Un enfant de grille a `min-width: auto` : il refuse de devenir
+   plus étroit que son contenu, et un contenu large — une maquette
+   qui défile, un tableau — force alors la COLONNE à grandir. La
+   page déborde, et on cherche le coupable ailleurs.
+
+   Un `min-width: 0` sur les enfants, et le défilement reprend sa
+   place à l'intérieur de la boîte prévue pour lui.
+   ======================================================== */
+
+.duo > *,
+.mosaique > *,
+.grille > *,
+.galerie > *,
+.plans > *,
+.formes-vives > *,
+.pied__grille > *,
+.hero__grille > * { min-width: 0; }
+
+.maq,
+.tableau-boite { max-width: 100%; }
+
+/* La mention à côté d'un nom de plan : onze pixels et demi de
+   plancher, comme le reste. */
+@media (max-width: 700px) {
+  .mention { font-size: 11.5px; }
+  .roue { height: 40px; }
+  .pied__bas a { display: inline-block; padding-block: 10px; }
+}
+
+/* ========================================================
+   35. Les planchers, partout et pas seulement sur téléphone
+
+   Une tablette n'est pas un grand écran, et un pointeur fin n'est
+   pas une garantie de précision. Ces valeurs valent donc pour tout
+   ce qui n'est pas franchement un bureau.
+   ======================================================== */
+
+/* Les petites étiquettes ne descendent plus sous onze pixels et demi,
+   quelle que soit la largeur : à dix, on ne les lit plus, on les
+   devine. */
+.legende,
+.point__clef,
+.mention,
+.index,
+.hero__sur,
+.regard__mot,
+.pied__titre,
+.forme__no,
+.cite__sous,
+.tableau thead th,
+.tableau .groupe th { font-size: 11.5px; }
+
+/* Ce qui se touche : quarante-quatre pixels. La condition couvre le
+   pointeur grossier ET la largeur, parce que ni l'un ni l'autre ne
+   suffit à décrire un iPad. */
+@media (hover: none), (max-width: 900px) {
+  .btn { height: 46px; }
+  .btn--grand { height: 52px; }
+  .btn--icone { width: 44px; height: 44px; }
+
+  .theme { padding: 4px; }
+  .theme__seg { height: 40px; padding: 0 13px; }
+  .theme__seg svg { width: 17px; height: 17px; }
+
+  .teinte { width: 40px; height: 40px; }
+  .roue { height: 40px; }
+  .roue::-webkit-slider-thumb { width: 28px; height: 28px; }
+  .roue::-moz-range-thumb { width: 28px; height: 28px; }
+
+  .pied__liste { gap: 4px; }
+  .pied__liste a,
+  .pied__liste button,
+  .pied__bas a { display: inline-block; padding-block: 11px; }
+
+  .nav__lien { padding-block: 15px; }
+  .question > summary { padding-block: 24px; }
+}
+
+/* Le téléphone garde sa largeur : posé plus haut dans la feuille, son
+   plafond se faisait écraser par le `max-width: 100%` des cadres. */
+.maq.maq--tel { max-width: 290px; }

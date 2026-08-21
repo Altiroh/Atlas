@@ -289,6 +289,16 @@ export const IconReduire = ({ size = 20, className, style }: Props) => (
   </svg>
 )
 
+/* Quatre flèches qui s'écartent d'un point : on se déplace DANS la
+   surface. Pas une main — une main ouverte et une main fermée se
+   ressemblent trop à seize pixels, et celle-ci doit se lire allumée ou
+   éteinte d'un coup d'œil. */
+export const IconMain = ({ size = 20, className, style }: Props) => (
+  <svg {...base(size)} className={className} style={style} aria-hidden="true">
+    <path d="M12 4v16M4 12h16M12 4l-2.5 2.5M12 4l2.5 2.5M12 20l-2.5-2.5M12 20l2.5-2.5M4 12l2.5-2.5M4 12l2.5 2.5M20 12l-2.5-2.5M20 12l-2.5 2.5" />
+  </svg>
+)
+
 export const IconCoche = ({ size = 20, className, style }: Props) => (
   <svg {...base(size)} strokeWidth={2.6} className={className} style={style} aria-hidden="true">
     <path d="m5 12.5 4.5 4.5L19 7" />

@@ -44,6 +44,26 @@
 }
 .planche__surface:active { cursor: grabbing; }
 
+/* EN MODE DÉPLACEMENT, LA MAIN VAUT PARTOUT — pièces comprises.
+
+   Sans ce `!important`, `.piece { cursor: grab }` garderait la main
+   ouverte au-dessus des images, ce qui est presque juste : le curseur
+   dirait « tu peux attraper ceci », alors que ce qu'on attrape est la
+   planche. Un curseur qui désigne la mauvaise chose est pire qu'un
+   curseur par défaut. */
+.planche__surface[data-main],
+.planche__surface[data-main] .piece {
+  cursor: grab !important;
+}
+.planche__surface[data-main]:active,
+.planche__surface[data-main]:active .piece {
+  cursor: grabbing !important;
+}
+
+/* Les poignées de redimensionnement n'ont plus rien à proposer : le
+   mode ne touche pas aux pièces. */
+.planche__surface[data-main] .piece__poignee { display: none; }
+
 .planche__monde {
   position: absolute;
   top: 0;

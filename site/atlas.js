@@ -309,13 +309,14 @@
      premier. Un compteur règle la question une fois pour toutes. */
   var noOeil = 0;
 
-  function oeilSvg(taille, avecFlux) {
+  function oeilSvg(taille, avecFlux, mode) {
     var flux = avecFlux === undefined ? taille >= 34 : avecFlux;
     var cote = flux ? taille * 1.8 : taille;
     var vb = flux ? '0 0 ' + CADRE + ' ' + CADRE : '0 0 100 100';
     var uid = 'o' + ++noOeil;
 
-    var s = '<svg class="oeil" width="' + cote + '" height="' + cote + '" viewBox="' + vb +
+    var s = '<svg class="oeil' + (mode ? ' oeil--' + mode : '') + '" width="' + cote +
+      '" height="' + cote + '" viewBox="' + vb +
       '" role="img" aria-label="Atlas">';
 
     s += '<defs>' +
@@ -394,7 +395,7 @@
   document.querySelectorAll('[data-oeil]').forEach(function (hote) {
     var taille = Number(hote.dataset.oeil) || 74;
     var flux = hote.dataset.flux !== 'non';
-    hote.innerHTML = oeilSvg(taille, flux);
+    hote.innerHTML = oeilSvg(taille, flux, hote.dataset.mode);
   });
 
   /* ==============================================================

@@ -30,7 +30,6 @@
    --------------------------------------------------------------- */
 
 .maq {
-  container-type: inline-size;
   position: relative;
   overflow: hidden;
   border-radius: var(--r-lg);
@@ -42,6 +41,8 @@
 /* Le dessin lui-même. `--mq-w` est la largeur de référence, et elle
    change selon l'appareil représenté. */
 .mq {
+  container-type: inline-size;
+  width: 100%;
   --mq-w: 1100;
   --mq-h: 660;
   --k: calc(100cqw / var(--mq-w));
@@ -986,3 +987,26 @@
 /* Les maquettes sont engendrées par le script. Tant qu'il n'a pas
    tourné, le cadre ne doit pas rester béant : il disparaît. */
 .maq:empty { display: none; }
+
+/* ========================================================
+   La largeur minimale lisible
+
+   Un dessin prévu pour 1 100 px, ramené à 335, met son texte à
+   quatre pixels : illisible, donc inutile. Plutôt que de le rétrécir
+   jusqu'à l'absurde, on lui donne une largeur PLANCHER proportionnelle
+   à son propre dessin — quatre cinquièmes — et c'est le cadre qui
+   défile en dessous.
+
+   La règle s'annule toute seule quand il y a la place : sur un grand
+   écran, le plancher est plus petit que la colonne, et rien ne change.
+   ======================================================== */
+
+.maq { overflow-x: auto; overflow-y: hidden; -webkit-overflow-scrolling: touch; }
+
+.mq { min-width: calc(var(--mq-w) * 0.8px); }
+
+/* La barre de défilement reste discrète : c'est un écran montré,
+   pas un panneau d'administration. */
+.maq::-webkit-scrollbar { height: 6px; }
+.maq::-webkit-scrollbar-thumb { border-radius: 99px; background: var(--border-strong); }
+.maq::-webkit-scrollbar-track { background: transparent; }
