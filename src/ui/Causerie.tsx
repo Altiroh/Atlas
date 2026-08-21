@@ -233,6 +233,24 @@ export function Causerie({ fermer }: { fermer: () => void }) {
     ajouter({ k: 'dit', texte: 'Remis comme avant.' })
   }
 
+  /**
+   * ÉCARTER UNE PROPOSITION, EXPLICITEMENT.
+   *
+   * Une carte n'avait qu'un bouton : celui qui fait. Pour la refuser il
+   * fallait ne rien faire — c'est-à-dire la laisser ouverte au milieu
+   * du fil, avec son bouton d'action encore armé, en espérant ne pas le
+   * toucher plus tard. Une proposition qu'on ne peut qu'accepter n'est
+   * pas une proposition.
+   *
+   * « Laisser » ne touche à rien : il note qu'on a répondu non, ferme
+   * la carte, et rend le fil lisible — on voit ce qu'on a écarté,
+   * autant que ce qu'on a validé.
+   */
+  const ecarter = (index: number) =>
+    setTours((avant) =>
+      avant.map((t, i) => (i !== index || t.k !== 'resultat' ? t : { ...t, fait: 'Laissée' })),
+    )
+
   const cocher = (index: number, id: string) =>
     setTours((avant) =>
       avant.map((t, i) =>
@@ -294,6 +312,7 @@ export function Causerie({ fermer }: { fermer: () => void }) {
             ouvrir={(id) => ajouter(...lancer(id))}
             regle={(id) => ajouter({ k: 'regle', scriptId: id })}
             cocher={(id) => cocher(i, id)}
+            ecarter={() => ecarter(i)}
             agir={(ids, danger) =>
               danger ? setAConfirmer({ tour: i, ids }) : executer(i, ids)
             }
@@ -361,6 +380,7 @@ function TourRendu({
   ouvrir,
   regle,
   cocher,
+  ecarter,
   agir,
   defaire,
 }: {
@@ -371,6 +391,7 @@ function TourRendu({
   regle: (scriptId: string) => void
   cocher: (id: string) => void
   agir: (ids: string[], danger: boolean) => void
+  ecarter: () => void
   defaire: () => void
 }) {
   switch (tour.k) {
@@ -537,6 +558,7 @@ function TourRendu({
           fait={tour.fait}
           regle={regle}
           cocher={cocher}
+          ecarter={ecarter}
           agir={agir}
         />
       )
@@ -577,6 +599,7 @@ function ResultatRendu({
   fait,
   regle,
   cocher,
+  ecarter,
   agir,
 }: {
   scriptId: string
@@ -586,6 +609,7 @@ function ResultatRendu({
   regle: (id: string) => void
   cocher: (id: string) => void
   agir: (ids: string[], danger: boolean) => void
+  ecarter: () => void
 }) {
   const s = scriptParId(scriptId)
 
@@ -644,6 +668,17 @@ function ResultatRendu({
         {s && (
           <button className="lien" onClick={() => regle(s.id)}>
             sur quelle règle ?
+          </button>
+        )}
+        {/* LAISSER, PUIS FAIRE — dans cet ordre.
+
+            Le refus est à GAUCHE et sans couleur, l'action à droite et
+            pleine : la main qui hésite doit trouver la sortie avant de
+            trouver l'entrée, pas l'inverse. C'est encore plus vrai
+            quand l'action est une suppression. */}
+        {proposition && !fait && (
+          <button className="btn btn--ghost" onClick={ecarter}>
+            Laisser
           </button>
         )}
         {proposition && !fait && (

@@ -59,6 +59,15 @@
   margin-top: 12px;
 }
 
+/* Les deux réponses restent COLLÉES l'une à l'autre, à droite, pendant
+   que le lien vers la règle garde sa gauche. Sans cette marge, le
+   `space-between` répartirait les trois à intervalles égaux et
+   « Laisser » flotterait au milieu du pied, sans qu'on sache s'il
+   appartient à la règle ou à l'action. */
+.carte-atlas__pied .btn--ghost {
+  margin-left: auto;
+}
+
 .carte-atlas__pied .btn {
   gap: 6px;
   height: 36px;

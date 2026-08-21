@@ -1,6 +1,6 @@
 # Le site d'Atlas
 
-Quatre pages statiques, deux feuilles de style, deux scripts. Aucune dépendance, aucune
+Quatre pages statiques, trois feuilles de style, trois scripts. Aucune dépendance, aucune
 compilation : on ouvre un `.html` dans un navigateur et ça marche.
 
 ```
@@ -13,12 +13,15 @@ site/
   atlas.js        Thème, couleur d'accent, l'œil, le menu, l'apparition au défilement
   maquettes.css   Les écrans d'Atlas — leur matière et leur unité de dessin
   maquettes.js    Les écrans d'Atlas — leur contenu
+  essai.css       Le bac à sable et les six formes essayables — leur allure
+  essai.js        Le bac à sable et les six formes essayables — leur mécanique
   polices/        Inter variable, latin — 48 Ko, servis depuis le projet
   images/         Les icônes du projet, copiées de public/
 ```
 
-`maquettes.js` doit être chargé **avant** `atlas.js` : c'est ce dernier qui dessine les
-yeux d'Atlas, y compris ceux posés dans les maquettes.
+L'ordre de chargement compte : `maquettes.js` **avant** `atlas.js` (c'est lui qui dessine les
+yeux d'Atlas, y compris ceux posés dans les maquettes), et `essai.js` **après** les deux
+(il réemploie les morceaux exposés dans `window.MQ`).
 
 ## Lancer
 
@@ -154,3 +157,33 @@ et `site/` n'y entre pas. Deux possibilités :
 Les liens internes s'écrivent `tarifs.html`. Les hébergeurs qui servent ce fichier à
 l'adresse `/tarifs` sont gérés : `atlas.js` compare les noms de page sans leur extension
 pour marquer l'onglet courant.
+
+## Essayer Atlas depuis le site
+
+Deux blocs vivants, dans `essai.js` :
+
+- **`data-essai`** — le bac à sable, sur l'accueil. On écrit une idée, Entrée la garde,
+  « Classer » la fait passer d'un projet à l'autre, « Archiver » la retire **et laisse un
+  mot pour revenir en arrière**. C'est la démonstration de la promesse « rien ne se perd »,
+  faite plutôt qu'écrite. Rien n'est envoyé, rien n'est gardé au rechargement, et le bloc
+  le dit lui-même.
+- **`data-formes`** — les six formes d'une note en onglets, sur la page produit. Elles
+  réemploient les corps de `maquettes.js` : ce qu'on essaie et ce qu'on regarde ailleurs
+  sont le même écran.
+
+## Le mouvement
+
+Trois règles, les mêmes que dans l'app : on n'anime que `transform` et `opacity`, rien ne
+rebondit, et « Réduire les animations » du système coupe tout sans jamais masquer de
+contenu.
+
+| Où | Quoi |
+|---|---|
+| Sections | Apparition en cascade — 70 ms de décalage par bloc, plafonné à cinq |
+| `.index` | Le filet se dessine de gauche à droite |
+| `.etape` | Le grand chiffre s'éclaircit et se décale au survol |
+| `.maq`, `.bloc`, `.plan` | Un soulèvement de deux ou trois pixels |
+| L'œil de l'ouverture | Il flotte, sur onze secondes |
+| `[data-compte]` | Le nombre monte une fois, quand il entre à l'écran |
+| `.fil` | Une ligne de deux pixels sous l'en-tête, qui suit le défilement |
+| Le bac à sable | L'idée gardée descend, l'idée archivée glisse et se referme |

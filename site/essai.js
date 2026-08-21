@@ -57,7 +57,7 @@
     var compteur = 0;
     var annulation = null;
 
-    hote.className = 'essai glass';
+    hote.classList.add('essai', 'glass');
     hote.innerHTML =
       '<div class="essai__tete">' +
         '<span class="essai__main">Bonjour !</span>' +
@@ -218,7 +218,7 @@
       Frise: 'Des événements posés dans l’ordre, sur un axe.'
     };
 
-    hote.className = 'formes-vives';
+    hote.classList.add('formes-vives');
     hote.innerHTML =
       '<div class="formes-vives__onglets glass" role="tablist" aria-label="Les six formes d’une note">' +
         MQ.formes.map(function (f, i) {

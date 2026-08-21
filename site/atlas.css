@@ -1338,3 +1338,194 @@ table.tableau { width: 100%; min-width: 680px; border-collapse: collapse; font-s
     transition-duration: 0.001ms !important;
   }
 }
+
+/* ========================================================
+   27. Le choix du thème, visible
+
+   Un bouton rond qui fait tourner trois états sans jamais dire
+   lequel est en cours est un piège : personne ne découvre le mode
+   nuit par hasard. Trois segments, l'actif porte la couleur, et le
+   mode automatique dit l'heure qu'il croit qu'il est.
+   ======================================================== */
+
+.theme {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 3px;
+  border-radius: 999px;
+  background: var(--surface-sunken);
+  border: 1px solid var(--border);
+}
+
+.theme__seg {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 30px;
+  padding: 0 11px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 480;
+  color: var(--text-3);
+  transition: color var(--fast) var(--ease), background var(--fast) var(--ease);
+}
+.theme__seg:hover { color: var(--text); }
+
+.theme__seg svg {
+  width: 15px;
+  height: 15px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.7;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.theme__seg[aria-pressed='true'] {
+  background: var(--surface-strong);
+  color: var(--text);
+  font-weight: 550;
+  box-shadow: var(--shadow-sm);
+}
+.theme__seg[aria-pressed='true'] svg { color: var(--accent-text); }
+
+/* Sous 1080 px les libellés tombent : les trois pictogrammes suffisent,
+   et l'infobulle porte le mot. */
+@media (max-width: 1080px) {
+  .theme__seg span { display: none; }
+  .theme__seg { padding: 0 9px; }
+}
+
+/* ========================================================
+   28. Le fil de progression
+
+   Une ligne d'un pixel sous l'en-tête, qui dit où l'on en est dans
+   la page. Discret, et ça suffit à donner sa longueur au document.
+   ======================================================== */
+
+.fil {
+  position: absolute;
+  left: 0;
+  bottom: -1px;
+  height: 2px;
+  width: 100%;
+  transform-origin: 0 50%;
+  transform: scaleX(0);
+  background: linear-gradient(90deg, var(--accent), hsl(calc(var(--accent-h) + 40) 85% 60%));
+  pointer-events: none;
+}
+
+/* ========================================================
+   29. Le pied de page
+
+   Un vrai pied : la marque en grand, un dernier appel, puis les
+   liens. Une rangée de colonnes maigres sous un filet ne termine pas
+   une page, elle l'abandonne.
+   ======================================================== */
+
+.pied__haut {
+  display: grid;
+  gap: clamp(28px, 5vw, 64px);
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr));
+  align-items: center;
+  padding-bottom: clamp(32px, 5vw, 52px);
+}
+
+.pied__marque { display: flex; align-items: center; gap: clamp(14px, 2vw, 22px); }
+
+.pied__nom {
+  font-size: clamp(40px, 6vw, 66px);
+  font-weight: 640;
+  letter-spacing: -0.05em;
+  line-height: 0.9;
+}
+
+.pied__phrase {
+  margin-top: 8px;
+  font-size: 14.5px;
+  color: var(--text-2);
+  line-height: 1.5;
+  max-width: 26ch;
+}
+
+.pied__appel { justify-self: end; text-align: right; }
+.pied__invite {
+  font-size: clamp(19px, 2.2vw, 26px);
+  font-weight: 600;
+  letter-spacing: -0.03em;
+}
+.pied__actions { display: flex; flex-wrap: wrap; gap: 10px; justify-content: flex-end; margin-top: 16px; }
+
+@media (max-width: 720px) {
+  .pied__appel { justify-self: start; text-align: left; }
+  .pied__actions { justify-content: flex-start; }
+}
+
+.pied__grille { padding-top: clamp(32px, 5vw, 52px); }
+
+/* ========================================================
+   30. Le mouvement
+
+   Trois règles, les mêmes que dans l'app :
+   · on n'anime que `transform` et `opacity` ;
+   · rien ne rebondit, rien ne clignote ;
+   · « Réduire les animations » du système fait foi, et coupe tout.
+   ======================================================== */
+
+/* L'apparition en cascade : les blocs d'une même rangée n'arrivent
+   pas ensemble, ils se suivent d'un cheveu. C'est ce décalage — pas
+   le fondu — qui fait qu'on lit une rangée de gauche à droite. */
+:root.js .revele { transition-delay: var(--retard, 0ms); }
+
+/* Le filet de l'index se DESSINE, il n'apparaît pas. */
+:root.js .index.revele::after {
+  transform: scaleX(0);
+  transform-origin: 0 50%;
+  transition: transform 900ms var(--ease) 120ms;
+}
+:root.js .index.revele[data-vu='true']::after { transform: scaleX(1); }
+
+/* Un bloc en verre se soulève à peine quand on le survole : assez
+   pour répondre, pas assez pour sauter. */
+.bloc.glass,
+.plan,
+.maq {
+  transition: transform var(--mid) var(--ease), border-color var(--mid) var(--ease),
+    box-shadow var(--mid) var(--ease);
+}
+.bloc.glass:hover { transform: translateY(-3px); border-color: var(--border-strong); }
+.plan:hover { transform: translateY(-3px); }
+.maq:hover { transform: translateY(-2px); }
+
+/* Le grand chiffre d'une étape s'éclaircit et se décale au survol :
+   le regard sait alors quelle ligne il tient. */
+.etape { transition: background var(--mid) var(--ease); }
+.etape:hover { background: var(--surface-sunken); }
+.etape__no { transition: opacity var(--mid) var(--ease), transform var(--mid) var(--ease); }
+.etape:hover .etape__no { opacity: 0.34; transform: translateX(4px); }
+
+/* L'œil de l'ouverture respire — très lentement, sur quelques
+   pixels. Il ne tourne pas, il ne pulse pas : il flotte. */
+.hero__oeil .oeil { animation: flotte 11s ease-in-out infinite; }
+
+@keyframes flotte {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-9px); }
+}
+
+/* Un écran montré arrive en se posant, pas en apparaissant à plat. */
+:root.js .maq.revele { transform: translateY(20px) scale(0.985); }
+:root.js .maq.revele[data-vu='true'] { transform: none; }
+
+/* Les liens du pied et de la navigation glissent d'un pixel. */
+.pied__liste a,
+.pied__liste button { transition: color var(--fast) var(--ease), transform var(--fast) var(--ease); }
+.pied__liste a:hover,
+.pied__liste button:hover { transform: translateX(3px); }
+
+@media (prefers-reduced-motion: reduce) {
+  .hero__oeil .oeil { animation: none; }
+  .fil { display: none; }
+  :root.js .maq.revele { transform: none; }
+}

@@ -450,16 +450,76 @@ const espaceANaitre: Script = {
    --------------------------------------------------------------- */
 
 const VERBES_CREER = String.raw`(?:cr[ée]{1,2}[rz]?|creer|fabrique|fais|ajoute|ouvre|monte|d[ée]marre|commence)`
+const VERBES_SUPPRIMER = String.raw`(?:supprime[rz]?|efface[rz]?|retire[rz]?|enl[èe]ve[rz]?|vire[rz]?|jette[rz]?|d[ée]truis|balance)`
+const VERBES_ARCHIVER = String.raw`(?:archive[rz]?|classe[rz]?\s+aux\s+archives|range[rz]?\s+aux\s+archives|mets?\s+aux\s+archives)`
+const VERBES_RESTAURER = String.raw`(?:restaure[rz]?|d[ée]sarchive[rz]?|ressors|sors|d[ée]sarchiver|remets?\s+dans\s+le\s+flux|sortir)`
+
+/**
+ * La tournure qui déclenche une consigne.
+ *
+ * Un verbe, un article facultatif, le mot « espace » ou « note ». Le
+ * reste de la phrase est le NOM, et c'est `nomApres` qui le découpe.
+ *
+ * L'article accepte le pluriel et les possessifs parce que les gens
+ * parlent comme ils parlent — « supprime mes notes du port » doit être
+ * entendu, quitte à ne rien trouver ensuite et à le dire.
+ */
+function tournure(verbes: string, quoi: 'espace' | 'note', seul = '') {
+  return new RegExp(
+    String.raw`(?:^|\b)${verbes}(?:\s+moi)?\s+(?:un|une|le|la|l['’]|les|des|mon|ma|mes|ce|cet|cette)?\s*(?:nouvel|nouvelle|nouveau)?\s*${quoi}s?\b${seul}`,
+    'i',
+  )
+}
 
 function consigneDe(quoi: 'espace' | 'note') {
   /* « note » accepte aussi la forme sans verbe — « note : rappeler Marc »
      est la façon la plus courte de capturer, et refuser de la lire
      serait ne pas écouter. */
   const seul = quoi === 'note' ? String.raw`|^note\s*[:—-]` : ''
-  return new RegExp(
-    String.raw`(?:^|\b)${VERBES_CREER}(?:\s+moi)?\s+(?:un|une|le|la|l['’]|mon|ma)?\s*(?:nouvel|nouvelle|nouveau)?\s*${quoi}s?\b${seul}`,
-    'i',
-  )
+  return tournure(VERBES_CREER, quoi, seul)
+}
+
+/* ---------------------------------------------------------------
+   RETROUVER CE QU'ON NOMME.
+
+   Deux passes, et l'ordre compte : on cherche d'abord un nom EXACT,
+   et on ne se rabat sur « qui contient » que si rien ne correspond.
+   Sans cette priorité, demander à supprimer « Roman » proposerait
+   aussi « Roman noir » et « Romans à finir » — et le jour où l'on
+   valide trop vite, on efface deux notes pour une.
+
+   Accents et casse sont ignorés : personne ne tape « Première scène »
+   avec l'accent quand il dicte, et refuser sur ce motif serait
+   incompréhensible.
+   --------------------------------------------------------------- */
+
+function sansAccents(s: string) {
+  return s
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLocaleLowerCase('fr')
+    .trim()
+}
+
+function notesNommees(terme: string): Post[] {
+  const t = sansAccents(terme)
+  if (!t) return []
+  const toutes = etat().posts.filter((p) => !p.supprime)
+  const exactes = toutes.filter((p) => sansAccents(titreDe(p)) === t)
+  return exactes.length ? exactes : toutes.filter((p) => sansAccents(titreDe(p)).includes(t))
+}
+
+function espacesNommes(terme: string): Espace[] {
+  const t = sansAccents(terme)
+  if (!t) return []
+  const tous = etat().espaces.filter((e) => !e.supprime)
+  const exacts = tous.filter((e) => sansAccents(e.nom) === t)
+  return exacts.length ? exacts : tous.filter((e) => sansAccents(e.nom).includes(t))
+}
+
+/** « Dis-moi laquelle », dit une fois pour toutes. */
+function faute(quoi: string, exemple: string): Resultat {
+  return { sorte: 'rien', mot: `Dis-moi ${quoi} — « ${exemple} ».` }
 }
 
 /** Ce qui suit le mot « espace » ou « note », débarrassé de l'emballage. */
@@ -585,6 +645,232 @@ const creerNote: Script = {
         return {
           libelle: `Note « ${titre} » supprimée`,
           defaire: () => etat().supprimerPosts([id]),
+        }
+      },
+    }
+  },
+}
+
+/* ---------------------------------------------------------------
+   DÉFAIRE CE QU'ON NOMME.
+
+   Trois consignes se ressemblent — supprimer, archiver, ressortir —
+   et une règle les sépare : SEULE LA SUPPRESSION EST SANS RETOUR.
+   Elle porte donc `danger`, qui impose une confirmation avant d'agir,
+   et son `faire` ne rend aucune annulation : promettre un retour en
+   arrière qu'on ne peut pas tenir serait pire que de ne rien
+   promettre. L'archivage, lui, se défait d'un geste.
+
+   L'AUTRE RÈGLE EST DANS LES CASES PRÉ-COCHÉES. Quand un seul élément
+   correspond au nom donné, il est coché : c'est celui qu'on a désigné.
+   Quand plusieurs correspondent, RIEN n'est coché pour une suppression
+   — le bouton reste éteint tant qu'on n'a pas choisi, ce qui oblige à
+   regarder la liste. Pour l'archivage, qui se défait, tout est coché :
+   la prudence a un coût, on ne le paie que là où il sert.
+   --------------------------------------------------------------- */
+
+const supprimerEspace: Script = {
+  id: 'supprimer-espace',
+  nom: 'Supprimer un espace',
+  famille: 'creer',
+  quoi: 'Retirer un espace, en laissant ses notes libres.',
+  regle:
+    'Tu nommes un espace, je le retire. SES NOTES NE PARTENT PAS : elles redeviennent libres, et se retrouvent dans le flux. Supprimer un dossier ne doit jamais emporter ce qu’on avait rangé dedans.',
+  cles: 'supprimer espace effacer retirer',
+  consigne: tournure(VERBES_SUPPRIMER, 'espace'),
+  chercher(demande = '') {
+    const terme = nomApres(demande, 'espace')
+    if (!terme) return faute('lequel', 'supprime l’espace Roman noir')
+    const trouves = espacesNommes(terme)
+    if (!trouves.length) {
+      return { sorte: 'rien', mot: `Aucun espace ne s'appelle « ${terme} ».` }
+    }
+
+    const compte = (e: Espace) => etat().posts.filter((p) => !p.supprime && p.espaceId === e.id).length
+
+    return {
+      sorte: 'proposition',
+      titre:
+        trouves.length === 1
+          ? `Supprimer l'espace « ${trouves[0].nom} »`
+          : `${trouves.length} espaces portent « ${terme} »`,
+      pourquoi:
+        'Leurs notes ne sont pas supprimées : elles redeviennent libres. La suppression d’un espace, elle, ne se défait pas.',
+      elements: trouves.map((e) => ({
+        id: e.id,
+        libelle: e.nom || 'Sans nom',
+        detail: `${compte(e)} note${compte(e) > 1 ? 's' : ''} — elles resteront`,
+        pris: trouves.length === 1,
+      })),
+      verbe: (n) => `Supprimer ${n} espace${n > 1 ? 's' : ''}`,
+      danger: true,
+      faire: (ids) => {
+        if (!ids.length) return null
+        etat().supprimerEspaces(ids)
+        return null
+      },
+    }
+  },
+}
+
+const supprimerNote: Script = {
+  id: 'supprimer-note',
+  nom: 'Supprimer une note',
+  famille: 'creer',
+  quoi: 'Retirer une note que tu nommes.',
+  regle:
+    'Tu nommes une note, je la retire. Si plusieurs portent ce nom, je les montre toutes SANS EN COCHER AUCUNE : c’est à toi de désigner, pas à moi de deviner. Rien ne se défait ensuite.',
+  cles: 'supprimer note effacer retirer',
+  consigne: tournure(VERBES_SUPPRIMER, 'note'),
+  chercher(demande = '') {
+    const terme = nomApres(demande, 'note')
+    if (!terme) return faute('laquelle', 'supprime la note Première scène')
+    const trouvees = notesNommees(terme)
+    if (!trouvees.length) return { sorte: 'rien', mot: `Aucune note ne s'appelle « ${terme} ».` }
+
+    return {
+      sorte: 'proposition',
+      titre:
+        trouvees.length === 1
+          ? `Supprimer « ${titreDe(trouvees[0])} »`
+          : `${trouvees.length} notes portent « ${terme} »`,
+      pourquoi:
+        'Rien ne se défait après. Si tu hésites, archive plutôt — l’archive se ressort quand tu veux.',
+      elements: trouvees.map((p) => ({
+        ...elementPost(p),
+        pris: trouvees.length === 1,
+      })),
+      verbe: (n) => `Supprimer ${n} note${n > 1 ? 's' : ''}`,
+      danger: true,
+      faire: (ids) => {
+        if (!ids.length) return null
+        etat().supprimerPosts(ids)
+        return null
+      },
+    }
+  },
+}
+
+const archiverNote: Script = {
+  id: 'archiver-note',
+  nom: 'Archiver une note',
+  famille: 'creer',
+  quoi: 'Sortir du flux ce qui a fait son temps, sans rien perdre.',
+  regle:
+    'Tu nommes une note, je l’archive. Elle quitte le flux, garde tout son contenu, et se ressort d’un mot. C’est le geste à faire quand on hésite à supprimer.',
+  cles: 'archiver note ranger archives sortir flux',
+  consigne: tournure(VERBES_ARCHIVER, 'note'),
+  chercher(demande = '') {
+    const terme = nomApres(demande, 'note')
+    if (!terme) return faute('laquelle', 'archive la note Première scène')
+    const trouvees = notesNommees(terme).filter((p) => p.etat !== 'archivee')
+    if (!trouvees.length) {
+      return {
+        sorte: 'rien',
+        mot: `Aucune note vivante ne s'appelle « ${terme} » — elle est peut-être déjà aux archives.`,
+      }
+    }
+
+    return {
+      sorte: 'proposition',
+      titre:
+        trouvees.length === 1
+          ? `Archiver « ${titreDe(trouvees[0])} »`
+          : `Archiver ${trouvees.length} notes portant « ${terme} »`,
+      pourquoi: 'Elles quittent le flux sans rien perdre, et se ressortent d’un mot.',
+      elements: trouvees.map((p) => elementPost(p)),
+      verbe: (n) => `Archiver ${n} note${n > 1 ? 's' : ''}`,
+      faire: (ids) => {
+        if (!ids.length) return null
+        etat().archiverPosts(ids)
+        return {
+          libelle: `${ids.length} note${ids.length > 1 ? 's' : ''} ressortie${ids.length > 1 ? 's' : ''} des archives`,
+          defaire: () => etat().restaurerPosts(ids),
+        }
+      },
+    }
+  },
+}
+
+const restaurerNote: Script = {
+  id: 'restaurer-note',
+  nom: 'Ressortir une note des archives',
+  famille: 'creer',
+  quoi: 'Remettre dans le flux ce qui redevient utile.',
+  regle:
+    'Tu nommes une note archivée, je la remets dans le flux, à l’endroit où elle était rangée.',
+  cles: 'restaurer desarchiver note archives ressortir',
+  consigne: tournure(VERBES_RESTAURER, 'note'),
+  chercher(demande = '') {
+    const terme = nomApres(demande, 'note')
+    if (!terme) return faute('laquelle', 'ressors la note Première scène')
+    const trouvees = notesNommees(terme).filter((p) => p.etat === 'archivee')
+    if (!trouvees.length) {
+      return {
+        sorte: 'rien',
+        mot: `Aucune note archivée ne s'appelle « ${terme} ».`,
+      }
+    }
+
+    return {
+      sorte: 'proposition',
+      titre:
+        trouvees.length === 1
+          ? `Ressortir « ${titreDe(trouvees[0])} »`
+          : `Ressortir ${trouvees.length} notes portant « ${terme} »`,
+      pourquoi: 'Elles retournent dans le flux, là où elles étaient rangées.',
+      elements: trouvees.map((p) => elementPost(p)),
+      verbe: (n) => `Ressortir ${n} note${n > 1 ? 's' : ''}`,
+      faire: (ids) => {
+        if (!ids.length) return null
+        etat().restaurerPosts(ids)
+        return {
+          libelle: `${ids.length} note${ids.length > 1 ? 's' : ''} remise${ids.length > 1 ? 's' : ''} aux archives`,
+          defaire: () => etat().archiverPosts(ids),
+        }
+      },
+    }
+  },
+}
+
+const archiverEspace: Script = {
+  id: 'archiver-espace',
+  nom: 'Archiver un espace',
+  famille: 'creer',
+  quoi: 'Mettre en sommeil tout un espace, sans le détruire.',
+  regle:
+    'Tu nommes un espace, j’archive TOUTES SES NOTES — l’espace lui-même reste. Un projet qui s’arrête n’est pas un projet qu’on efface : il dort, et il se réveille d’un mot.',
+  cles: 'archiver espace projet sommeil',
+  consigne: tournure(VERBES_ARCHIVER, 'espace'),
+  chercher(demande = '') {
+    const terme = nomApres(demande, 'espace')
+    if (!terme) return faute('lequel', 'archive l’espace Roman noir')
+    const trouves = espacesNommes(terme)
+    if (!trouves.length) return { sorte: 'rien', mot: `Aucun espace ne s'appelle « ${terme} ».` }
+
+    const ids = new Set(trouves.map((e) => e.id))
+    const notes = etat().posts.filter(
+      (p) => !p.supprime && p.etat !== 'archivee' && p.espaceId && ids.has(p.espaceId),
+    )
+    if (!notes.length) {
+      return {
+        sorte: 'rien',
+        mot: `« ${trouves[0].nom} » n'a aucune note à archiver.`,
+      }
+    }
+
+    return {
+      sorte: 'proposition',
+      titre: `Archiver les ${notes.length} notes de « ${trouves.map((e) => e.nom).join(' », « ')} »`,
+      pourquoi: 'L’espace reste : c’est son contenu qui va dormir. Tout se ressort d’un mot.',
+      elements: notes.map((p) => elementPost(p)),
+      verbe: (n) => `Archiver ${n} note${n > 1 ? 's' : ''}`,
+      faire: (choisis) => {
+        if (!choisis.length) return null
+        etat().archiverPosts(choisis)
+        return {
+          libelle: `${choisis.length} note${choisis.length > 1 ? 's' : ''} ressortie${choisis.length > 1 ? 's' : ''}`,
+          defaire: () => etat().restaurerPosts(choisis),
         }
       },
     }
@@ -1630,6 +1916,11 @@ const attachesAuxLignes: Script = {
 export const SCRIPTS: Script[] = [
   creerEspace,
   creerNote,
+  supprimerEspace,
+  supprimerNote,
+  archiverNote,
+  archiverEspace,
+  restaurerNote,
   rangerParNom,
   rangerParVoisinage,
   demenager,

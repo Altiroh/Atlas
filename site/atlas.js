@@ -452,6 +452,16 @@
     reveles.forEach(function (el) {
       guet.observe(el);
     });
+
+    /* Filet de sécurité : si l'observateur ne s'est jamais déclenché au
+       bout de trois secondes — onglet en arrière-plan, moteur exotique,
+       page trop courte — on montre tout. Un contenu invisible est un
+       contenu perdu, et aucune animation ne vaut ça. */
+    setTimeout(function () {
+      reveles.forEach(function (el) {
+        el.dataset.vu = 'true';
+      });
+    }, 3000);
   } else {
     reveles.forEach(function (el) {
       el.dataset.vu = 'true';
@@ -478,4 +488,127 @@
       a.setAttribute('aria-current', 'page');
     }
   });
+})();
+
+/* ---------------------------------------------------------------
+   Le mouvement.
+
+   Ce qui ne pouvait pas se dire en CSS seul : le décalage en cascade
+   des apparitions, les nombres qui montent, et le fil qui dit où
+   l'on en est dans la page.
+
+   Tout est coupé net si le système demande de réduire les
+   animations — et le contenu reste entier, jamais masqué.
+   --------------------------------------------------------------- */
+
+(function () {
+  'use strict';
+
+  var sobre = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  /* ==============================================================
+     1. LA CASCADE
+
+     Les blocs d'une même rangée ne se lèvent pas ensemble : chacun
+     attend son tour, d'un cheveu. C'est ce décalage qui fait qu'on
+     lit une rangée de gauche à droite au lieu de recevoir un mur.
+     Le retard est plafonné : au-delà de cinq blocs, on attendrait.
+     ============================================================== */
+
+  if (!sobre) {
+    document.querySelectorAll('.grille, .mosaique, .plans, .etapes, .formes, .galerie, .questions')
+      .forEach(function (groupe) {
+        var rang = 0;
+        [].forEach.call(groupe.children, function (enfant) {
+          if (!enfant.classList.contains('revele')) return;
+          enfant.style.setProperty('--retard', Math.min(rang, 5) * 70 + 'ms');
+          rang++;
+        });
+      });
+  }
+
+  /* ==============================================================
+     2. LES NOMBRES QUI MONTENT
+
+     Un chiffre posé d'un bloc se lit ; un chiffre qui monte se
+     REGARDE. On ne s'en sert que sur les mesures — jamais sur un
+     prix, qu'on veut pouvoir lire du premier coup d'œil.
+     ============================================================== */
+
+  function monter(el) {
+    var cible = Number(el.dataset.compte);
+    var suffixe = el.dataset.suffixe || '';
+    var prefixe = el.dataset.prefixe || '';
+    if (!isFinite(cible)) return;
+
+    if (sobre) {
+      el.textContent = prefixe + cible.toLocaleString('fr-FR') + suffixe;
+      return;
+    }
+
+    // Le nombre juste est DÉJÀ dans le HTML : on ne le remet à zéro
+    // qu'au moment où l'animation part. Sans ça, un observateur qui ne
+    // se déclenche jamais laisserait un « 0 » à l'écran — un chiffre
+    // faux est bien pire qu'un chiffre qui ne bouge pas.
+    el.textContent = prefixe + '0' + suffixe;
+
+    var duree = 1100;
+    var debut = null;
+
+    function pas(t) {
+      if (debut === null) debut = t;
+      var p = Math.min(1, (t - debut) / duree);
+      // décélération franche : la fin doit se poser, pas s'arrêter net
+      var e = 1 - Math.pow(1 - p, 3);
+      el.textContent = prefixe + Math.round(cible * e).toLocaleString('fr-FR') + suffixe;
+      if (p < 1) requestAnimationFrame(pas);
+    }
+    requestAnimationFrame(pas);
+  }
+
+  var compteurs = document.querySelectorAll('[data-compte]');
+  if (compteurs.length) {
+    if ('IntersectionObserver' in window) {
+      var guet = new IntersectionObserver(function (entrees) {
+        entrees.forEach(function (e) {
+          if (!e.isIntersecting) return;
+          monter(e.target);
+          guet.unobserve(e.target);
+        });
+      }, { threshold: 0.4 });
+      compteurs.forEach(function (c) { guet.observe(c); });
+    } else {
+      compteurs.forEach(monter);
+    }
+  }
+
+  /* ==============================================================
+     3. LE FIL
+
+     Une ligne de deux pixels sous l'en-tête. On ne la lit pas, on
+     sent la longueur du document — et c'est tout ce qu'on lui
+     demande.
+     ============================================================== */
+
+  var entete = document.querySelector('.entete');
+  if (entete && !sobre) {
+    var fil = document.createElement('span');
+    fil.className = 'fil';
+    fil.setAttribute('aria-hidden', 'true');
+    entete.appendChild(fil);
+
+    var enCours = false;
+    function majFil() {
+      var h = document.documentElement.scrollHeight - window.innerHeight;
+      var p = h > 0 ? Math.min(1, window.scrollY / h) : 0;
+      fil.style.transform = 'scaleX(' + p.toFixed(4) + ')';
+      enCours = false;
+    }
+    window.addEventListener('scroll', function () {
+      if (enCours) return;
+      enCours = true;
+      requestAnimationFrame(majFil);
+    }, { passive: true });
+    majFil();
+  }
 })();
