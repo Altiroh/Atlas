@@ -383,6 +383,77 @@
   });
 
   /* ==============================================================
+     ON TOUCHE L'ŒIL, IL PROTESTE
+
+     Repris de `src/ui/Causerie.tsx` avec ses valeurs : au plus six
+     « Aïe » à la fois, posés au hasard, neuf cents millisecondes de
+     vie. Une accumulation qui reste à l'écran cesse d'être une
+     réaction pour devenir un décor, et il faudrait alors la ranger.
+
+     Rien ne se déclenche, rien ne s'ouvre, aucune fonction ne se
+     cache derrière. Un site qu'on parcourt a le droit d'avoir un
+     endroit où il ne se passe rien d'utile.
+
+     Les petits yeux — l'en-tête, le pied, ceux des maquettes — sont
+     laissés tranquilles : l'un est un lien vers l'accueil, les autres
+     sont des dessins.
+     ============================================================== */
+
+  var compteAie = 0;
+
+  function piquer(hote) {
+    var svg = hote.querySelector('.oeil');
+    if (!svg) return;
+
+    /* La paupière tombe et Y RESTE le temps du sursaut : c'est le
+       mode « dort » de l'app, celui qui sert quand on la déplace. */
+    svg.classList.add('oeil--dort');
+    setTimeout(function () {
+      svg.classList.remove('oeil--dort');
+    }, 520);
+
+    var aie = document.createElement('span');
+    aie.className = 'aie';
+    aie.setAttribute('aria-hidden', 'true');
+    aie.textContent = 'Aïe';
+    aie.style.left = (10 + Math.random() * 80) + '%';
+    aie.style.top = (12 + Math.random() * 72) + '%';
+    aie.style.setProperty('--r', (-16 + Math.random() * 32) + 'deg');
+    hote.appendChild(aie);
+
+    /* Plafonné à six : au-delà, ce n'est plus une réaction. */
+    var tous = hote.querySelectorAll('.aie');
+    if (tous.length > 6) tous[0].remove();
+
+    compteAie++;
+    setTimeout(function () {
+      aie.remove();
+    }, 900);
+  }
+
+  document.querySelectorAll('[data-oeil]').forEach(function (hote) {
+    var taille = Number(hote.dataset.oeil) || 74;
+    // les petits yeux et ceux qui dorment déjà ne se touchent pas
+    if (taille < 44 || hote.dataset.mode === 'dort') return;
+    /* Ni les yeux d'illustration : les deux regards de la page produit
+       démontrent l'ouvert et le fermé — en refermer un sous le doigt
+       brouillerait ce qu'ils sont là pour montrer. */
+    if (hote.closest('a') || hote.closest('.maq') || hote.closest('.regards')) return;
+
+    hote.classList.add('oeil-piquable');
+    hote.setAttribute('role', 'button');
+    hote.setAttribute('tabindex', '0');
+    hote.setAttribute('aria-label', 'Toucher Atlas');
+
+    hote.addEventListener('click', function () { piquer(hote); });
+    hote.addEventListener('keydown', function (e) {
+      if (e.key !== 'Enter' && e.key !== ' ') return;
+      e.preventDefault();
+      piquer(hote);
+    });
+  });
+
+  /* ==============================================================
      3. LE MENU (largeur compacte)
      ============================================================== */
 

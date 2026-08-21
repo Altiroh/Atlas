@@ -1,4 +1,4 @@
-import { memo } from 'react'
+import { memo, useEffect, useState } from 'react'
 
 /* ---------------------------------------------------------------
    Atlas, en tant qu'entité.
@@ -198,15 +198,47 @@ export const OeilAtlas = memo(function OeilAtlas({
   size = 74,
   mode = 'veille',
   flux,
+  clin = 0,
 }: {
   size?: number
   mode?: ModeRegard
+  /**
+   * UN CLIN D'ŒIL À LA DEMANDE — un compteur, pas un booléen.
+   *
+   * Un booléen ne peut pas dire « recommence » : le remettre à vrai
+   * alors qu'il l'est déjà ne change rien, et deux appuis rapprochés
+   * ne donneraient qu'un seul clignement. Le nombre, lui, change à
+   * chaque fois, et c'est ce changement qui sert de clé React aux
+   * paupières — remontées, elles rejouent l'animation depuis son
+   * début, quel que soit l'endroit où elle en était.
+   */
+  clin?: number
   /** La couronne. Coupée d'office en dessous de 34 px : à cette taille
       les langues font moins de trois pixels de large et ne rendent
       qu'une bouillie autour de l'œil. */
   flux?: boolean
 }) {
   const avecFlux = flux ?? size >= 34
+
+  /* LA CLASSE DU CLIN SE RETIRE TOUTE SEULE, et c'est le point.
+
+     Premier réflexe : un attribut posé sur le SVG et une règle qui
+     s'en sert. Il marchait une fois. L'attribut restant là ensuite, la
+     règle du clin continuait d'écraser le clignement de fond — l'œil
+     jouait son clin, puis ne clignait plus JAMAIS, l'animation à
+     remplissage « both » le tenant ouvert pour l'éternité.
+
+     La classe ne vit donc que le temps du geste. Après quoi tout
+     revient : le clignement lent reprend depuis son début, c'est-à-dire
+     l'œil ouvert — exactement là où le clin l'a laissé. */
+  const [clignote, setClignote] = useState(false)
+
+  useEffect(() => {
+    if (!clin) return
+    setClignote(true)
+    const t = window.setTimeout(() => setClignote(false), 460)
+    return () => window.clearTimeout(t)
+  }, [clin])
 
   /* L'ŒIL GARDE SA TAILLE. La couronne s'ajoute AUTOUR, donc le dessin
      s'élargit — jamais l'œil ne rétrécit pour lui faire de la place.
@@ -216,7 +248,7 @@ export const OeilAtlas = memo(function OeilAtlas({
 
   return (
     <svg
-      className={`oeil oeil--${mode}`}
+      className={`oeil oeil--${mode}${clignote ? ' oeil--clin' : ''}`}
       width={cote}
       height={cote}
       viewBox={avecFlux ? `0 0 ${CADRE} ${CADRE}` : '0 0 100 100'}
@@ -240,6 +272,14 @@ export const OeilAtlas = memo(function OeilAtlas({
         <linearGradient id="oeil-paupiere" x1="0" y1="0" x2="0" y2="1">
           <stop offset="0%" stopColor="var(--paupiere-haut)" />
           <stop offset="100%" stopColor="var(--paupiere-bas)" />
+        </linearGradient>
+
+        {/* La paupière du bas reçoit la lumière par en dessous : son
+            dégradé est donc RETOURNÉ. Deux paupières éclairées du même
+            côté se lisent comme un seul volet coupé en deux. */}
+        <linearGradient id="oeil-paupiere-bas" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="var(--paupiere-bas)" />
+          <stop offset="100%" stopColor="var(--paupiere-haut)" />
         </linearGradient>
 
         <filter id="oeil-lueur" x="-60%" y="-60%" width="220%" height="220%">
@@ -321,14 +361,42 @@ export const OeilAtlas = memo(function OeilAtlas({
             la paupière descend un peu ; vers le haut, elle se relève.
             Deux `transform` sur un même élément s'écrasent — il faut
             donc un groupe par mouvement. */}
+        {/* LA PAUPIÈRE DU BAS, dessinée AVANT celle du haut.
+
+            L'ordre de peinture est le geste lui-même : c'est la
+            paupière haute qui vient se poser SUR la basse, jamais
+            l'inverse. Peintes dans l'autre sens, les deux bords se
+            croisent et la fermeture ressemble à deux volets qui se
+            heurtent.
+
+            Elle bouge peu — un quart de ce que fait l'autre. C'est
+            l'anatomie : la paupière basse ne ferme pas l'œil, elle
+            monte à sa rencontre. Lui donner la moitié du chemin
+            donnerait un œil de poupée qui pince. */}
+        <g className="oeil__paupiere-bas" key={`bas${clin}`}>
+          <rect x="-6" y="94" width="112" height="110" fill="url(#oeil-paupiere-bas)" />
+          <ellipse cx="50" cy="95" rx="56" ry="8" fill="var(--paupiere-bas)" />
+          <path className="oeil__cil oeil__cil--bas" d="M -6 95 Q 50 86, 106 95" />
+        </g>
+
         <g className="oeil__voile">
-          <g className="oeil__paupiere">
+          <g className="oeil__paupiere" key={`haut${clin}`}>
             <ellipse className="oeil__ombre" cx="50" cy="0" rx="52" ry="10" filter="url(#oeil-ombre)" />
             <rect x="-6" y="-108" width="112" height="108" fill="url(#oeil-paupiere)" />
             <ellipse cx="50" cy="-1" rx="56" ry="9" fill="var(--paupiere-bas)" />
+
+            {/* LE PLI. C'est lui qui fait la peau.
+
+                Sans pli, une paupière qui descend est un volet : une
+                surface unie qui glisse. Le pli est hors du globe tant
+                que l'œil est ouvert — il n'apparaît qu'en descendant,
+                exactement comme le vrai, et c'est ce qui fait lire un
+                repli plutôt qu'un rideau. */}
+            <path className="oeil__pli" d="M 2 -19 Q 50 -7, 98 -19" />
+
             <path className="oeil__cil" d="M -6 -1 Q 50 9, 106 -1" />
           </g>
-          </g>
+        </g>
         </g>
 
         <circle className="oeil__cerne" cx="50" cy="50" r="45" />

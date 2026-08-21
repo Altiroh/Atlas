@@ -376,3 +376,29 @@ liens l'encre pleine plutôt que le gris de service.
 En une colonne, un bloc à largeur plafonnée reste **collé à gauche** s'il n'a pas de marge
 automatique — c'est ce qui donnait l'impression d'un conteneur mal posé. `.maq--tel`,
 `.reglage` et les onglets des formes reçoivent `margin-inline: auto` sous 900 px.
+
+## On touche l'œil, il proteste
+
+Repris de [`src/ui/Causerie.tsx`](../src/ui/Causerie.tsx) et de `causerie.css`, avec les
+valeurs de l'app : **six « Aïe » au maximum**, posés au hasard, **neuf cents millisecondes**
+de vie. Une accumulation qui reste à l'écran cesse d'être une réaction pour devenir un
+décor — et il faudrait alors la ranger.
+
+Le site y ajoute la paupière : le clic met l'œil en **`oeil--dort`** pendant 520 ms, le
+mode que l'app emploie quand on déplace la mascotte. Il ferme l'œil, il dit aïe, il rouvre.
+
+> Rien ne se déclenche, rien ne s'ouvre, aucune fonction ne se cache derrière. **Un site
+> qu'on parcourt a le droit d'avoir un endroit où il ne se passe rien d'utile.**
+
+Trois yeux par page sont concernés — l'ouverture, l'appel final, le pied. Quatre familles
+sont écartées, et chacune pour sa raison :
+
+| Écarté | Pourquoi |
+|---|---|
+| L'œil de l'en-tête | Il est dans un lien vers l'accueil : le clic a déjà un travail |
+| Les yeux des maquettes | Ce sont des dessins, pas Atlas |
+| Les deux regards de la page produit | Ils démontrent l'ouvert et le fermé ; en refermer un brouillerait la démonstration |
+| Tout ce qui fait moins de 44 px | Trop petit pour être visé au doigt |
+
+Au clavier : `role="button"`, `tabindex="0"`, Entrée et Espace. Les « Aïe » sont
+`aria-hidden` — un lecteur d'écran n'a pas à les énumérer.

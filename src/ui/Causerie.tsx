@@ -173,10 +173,15 @@ export function Causerie({ fermer }: { fermer: () => void }) {
      accumulation qui reste à l'écran cesserait d'être une réaction
      pour devenir un décor, et il faudrait alors la ranger. */
   const [aies, setAies] = useState<{ id: number; x: number; y: number; r: number }[]>([])
+  /* Le compteur de clins EST le nonce passé à l'œil : il change à
+     chaque appui, donc l'animation rejoue, même si la précédente
+     n'était pas finie. */
+  const [clins, setClins] = useState(0)
   const compteAie = useRef(0)
   const minuteurs = useRef<number[]>([])
 
   const piquer = () => {
+    setClins((n) => n + 1)
     const id = ++compteAie.current
     setAies((a) => [
       ...a.slice(-5),
@@ -500,7 +505,7 @@ export function Causerie({ fermer }: { fermer: () => void }) {
       {tours.length === 0 ? (
         <div className="causerie__accueil">
           <button className="accueil__oeil" onClick={piquer} aria-label="Atlas t’écoute">
-            <OeilAtlas size={plein ? 132 : 84} mode="cause" flux />
+            <OeilAtlas size={plein ? 132 : 84} mode="cause" flux clin={clins} />
           </button>
           <p className="accueil__mot">Je t’écoute.</p>
 

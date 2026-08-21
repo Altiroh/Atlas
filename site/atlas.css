@@ -1983,3 +1983,53 @@ table.tableau { width: 100%; min-width: 680px; border-collapse: collapse; font-s
 @media (max-width: 700px) {
   .galerie__tablette { display: none; }
 }
+
+/* ========================================================
+   39. On touche l'œil, il proteste
+
+   Repris de src/styles/causerie.css. Les « aïe » sont posés au
+   hasard, jamais deux fois au même endroit, et partis avant qu'on
+   ait eu le temps de les lire deux fois.
+   ======================================================== */
+
+.oeil-piquable {
+  position: relative;
+  cursor: pointer;
+  /* les flammes de l'œil débordent : aucun cadre ne doit les couper */
+  overflow: visible;
+  border-radius: 50%;
+  -webkit-tap-highlight-color: transparent;
+  transition: transform var(--fast) var(--ease);
+}
+.oeil-piquable:active { transform: scale(0.94); }
+
+.aie {
+  position: absolute;
+  transform: translate(-50%, -50%) rotate(var(--r, 0deg));
+  font-size: 17px;
+  font-weight: 620;
+  letter-spacing: -0.01em;
+  color: var(--accent-text);
+  pointer-events: none;
+  user-select: none;
+  white-space: nowrap;
+  z-index: 2;
+  animation: aie-part 900ms var(--ease) both;
+}
+
+@keyframes aie-part {
+  0%   { opacity: 0; transform: translate(-50%, -40%) rotate(var(--r, 0deg)) scale(0.7); }
+  22%  { opacity: 1; transform: translate(-50%, -50%) rotate(var(--r, 0deg)) scale(1); }
+  100% { opacity: 0; transform: translate(-50%, -78%) rotate(var(--r, 0deg)) scale(1); }
+}
+
+/* Le « aïe » garde sa disparition — sans elle il resterait à
+   l'écran — mais ne se déplace plus. */
+@media (prefers-reduced-motion: reduce) {
+  .aie { animation: aie-part-sobre 900ms linear both; }
+}
+
+@keyframes aie-part-sobre {
+  0%, 70% { opacity: 1; }
+  100%    { opacity: 0; }
+}

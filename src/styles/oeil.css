@@ -121,10 +121,71 @@
   animation: paupiere-baisse 180ms var(--ease) both;
 }
 
+.oeil--dort .oeil__paupiere-bas {
+  animation: paupiere-monte 180ms var(--ease) both;
+}
+
 @keyframes paupiere-baisse {
   to {
-    transform: translateY(106px);
+    transform: translateY(var(--ferme-haut));
   }
+}
+
+@keyframes paupiere-monte {
+  to {
+    transform: translateY(var(--ferme-bas));
+  }
+}
+
+/* ========================================================
+   LE CLIN D'ŒIL À LA DEMANDE
+
+   On touche l'œil, il se ferme et se rouvre. C'est la seule réponse
+   qu'il donne, et elle suffit : un être qu'on touche réagit, il ne
+   s'anime pas.
+
+   ── LA FERMETURE EST PLUS RAPIDE QUE L'OUVERTURE
+
+   Trois fois plus. C'est vrai de toutes les paupières, et c'est ce
+   qui distingue un clignement d'un battement de volet : la descente
+   est un réflexe, la remontée est un muscle qui se relâche. Deux
+   durées égales donnent un métronome.
+
+   ── ET IL REMPLACE LE CLIGNEMENT DE FOND, IL NE S'Y AJOUTE PAS
+
+   Deux animations sur la même propriété : la dernière déclarée gagne.
+   Pendant les 460 ms du clin, le clignement lent est donc écarté, et
+   il reprend ensuite depuis son début — c'est-à-dire l'œil ouvert, ce
+   qui est exactement l'état où le clin le laisse. Aucune couture.
+   ======================================================== */
+
+.oeil--clin .oeil__paupiere {
+  animation: clin-haut 460ms cubic-bezier(0.35, 0, 0.2, 1) both;
+}
+
+.oeil--clin .oeil__paupiere-bas {
+  animation: clin-bas 460ms cubic-bezier(0.35, 0, 0.2, 1) both;
+}
+
+@keyframes clin-haut {
+  0%   { transform: translateY(0); }
+  26%  { transform: translateY(var(--ferme-haut)); }
+  42%  { transform: translateY(var(--ferme-haut)); }
+  100% { transform: translateY(0); }
+}
+
+@keyframes clin-bas {
+  0%   { transform: translateY(0); }
+  26%  { transform: translateY(var(--ferme-bas)); }
+  42%  { transform: translateY(var(--ferme-bas)); }
+  100% { transform: translateY(0); }
+}
+
+/* Le regard se fige le temps du clin : un iris qui continue de balayer
+   derrière une paupière fermée réapparaît ailleurs qu'où on l'avait
+   laissé, et c'est ce petit saut qui trahit la mécanique. */
+.oeil--clin .oeil__regard {
+  animation-play-state: paused;
 }
 
 .oeil--dort .oeil__regard,

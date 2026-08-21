@@ -2276,6 +2276,20 @@
   /* et la paupière n'est pas blanche : elle assombrit, elle n'efface pas */
   --paupiere-haut: #d9dbe2;
   --paupiere-bas: #eceef3;
+
+  /* OÙ LES DEUX PAUPIÈRES SE RENCONTRENT.
+
+     Écrit une fois, lu par les quatre animations qui ferment l'œil —
+     le clignement, le clignement en conversation, le sommeil et le
+     clin d'œil. Les deux nombres doivent s'accorder au pixel près :
+     un écart de deux unités laisse une fente d'iris au milieu d'un œil
+     censé être fermé, et c'est tout de suite un œil qui louche.
+
+     La rencontre se fait à y = 72 sur un globe qui va de 5 à 95, soit
+     aux trois quarts de la hauteur. C'est l'anatomie : la paupière du
+     haut fait le trajet, celle du bas monte à peine à sa rencontre. */
+  --ferme-haut: 72px;
+  --ferme-bas: -16px;
 }
 
 :root[data-theme='dark'] .oeil {
@@ -2352,10 +2366,44 @@
 
 @keyframes cligner {
   0%, 90.5% { transform: translateY(0); }
-  93%       { transform: translateY(106px); }
-  93.8%     { transform: translateY(106px); }
+  93%       { transform: translateY(var(--ferme-haut)); }
+  93.8%     { transform: translateY(var(--ferme-haut)); }
   97.5%     { transform: translateY(0); }
   100%      { transform: translateY(0); }
+}
+
+/* LA PAUPIÈRE DU BAS SUIT LE MÊME TEMPS, au centième près.
+
+   Même durée, mêmes pourcentages, même courbe : c'est ce qui les tient
+   ensemble. Deux animations séparées qui décrivent un seul geste ne se
+   pardonnent aucun écart — un dixième de seconde de décalage et l'œil
+   se ferme en deux temps, ce qui ne ressemble plus à rien. */
+.oeil__paupiere-bas {
+  animation: cligner-bas 7.4s cubic-bezier(0.4, 0, 0.3, 1) infinite;
+}
+
+@keyframes cligner-bas {
+  0%, 90.5% { transform: translateY(0); }
+  93%       { transform: translateY(var(--ferme-bas)); }
+  93.8%     { transform: translateY(var(--ferme-bas)); }
+  97.5%     { transform: translateY(0); }
+  100%      { transform: translateY(0); }
+}
+
+/* Le pli n'existe que replié : au repos il est hors du globe, et c'est
+   la descente qui le fait entrer dans le champ. */
+.oeil__pli {
+  fill: none;
+  stroke: rgba(20, 24, 34, 0.16);
+  stroke-width: 1.3;
+  stroke-linecap: round;
+}
+
+/* Le bord de la paupière basse est plus discret que celui du haut :
+   c'est une ligne d'eau, pas un bord de peau. */
+.oeil__cil--bas {
+  stroke: rgba(20, 24, 34, 0.18);
+  stroke-width: 1.2;
 }
 
 /* LA PAUPIÈRE SUIT LE REGARD.
@@ -2421,7 +2469,8 @@
   96%, 100% { transform: translate(5px, 6px); }
 }
 
-.oeil--cause .oeil__paupiere {
+.oeil--cause .oeil__paupiere,
+.oeil--cause .oeil__paupiere-bas {
   animation-duration: 4.6s;
 }
 
