@@ -1,6 +1,16 @@
 import { oublierImage, registreImages } from './db'
 import type { Bloc } from './blocs'
-import { imagesDuPost, texteDesFormes, type Forme, type Ligne } from './formes'
+import {
+  depuisAncienModele,
+  imagesDuPost,
+  LIBELLES,
+  normaliserFormes,
+  nouvelleForme,
+  texteDesFormes,
+  type Forme,
+  type Ligne,
+  type TypeForme,
+} from './formes'
 import {
   copier,
   dernierExport,
@@ -123,6 +133,26 @@ export type Script = {
    * on n'attend pas qu'on devine.
    */
   consigne?: RegExp
+  /**
+   * CE QU'ON A ENVIE DE FAIRE JUSTE APRÈS.
+   *
+   * Rendu une fois l'action faite, sous forme de demandes toutes
+   * prêtes — les mêmes phrases qu'on aurait tapées. Elles ne
+   * s'exécutent pas : elles se proposent, et repassent par le même
+   * chemin si on les touche.
+   *
+   * Une action réussie était un cul-de-sac. « L'espace Roman noir est
+   * créé » — et puis ? Il est vide, il faudra y ranger des notes, et
+   * rien ne le disait. La suite d'un geste est presque toujours
+   * évidente pour qui a écrit la règle, et jamais pour qui la
+   * découvre.
+   *
+   * Deux refus : RIEN APRÈS UNE SUPPRESSION — enchaîner sur un geste
+   * qui ne se défait pas serait inviter à en faire un deuxième sans
+   * réfléchir — et jamais plus de deux propositions, sinon c'est un
+   * menu qu'on subit, pas une conversation.
+   */
+  ensuite?: (res: Resultat) => string[]
   chercher: (demande?: string) => Resultat
 }
 
@@ -449,9 +479,18 @@ const espaceANaitre: Script = {
    Un nom qu'on retouche est un nom qu'on n'a pas choisi.
    --------------------------------------------------------------- */
 
-const VERBES_CREER = String.raw`(?:cr[ée]{1,2}[rz]?|creer|fabrique|fais|ajoute|ouvre|monte|d[ée]marre|commence)`
+/* PAS DE « OUVRE » ICI, et c'est une exclusion voulue.
+
+   Il y figurait pour « ouvre un espace ». Mais ouvrir veut d'abord
+   dire REGARDER, pas fabriquer — et comme les consignes de création
+   sont déclarées avant celle d'ouverture, « ouvre la note Vieille
+   note » proposait de CRÉER une deuxième note du même nom. Un verbe
+   qui appartient à deux logiques appartient en fait à celle qu'on a
+   déclarée en premier, ce qui n'est une règle pour personne. */
+const VERBES_CREER = String.raw`(?:cr[ée]{1,2}[rz]?|creer|fabrique|fais|ajoute|monte|d[ée]marre|commence)`
 const VERBES_SUPPRIMER = String.raw`(?:supprime[rz]?|efface[rz]?|retire[rz]?|enl[èe]ve[rz]?|vire[rz]?|jette[rz]?|d[ée]truis|balance)`
 const VERBES_ARCHIVER = String.raw`(?:archive[rz]?|classe[rz]?\s+aux\s+archives|range[rz]?\s+aux\s+archives|mets?\s+aux\s+archives)`
+const VERBES_OUVRIR = String.raw`(?:ouvre[rz]?|affiche[rz]?|montre[- ]moi|va\s+(?:sur|dans|[àa])|am[èe]ne[- ]moi)`
 const VERBES_RANGER = String.raw`(?:range[rz]?|classe[rz]?|mets?|met|d[ée]place[rz]?|envoie|bouge)`
 const VERBES_RENOMMER = String.raw`(?:renomme[rz]?|rebaptise|appelle|nomme[rz]?)`
 const VERBES_CHERCHER = String.raw`(?:cherche[rz]?|trouve[rz]?|retrouve[rz]?|montre[- ]moi|liste[rz]?|qu['’]?est.ce que j['’]ai|qu['’]?ai.je|o[ùu] (?:est|sont))`
@@ -570,6 +609,23 @@ const creerEspace: Script = {
     'Tu dis « crée un espace » suivi d’un nom, et je le fabrique avec ce nom exact. Rien n’y est rangé : un espace naît vide, et se remplit quand tu le décides.',
   cles: 'creer espace nouveau fabriquer ajouter',
   consigne: consigneDe('espace'),
+  /* Un espace neuf est vide, et c'est ce qui rend la suite évidente :
+     il ne sert à rien tant qu'on n'y a rien mis.
+
+     LES POINTS DE SUSPENSION SONT UNE AMORCE, pas de la ponctuation :
+     ils marquent l'endroit où il manque quelque chose, et la
+     conversation pose le curseur là plutôt que d'envoyer la phrase.
+     Sans ça, la proposition « crée une note dans Roman noir » partait
+     telle quelle et Atlas répondait « dis-moi ce qu'elle raconte » —
+     une suggestion qui ne peut pas aboutir est pire que pas de
+     suggestion du tout. */
+  ensuite: (res) =>
+    res.sorte === 'rien'
+      ? []
+      : [
+          `crée une note … dans ${res.elements[0]?.libelle ?? ''}`,
+          `range la note … dans ${res.elements[0]?.libelle ?? ''}`,
+        ],
   chercher(demande = '') {
     const nom = nomApres(demande, 'espace')
     if (!nom) {
@@ -615,6 +671,10 @@ const creerNote: Script = {
     'Tu dis « crée une note » suivi d’un titre, et je la fabrique. Ajoute « dans <espace> » et elle y va directement — à condition que cet espace existe déjà, sinon je ne saurais pas lequel tu vises.',
   cles: 'creer note nouvelle ecrire capturer ajouter',
   consigne: consigneDe('note'),
+  ensuite: (res) =>
+    res.sorte === 'rien'
+      ? []
+      : [`ouvre la note ${res.elements[0]?.libelle ?? ''}`, `ajoute une carte mentale à ${res.elements[0]?.libelle ?? ''}`],
   chercher(demande = '') {
     const vise = espaceVise(demande)
     const titre = nomApres(vise?.sansLui ?? demande, 'note')
@@ -762,6 +822,12 @@ const archiverNote: Script = {
   regle:
     'Tu nommes une note, je l’archive. Elle quitte le flux, garde tout son contenu, et se ressort d’un mot. C’est le geste à faire quand on hésite à supprimer.',
   cles: 'archiver note ranger archives sortir flux',
+  /* L'archive se ressort : le dire tout de suite est ce qui rend le
+     geste sans risque, et donc préférable à la suppression. */
+  ensuite: (res) =>
+    res.sorte === 'rien' || res.elements.length !== 1
+      ? []
+      : [`ressors la note ${res.elements[0].libelle}`],
   consigne: tournure(VERBES_ARCHIVER, 'note'),
   chercher(demande = '') {
     const terme = nomApres(demande, 'note')
@@ -918,6 +984,10 @@ const rangerNote: Script = {
   regle:
     'Tu nommes une note et un espace, je l’y range. L’espace doit exister : je n’en fabrique pas un au passage, sinon une faute de frappe créerait un doublon qu’on ne verrait qu’un mois plus tard.',
   cles: 'ranger note espace classer deplacer mettre',
+  ensuite: (res) =>
+    res.sorte === 'rien' || res.elements.length !== 1
+      ? []
+      : [`ouvre la note ${res.elements[0].libelle}`],
   consigne: tournure(VERBES_RANGER, 'note'),
   chercher(demande = '') {
     const cible = apresDans(demande)
@@ -971,6 +1041,8 @@ const renommer: Script = {
   regle:
     'Tu dis « renomme l’espace X en Y », et je change le nom — rien d’autre. Le contenu, le rangement et les liens ne bougent pas : un nom n’est qu’une étiquette.',
   cles: 'renommer espace note titre nom rebaptiser',
+  ensuite: (res) =>
+    res.sorte === 'rien' ? [] : [`ouvre la note ${res.elements[0]?.libelle ?? ''}`],
   consigne: new RegExp(
     String.raw`(?:^|\b)${VERBES_RENOMMER}\s+(?:un|une|le|la|l['’]|mon|ma|ce|cet|cette)?\s*(?:espace|note)s?\b`,
     'i',
@@ -1108,6 +1180,147 @@ const chercherDedans: Script = {
         trouvees.length > 25
           ? `${trouvees.length - 25} autres ne sont pas montrées : passé vingt-cinq, une liste ne se lit plus, elle se subit.`
           : undefined,
+    }
+  },
+}
+
+/* ---------------------------------------------------------------
+   AJOUTER UNE FORME, ET OUVRIR CE DONT ON PARLE.
+
+   Ces deux-là ferment la boucle. Sans la première, Atlas savait
+   fabriquer des notes mais pas ce qui va dedans — il s'arrêtait à la
+   coquille. Sans la seconde, tout ce qu'il fabriquait restait à
+   retrouver soi-même dans le flux, ce qui est exactement le travail
+   qu'on venait de lui confier.
+   --------------------------------------------------------------- */
+
+/* Chaque forme et les mots par lesquels on l'appelle vraiment. « Mood
+   board » figure à côté de « planche », « timeline » à côté de
+   « chronologie » : les gens disent le mot qu'ils ont en tête, pas
+   celui de l'onglet. L'ordre compte — les tournures les plus longues
+   d'abord, sinon « carte » attraperait « carte mentale ». */
+const MOTS_DE_FORME: { t: TypeForme; motif: RegExp }[] = [
+  { t: 'carte', motif: /carte\s+mentale|carte\s+heuristique|mind\s?map|arbre\s+d[’']id[ée]es/i },
+  { t: 'frise', motif: /chronologie|frise|timeline|ligne\s+du\s+temps/i },
+  { t: 'planche', motif: /planche|mood\s?board|moodboard/i },
+  { t: 'table', motif: /tableur|\btables?\b|tableau/i },
+  { t: 'dessin', motif: /dessin|croquis|sch[ée]ma|griffonnage/i },
+  { t: 'texte', motif: /\bfiches?\b|page\s+de\s+texte/i },
+  { t: 'carte', motif: /\bcartes?\b/i },
+]
+
+/* « Ajouter table à Vieille note » : le genre manquait, et une phrase
+   sans article se lit comme du code. Les libellés d'onglets, eux,
+   doivent rester nus — « Carte mentale », pas « Une carte mentale ». */
+const AVEC_ARTICLE: Record<TypeForme, string> = {
+  texte: 'une fiche',
+  carte: 'une carte mentale',
+  dessin: 'un dessin',
+  planche: 'une planche',
+  frise: 'une chronologie',
+  table: 'une table',
+}
+
+function formeVoulue(demande: string): TypeForme | null {
+  return MOTS_DE_FORME.find((f) => f.motif.test(demande))?.t ?? null
+}
+
+/** Ce qui suit « à », « dans », « sur » — la note visée. */
+function noteVisee(demande: string): string {
+  const m =
+    /\s+(?:[àa]|dans|sur|pour|de|du)\s+(?:la\s+note\s+|ma\s+note\s+|le\s+post\s+|la\s+|le\s+|l['’])?(.+)$/i.exec(
+      demande,
+    )
+  return m ? m[1].trim().replace(/[.!?]+$/, '') : ''
+}
+
+const ajouterForme: Script = {
+  id: 'ajouter-forme',
+  nom: 'Ajouter une forme à une note',
+  famille: 'creer',
+  quoi: 'Une carte mentale, une planche, une table… dans une note que tu nommes.',
+  regle:
+    'Tu dis « ajoute une carte mentale à Première scène », et j’ajoute l’onglet — vide. Une note porte autant de formes qu’elle veut : c’est un onglet de plus, pas une note de plus.',
+  cles: 'ajouter forme carte dessin planche table chronologie onglet',
+  ensuite: (res) =>
+    res.sorte === 'rien' ? [] : [`ouvre la note ${res.elements[0]?.libelle ?? ''}`],
+  consigne: new RegExp(
+    String.raw`(?:^|\b)${VERBES_CREER}\s+(?:un|une|le|la|l['’])?\s*(?:carte\s+mentale|carte|chronologie|frise|timeline|planche|mood\s?board|tableur|tableau|table|dessin|croquis|sch[ée]ma|fiche)\b`,
+    'i',
+  ),
+  chercher(demande = '') {
+    const t = formeVoulue(demande)
+    if (!t) {
+      return faute('quelle forme', 'ajoute une carte mentale à Première scène')
+    }
+
+    const cible = noteVisee(demande)
+    if (!cible) {
+      return faute('à quelle note', `ajoute ${AVEC_ARTICLE[t]} à Première scène`)
+    }
+
+    const trouvees = notesNommees(cible)
+    if (!trouvees.length) return { sorte: 'rien', mot: `Aucune note ne s'appelle « ${cible} ».` }
+
+    return {
+      sorte: 'proposition',
+      titre: `Ajouter ${AVEC_ARTICLE[t]} à « ${titreDe(trouvees[0])} »`,
+      pourquoi:
+        'Un onglet de plus dans la même note, et vide : je ne devine pas ce que tu vas y mettre.',
+      elements: trouvees.slice(0, 1).map((p) => elementPost(p, `recevra ${AVEC_ARTICLE[t]}`)),
+      verbe: () => `Ajouter ${AVEC_ARTICLE[t]}`,
+      faire: (ids) => {
+        if (!ids.length) return null
+        const post = etat().posts.find((p) => p.id === ids[0])
+        if (!post) return null
+        /* LES FORMES SE LISENT PAR `normaliserFormes`, jamais dans le
+           champ brut : une note écrite avant le modèle à onglets n'en a
+           aucune, et lui en ajouter une PREMIÈRE ferait disparaître son
+           texte — il serait devenu une forme qu'on vient d'écraser. */
+        const avant = normaliserFormes(post.formes) ?? depuisAncienModele(post)
+        const f = nouvelleForme(avant, t)
+        etat().majPost(post.id, { formes: [...avant, f] })
+        return {
+          libelle: `${LIBELLES[t]} retirée de « ${titreDe(post)} »`,
+          defaire: () => etat().majPost(post.id, { formes: avant }),
+        }
+      },
+    }
+  },
+}
+
+const ouvrirNote: Script = {
+  id: 'ouvrir-note',
+  nom: 'Ouvrir une note',
+  famille: 'retrouver',
+  quoi: 'Aller directement sur une note que tu nommes.',
+  regle: 'Tu nommes une note, je l’ouvre dans le flux. Rien n’est modifié.',
+  cles: 'ouvrir note aller afficher montrer',
+  consigne: tournure(VERBES_OUVRIR, 'note'),
+  chercher(demande = '') {
+    const terme = nomApres(demande, 'note')
+    if (!terme) return faute('laquelle', 'ouvre la note Première scène')
+    const trouvees = notesNommees(terme)
+    if (!trouvees.length) return { sorte: 'rien', mot: `Aucune note ne s'appelle « ${terme} ».` }
+
+    return {
+      sorte: 'proposition',
+      titre:
+        trouvees.length === 1
+          ? `Ouvrir « ${titreDe(trouvees[0])} »`
+          : `${trouvees.length} notes portent « ${terme} »`,
+      pourquoi: 'Rien n’est modifié : je t’y emmène, c’est tout.',
+      elements: trouvees.map((p) => ({ ...elementPost(p), pris: trouvees.length === 1 })),
+      verbe: () => 'Ouvrir',
+      /* PAS D'ANNULATION : rien n'a été défait. Proposer « annuler »
+         pour un déplacement du regard laisserait croire qu'il s'est
+         passé quelque chose. */
+      faire: (ids) => {
+        if (!ids.length) return null
+        etat().select(ids[0])
+        etat().setNav('flux')
+        return null
+      },
     }
   },
 }
@@ -2159,6 +2372,8 @@ export const SCRIPTS: Script[] = [
   creerNote,
   rangerNote,
   renommer,
+  ajouterForme,
+  ouvrirNote,
   chercherDedans,
   supprimerEspace,
   supprimerNote,

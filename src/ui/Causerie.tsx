@@ -73,7 +73,16 @@ type Tour =
   | { k: 'theme'; theme: Theme | 'tout' }
   | { k: 'famille'; famille: Famille }
   | { k: 'regle'; scriptId: string }
-  | { k: 'resultat'; scriptId: string; res: Resultat; pris: string[]; fait?: string }
+  | {
+      k: 'resultat'
+      scriptId: string
+      res: Resultat
+      pris: string[]
+      fait?: string
+      /* Remplies APRÈS l'action, jamais avant : proposer la suite d'un
+         geste qu'on n'a pas encore fait, c'est le supposer accepté. */
+      suites?: string[]
+    }
   | { k: 'annulation'; libelle: string; defaire: () => void; utilisee?: boolean }
 
 /** Les quatre demandes qu'on fait tout le temps, à portée d'appui. */
@@ -128,16 +137,52 @@ export function Causerie({ fermer }: { fermer: () => void }) {
      qu'Atlas a compris. Il ne survit pas à la fermeture : rouvrir la
      conversation, c'est repartir sans sous-entendu. */
   const [memoire, setMemoire] = useState<Reprise | null>(null)
+
+  /* OÙ POSER LE CURSEUR, quand une amorce vient d'être touchée.
+
+     Il passe par un état et un effet, et non par un appel direct après
+     `setTexte` : React n'a pas encore écrit la valeur dans le champ à
+     cet instant-là, et déplacer la sélection d'un champ vide ne
+     déplace rien — le curseur repartait sagement se coller à la fin.
+     L'effet, lui, s'exécute après la peinture, sur le champ rempli. */
+  const [curseur, setCurseur] = useState<number | null>(null)
   const [aConfirmer, setAConfirmer] = useState<{ tour: number; ids: string[] } | null>(null)
   const champ = useRef<HTMLInputElement>(null)
   const fin = useRef<HTMLDivElement>(null)
 
   useEffect(() => champ.current?.focus(), [])
+
+  useEffect(() => {
+    if (curseur === null) return
+    champ.current?.focus()
+    champ.current?.setSelectionRange(curseur, curseur)
+    setCurseur(null)
+  }, [curseur, texte])
   useEffect(() => {
     fin.current?.scrollIntoView({ block: 'end', behavior: 'smooth' })
   }, [tours])
 
   const ajouter = (...t: Tour[]) => setTours((avant) => [...avant, ...t])
+
+  /**
+   * Suivre une suggestion — l'envoyer, ou l'AMORCER.
+   *
+   * Certaines suites sont des phrases entières : « ouvre la note
+   * Première scène » se lance telle quelle. D'autres attendent qu'on
+   * complète — on ne peut pas créer une note sans dire ce qu'elle
+   * raconte. Les envoyer quand même ne produirait qu'un « dis-moi
+   * laquelle », c'est-à-dire une proposition qui n'aboutit jamais.
+   *
+   * Les points de suspension marquent l'endroit qui manque. La phrase
+   * va dans le champ, le curseur se pose exactement là, et le reste —
+   * « dans Roman noir » — attend derrière sans qu'on ait à le retaper.
+   */
+  const suivre = (s: string) => {
+    const i = s.indexOf('…')
+    if (i < 0) return repondre(s)
+    setTexte(s.replace('…', '').replace(/\s{2,}/g, ' '))
+    setCurseur(i)
+  }
 
   /* --- ce qu'on tape --- */
 
@@ -278,9 +323,23 @@ export function Causerie({ fermer }: { fermer: () => void }) {
        souvenir précédent en place. */
     const suite = repriseDe(t.res)
     if (suite) setMemoire(suite)
+
+    /* LA SUITE SE CALCULE MAINTENANT, PAS AU RENDU.
+
+       Elle nomme des choses qui viennent d'exister — « ouvre la note
+       Première scène » n'a de sens qu'une fois la note créée. La
+       calculer plus tard donnerait le même texte, mais la recalculerait
+       à chaque rendu du fil, sur un état qui aura bougé : un tour ancien
+       proposerait alors d'ouvrir une note supprimée depuis. Un tour est
+       une trace, il ne se réécrit pas. */
+    const apres = scriptParId(t.scriptId)?.ensuite?.(t.res) ?? []
     setTours((avant) => {
       const suite = [...avant]
-      suite[index] = { ...t, fait: `${ids.length} traité${ids.length > 1 ? 's' : ''}` }
+      suite[index] = {
+        ...t,
+        fait: `${ids.length} traité${ids.length > 1 ? 's' : ''}`,
+        suites: apres.filter((x) => x.trim()),
+      }
       return suite
     })
     if (annulation) ajouter(bandeauAnnulation(annulation))
@@ -373,7 +432,7 @@ export function Causerie({ fermer }: { fermer: () => void }) {
           <TourRendu
             key={i}
             tour={t}
-            demander={repondre}
+            demander={suivre}
             demanderTheme={(theme) => ajouter({ k: 'theme', theme })}
             ouvrir={(id) => jouer(id)}
             regle={(id) => ajouter({ k: 'regle', scriptId: id })}
@@ -622,6 +681,8 @@ function TourRendu({
           res={tour.res}
           pris={tour.pris}
           fait={tour.fait}
+          suites={tour.suites}
+          demander={demander}
           regle={regle}
           cocher={cocher}
           ecarter={ecarter}
@@ -663,6 +724,8 @@ function ResultatRendu({
   res,
   pris,
   fait,
+  suites,
+  demander,
   regle,
   cocher,
   ecarter,
@@ -672,6 +735,8 @@ function ResultatRendu({
   res: Resultat
   pris: string[]
   fait?: string
+  suites?: string[]
+  demander: (d: string) => void
   regle: (id: string) => void
   cocher: (id: string) => void
   agir: (ids: string[], danger: boolean) => void
@@ -770,6 +835,28 @@ function ResultatRendu({
         )}
         {fait && <span className="carte-atlas__fait">{fait}</span>}
       </div>
+
+      {/* CE QU'ON A ENVIE DE FAIRE JUSTE APRÈS.
+
+          Une action réussie était un cul-de-sac : « l'espace Roman noir
+          est créé » — et puis ? Il est vide, il faudra y ranger des
+          notes, et rien ne le disait. La suite d'un geste est presque
+          toujours évidente pour qui a écrit la règle, et jamais pour
+          qui la découvre.
+
+          Ce sont des demandes toutes prêtes, pas des boutons d'action :
+          elles repassent par le même chemin qu'une phrase tapée, et
+          rendent donc une carte à valider comme les autres. Rien ne se
+          fait d'un seul appui. */}
+      {fait && suites && suites.length > 0 && (
+        <div className="suites">
+          {suites.map((s) => (
+            <Puce key={s} mot={s} onClick={() => demander(s)} />
+          ))}
+        </div>
+      )}
+      {/* `demander` est ici `suivre` : c'est lui qui distingue la phrase
+          entière de l'amorce à compléter. */}
     </div>
   )
 }
