@@ -495,27 +495,40 @@ export function SyncPanel() {
   const derniereSync = useSync((s) => s.derniereSync)
   const synchroniser = useSync((s) => s.synchroniser)
 
+  /* TOUS LES HOOKS AVANT LE PREMIER RETOUR.
+
+     « imagesRestantes » est un useMemo, et il vivait SOUS le
+     « if (!session) return null » d'en dessous. Se déconnecter fait
+     passer la session à null : le rendu suivant compte alors un hook
+     de moins que le précédent, et React ne se rattrape pas — il jette
+     l'écran entier. Le panneau qui porte le bouton « Se déconnecter »
+     est précisément celui qui tombe, ce qui rend la panne d'autant
+     plus déroutante.
+
+     Le calcul ne coûte rien quand il n'y a pas de session : il
+     parcourt des tableaux vides.
+
+     ── LES IMAGES ONT LEUR PROPRE FILE, et il faut la montrer.
+
+     Elles ne voyagent pas avec les notes : une note part en quelques
+     octets de texte, son image passe par le seau de stockage, sur un
+     autre canal. Le bandeau ne comptait que les notes — il annonçait
+     « à jour » pendant qu'une photo dormait encore sur le téléphone,
+     et on ne l'apprenait qu'en ouvrant la note ailleurs, devant un
+     cadre vide.
+
+     L'état de synchro figure dans les dépendances parce que le
+     registre des images montées vit dans localStorage, hors de
+     Zustand : c'est la fin d'un tour de synchro qui le fait bouger,
+     et donc elle qui doit rafraîchir le chiffre. */
+  const imagesRestantes = useMemo(() => imagesEnAttente(), [posts, espaces, etat])
+
   if (!session) return null
 
   // recalculé à chaque changement du contenu : c'est la file d'attente réelle
   const attente =
     [...posts, ...tombes.posts].filter((p) => p.sale).length +
     [...espaces, ...tombes.espaces].filter((e) => e.sale).length
-
-  /* LES IMAGES ONT LEUR PROPRE FILE, et il fallait la montrer.
-
-     Elles ne voyagent pas avec les notes : une note part en quelques
-     octets de texte, son image passe par le seau de stockage, sur un
-     autre canal. Le bandeau ne comptait que les notes — il annonçait
-     donc « à jour » pendant qu'une photo dormait encore sur le
-     téléphone, et on ne l'apprenait qu'en ouvrant la note sur
-     l'ordinateur, devant un cadre vide.
-
-     L'état de synchro figure dans les dépendances parce que le registre
-     des images montées vit dans localStorage, hors de Zustand : c'est
-     la fin d'un tour de synchro qui le fait bouger, et donc elle qui
-     doit rafraîchir le chiffre. */
-  const imagesRestantes = useMemo(() => imagesEnAttente(), [posts, espaces, etat])
 
   return (
     <section className="setting glass">

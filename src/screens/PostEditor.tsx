@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { libelleHeure, libelleJour, titreDe, useAtlas } from '../store/atlas'
 import {
   depuisAncienModele,
@@ -425,10 +426,21 @@ export function PostEditor() {
         </div>
       )}
 
-      {ajout && (
-        <div className="sheet" role="dialog" onClick={() => setAjout(false)}>
+      {/* LA TROISIÈME FEUILLE À SORTIR DE SON ÉCRAN.
+
+          Même piège que pour les réglages d'un espace et le classement
+          d'une note : rendue ici, elle hérite du contexte d'empilement
+          que le verre du panneau crée, et son `z-index: 60` ne vaut
+          plus que dans ce contexte — le rail de navigation, avec son 20
+          comparé à l'échelle de la page, passait devant elle.
+
+          Trois occurrences du même défaut valent une règle : toute
+          feuille modale se rend dans `document.body`. */}
+      {ajout &&
+        createPortal(
+          <div className="sheet" role="dialog" onClick={() => setAjout(false)}>
           <div className="sheet__panel rise" onClick={(e) => e.stopPropagation()}>
-            <div className="menu__section">Ajouter une forme</div>
+              <div className="menu__section">Ajouter une forme</div>
             <div className="menu">
               {AJOUTS.map((a) => (
                 <button key={a.t} className="menu__item" onClick={() => ajouter(a.t)}>
@@ -442,14 +454,15 @@ export function PostEditor() {
                 </button>
               ))}
             </div>
-            <p className="menu__pied">
-              La même idée, travaillée autrement. On peut en ajouter plusieurs du même type — deux
-              cartes pour deux angles, une fiche par chapitre. Appuyer deux fois sur un onglet le
-              renomme.
-            </p>
-          </div>
-        </div>
-      )}
+              <p className="menu__pied">
+                La même idée, travaillée autrement. On peut en ajouter plusieurs du même type —
+                deux cartes pour deux angles, une fiche par chapitre. Appuyer deux fois sur un
+                onglet le renomme.
+              </p>
+            </div>
+          </div>,
+          document.body,
+        )}
 
       {aSupprimer && (
         <Confirmation
