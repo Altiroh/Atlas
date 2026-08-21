@@ -581,6 +581,114 @@
   pointer-events: none;
 }
 
+/* ========================================================
+   L'ACCUEIL — Atlas attend
+
+   Il prend toute la place que le fil aurait prise, et il est CENTRÉ :
+   un œil posé en haut d'une page vide ressemble à un chargement qui
+   n'aboutit pas ; au milieu, il attend. La nuance tient à la position.
+   ======================================================== */
+
+.causerie__accueil {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+  padding: 24px;
+  /* rien ne défile ici : les « aïe » sortiraient du cadre */
+  overflow: hidden;
+}
+
+.accueil__oeil {
+  display: grid;
+  place-items: center;
+  /* les flammes de l'œil débordent : aucun cadre ne doit les couper */
+  overflow: visible;
+  border-radius: 50%;
+  animation: accueil-monte 460ms var(--ease) both;
+  transition: transform var(--fast) var(--ease);
+}
+.accueil__oeil:active { transform: scale(0.94); }
+
+.accueil__mot {
+  font-size: 15px;
+  color: var(--text-3);
+  text-align: center;
+  animation: accueil-monte 460ms 120ms var(--ease) both;
+}
+
+@keyframes accueil-monte {
+  from { opacity: 0; transform: translateY(14px) scale(0.94); }
+  to { opacity: 1; transform: none; }
+}
+
+/* Les « aïe » : posés au hasard, jamais deux fois au même endroit, et
+   partis avant qu'on ait eu le temps de les lire deux fois. */
+.aie {
+  position: absolute;
+  transform: translate(-50%, -50%) rotate(var(--r, 0deg));
+  font-size: 17px;
+  font-weight: 620;
+  letter-spacing: -0.01em;
+  color: var(--accent-text);
+  pointer-events: none;
+  user-select: none;
+  animation: aie-part 900ms var(--ease) both;
+}
+
+@keyframes aie-part {
+  0% { opacity: 0; transform: translate(-50%, -40%) rotate(var(--r, 0deg)) scale(0.7); }
+  22% { opacity: 1; transform: translate(-50%, -50%) rotate(var(--r, 0deg)) scale(1); }
+  100% { opacity: 0; transform: translate(-50%, -78%) rotate(var(--r, 0deg)) scale(1); }
+}
+
+/* IL N'Y A JAMAIS DEUX ATLAS À L'ÉCRAN. Tant que l'accueil est là,
+   l'œil de l'en-tête s'efface — sinon l'un regarde l'autre, et le
+   grand cesse d'être « lui » pour devenir une illustration. */
+.causerie[data-accueil] .causerie__oeil {
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* L'ATTERRISSAGE : il vient du centre, il rétrécit, il se range.
+
+   L'œil de l'en-tête est remonté (par sa clé React) à l'instant où le
+   fil cesse d'être vide. Il rejoue donc cette animation-là, et elle
+   part d'où le grand se tenait. Les valeurs sont en unités d'écran
+   parce que la distance à parcourir EST une fraction de l'écran : en
+   pixels, elle serait juste sur un format et fausse sur tous les
+   autres. */
+.causerie[data-plein]:not([data-accueil]) .causerie__oeil {
+  animation: oeil-atterrit 560ms var(--ease) both;
+}
+
+@keyframes oeil-atterrit {
+  from { opacity: 0.6; transform: translate(38vw, 30vh) scale(4.4); }
+  to { opacity: 1; transform: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .accueil__oeil,
+  .accueil__mot,
+  .causerie[data-plein]:not([data-accueil]) .causerie__oeil {
+    animation: none;
+  }
+  /* Les « aïe » gardent leur disparition — sans elle ils resteraient
+     à l'écran — mais ne se déplacent plus. */
+  .aie {
+    animation: aie-part-sobre 900ms linear both;
+  }
+}
+
+@keyframes aie-part-sobre {
+  0%, 70% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
 @keyframes causerie-glisse {
   from { opacity: 0; transform: translateX(24px); }
   to { opacity: 1; transform: none; }

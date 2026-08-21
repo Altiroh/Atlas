@@ -7,7 +7,7 @@
    l'outillage du projet (tools/icones.mjs).
 
    Quatre choses seulement :
-   · le thème (clair / nuit / automatique à l'heure) ;
+   · le thème, jour ou nuit ;
    · l'accent, réglable, qui reteinte tout, halos compris ;
    · l'œil d'Atlas, engendré en SVG ;
    · deux babioles d'interface (le menu, l'apparition au défilement).
@@ -20,12 +20,15 @@
   root.classList.add('js');
 
   /* ==============================================================
-     1. LE THÈME
+     1. LE THÈME — jour ou nuit, rien d'autre
 
-     Bornes reprises de src/theme/theme.ts : clair de 8 h à 18 h,
-     nuit le reste du temps. Le mode automatique est le défaut, et
-     c'est volontaire — un site qui s'allume en pleine nuit est le
-     seul détail que personne ne pardonne.
+     Deux états, pas trois. Un troisième bouton « automatique » oblige
+     à expliquer ce qu'il fait, et personne ne le lit.
+
+     L'heure sert quand même, mais SANS SE MONTRER : à la première
+     visite, on ouvre en jour de 8 h à 18 h et en nuit le reste du
+     temps — bornes reprises de src/theme/theme.ts. Dès que quelqu'un
+     touche au réglage, c'est son choix qui vaut, et il reste.
      ============================================================== */
 
   var CLEF = 'atlas.site.v1';
@@ -38,14 +41,16 @@
   var etat = charger();
 
   function charger() {
-    var defaut = { mode: 'auto', accent: ACCENT_DEFAUT };
+    /* `mode: null` = personne n'a encore choisi : c'est l'heure qui
+       tranche, une seule fois, à l'ouverture. */
+    var defaut = { mode: null, accent: ACCENT_DEFAUT };
     try {
       var brut = localStorage.getItem(CLEF);
       if (!brut) return defaut;
       var lu = JSON.parse(brut);
       var a = lu && lu.accent;
       return {
-        mode: lu.mode === 'light' || lu.mode === 'dark' ? lu.mode : 'auto',
+        mode: lu.mode === 'light' || lu.mode === 'dark' ? lu.mode : null,
         accent: a && typeof a.h === 'number' ? { h: a.h, s: a.s || 92, l: a.l || 58 } : ACCENT_DEFAUT
       };
     } catch (e) {
@@ -62,7 +67,7 @@
   }
 
   function resoudre(mode) {
-    if (mode !== 'auto') return mode;
+    if (mode === 'light' || mode === 'dark') return mode;
     var h = new Date().getHours();
     return h >= JOUR_DEBUT && h < JOUR_FIN ? 'light' : 'dark';
   }
@@ -110,9 +115,11 @@
     var meta = document.querySelector('meta[name="theme-color"]');
     if (meta) meta.setAttribute('content', resolu === 'dark' ? '#0b0d12' : '#eceff6');
 
-    // les boutons de réglage reflètent l'état courant
-    document.querySelectorAll('[data-mode]').forEach(function (b) {
-      b.setAttribute('aria-pressed', String(b.dataset.mode === etat.mode));
+    /* Le segment allumé est celui du thème EFFECTIF — pas celui d'un
+       choix qui n'a peut-être pas encore été fait. Sans ça, la
+       première visite montrerait deux boutons éteints. */
+    document.querySelectorAll('.theme__seg[data-mode]').forEach(function (b) {
+      b.setAttribute('aria-pressed', String(b.dataset.mode === resolu));
     });
     document.querySelectorAll('.teinte').forEach(function (b) {
       b.setAttribute('aria-pressed', String(Number(b.dataset.h) === a.h));
@@ -121,13 +128,6 @@
       if (document.activeElement !== r) r.value = String(a.h);
     });
 
-    var libelle = etat.mode === 'auto' ? 'Thème : automatique à l’heure'
-      : etat.mode === 'light' ? 'Thème : toujours clair'
-      : 'Thème : toujours sombre';
-    document.querySelectorAll('.bascule-theme').forEach(function (b) {
-      b.setAttribute('title', libelle);
-      b.setAttribute('aria-label', libelle);
-    });
   }
 
   /* Le thème est posé AVANT la première image, sinon la page
@@ -140,24 +140,8 @@
     root.classList.add('theme-ready');
   });
 
-  /* Le mode automatique se réévalue : quelqu'un qui laisse la page
-     ouverte à 18 h doit voir la nuit tomber. Une fois par minute
-     suffit largement. */
-  setInterval(function () {
-    if (etat.mode === 'auto') appliquer();
-  }, 60000);
-
   document.addEventListener('click', function (e) {
-    var bascule = e.target.closest('.bascule-theme');
-    if (bascule) {
-      // auto → clair → sombre → auto
-      etat.mode = etat.mode === 'auto' ? 'light' : etat.mode === 'light' ? 'dark' : 'auto';
-      ranger();
-      appliquer();
-      return;
-    }
-
-    var mode = e.target.closest('[data-mode]');
+    var mode = e.target.closest('.theme__seg[data-mode]');
     if (mode) {
       etat.mode = mode.dataset.mode;
       ranger();

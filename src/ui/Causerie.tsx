@@ -7,7 +7,6 @@ import {
   repriseDe,
   repriseOrpheline,
   FAMILLES,
-  SCRIPTS,
   scriptParId,
   scriptsDe,
   type Annulation,
@@ -19,7 +18,6 @@ import {
 import {
   civilite,
   incompris,
-  NOMBRE_DE_SUJETS,
   parQuestion,
   sujet,
   sujetsDe,
@@ -102,31 +100,48 @@ const AIDE = /^(\?+\s*$|aide$|help$|que sais.?tu|tes capacit|capacites$)/i
 /* Le sommaire des paroles, par opposition à celui des actions. */
 const SOMMAIRE = /de quoi (peux|peut|sais)|quels sujets|sommaire|de quoi parler/i
 
+/* Le doigt, ou l'écran étroit. Même critère que la feuille montante :
+   ce qui ne tient pas dans un panneau flottant tient dans la page. */
+const auDoigt = () => window.matchMedia('(max-width: 700px), (pointer: coarse)').matches
+
 export function Causerie({ fermer }: { fermer: () => void }) {
-  const [tours, setTours] = useState<Tour[]>(() => [
-    {
-      k: 'dit',
-      texte:
-        'Je n’ai pas d’intelligence — j’ai des règles, et je les connais par cœur. Voilà où tu en es.',
-      suites: ['De quoi peux-tu parler ?'],
-    },
-    ...lancer('briefing'),
-  ])
+  /* PLEIN PAR DÉFAUT AU DOIGT, et c'est l'inverse du réglage d'avant.
+
+     Sur téléphone, la feuille montante prend six dixièmes de l'écran
+     et laisse le flux derrière — sauf qu'on ne consulte pas le flux
+     pendant qu'on parle : on parle. Les six dixièmes servaient donc à
+     montrer ce qu'on ne regarde pas, en rognant ce qu'on lit. Atlas
+     s'ouvre en grand, et le bouton de réduction devient ce qu'il aurait
+     toujours dû être : le geste qu'on fait EXPRÈS pour revoir ses notes
+     pendant la conversation, comme un écran partagé. */
+  const [plein, setPlein] = useState(auDoigt)
+
+  /* LE FIL COMMENCE VIDE QUAND ON OUVRE EN GRAND.
+
+     Il s'ouvrait sur un bonjour et le briefing du jour — deux cartes
+     déjà posées avant qu'on ait rien demandé. Dans un panneau de
+     quatre cents pixels, c'est une entrée en matière. En pleine page,
+     c'est un écran rempli par quelqu'un d'autre, et l'impression
+     d'arriver après le début.
+
+     En grand, Atlas attend donc. Le briefing n'est pas perdu : il est
+     à un appui, dans les raccourcis, et c'est mieux — il devient une
+     chose qu'on demande plutôt qu'une chose qu'on subit (docs/06 § 7,
+     « une seule sollicitation à la fois », et zéro vaut mieux qu'une). */
+  const [tours, setTours] = useState<Tour[]>(() =>
+    auDoigt()
+      ? []
+      : [
+          {
+            k: 'dit',
+            texte:
+              'Je n’ai pas d’intelligence — j’ai des règles, et je les connais par cœur. Voilà où tu en es.',
+            suites: ['De quoi peux-tu parler ?'],
+          },
+          ...lancer('briefing'),
+        ],
+  )
   const [texte, setTexte] = useState('')
-  /* LA PLEINE PAGE.
-
-     Le panneau de droite convient à une question — on garde sa note
-     sous les yeux, on demande, on referme. Il ne convient plus dès
-     qu'Atlas rend une carte à travailler : quarante-deux pour cent de
-     la largeur pour une liste de douze notes à cocher, chacune avec
-     son détail, c'est une colonne où tout se replie sur deux lignes.
-
-     La pleine page n'est donc pas un confort d'affichage, c'est le
-     mode de travail : plus de rail, plus d'onglets, plus de note
-     derrière — la conversation et rien d'autre. On y entre et on en
-     sort d'un même bouton, et l'état ne survit pas à la fermeture :
-     rouvrir Atlas pour une question doit redonner la petite fenêtre. */
-  const [plein, setPlein] = useState(false)
 
   /* CE DONT ON VIENT DE PARLER — un souvenir, pas un état.
 
@@ -147,6 +162,33 @@ export function Causerie({ fermer }: { fermer: () => void }) {
      L'effet, lui, s'exécute après la peinture, sur le champ rempli. */
   const [curseur, setCurseur] = useState<number | null>(null)
   const [aConfirmer, setAConfirmer] = useState<{ tour: number; ids: string[] } | null>(null)
+  /* LES « AÏE ».
+
+     On touche l'œil, il proteste. C'est tout, et c'est voulu : rien
+     ne se déclenche, rien ne s'ouvre, aucune fonction ne se cache
+     derrière. Une app qu'on utilise tous les jours a le droit d'avoir
+     un endroit où il ne se passe rien d'utile.
+
+     Ils sont plafonnés à six et vivent neuf cents millisecondes : une
+     accumulation qui reste à l'écran cesserait d'être une réaction
+     pour devenir un décor, et il faudrait alors la ranger. */
+  const [aies, setAies] = useState<{ id: number; x: number; y: number; r: number }[]>([])
+  const compteAie = useRef(0)
+  const minuteurs = useRef<number[]>([])
+
+  const piquer = () => {
+    const id = ++compteAie.current
+    setAies((a) => [
+      ...a.slice(-5),
+      { id, x: 10 + Math.random() * 80, y: 12 + Math.random() * 72, r: -16 + Math.random() * 32 },
+    ])
+    minuteurs.current.push(
+      window.setTimeout(() => setAies((a) => a.filter((x) => x.id !== id)), 900),
+    )
+  }
+
+  useEffect(() => () => minuteurs.current.forEach(window.clearTimeout), [])
+
   const champ = useRef<HTMLInputElement>(null)
   const fin = useRef<HTMLDivElement>(null)
 
@@ -390,29 +432,47 @@ export function Causerie({ fermer }: { fermer: () => void }) {
     enAttente?.res.sorte === 'proposition' ? enAttente.res : null
 
   return (
-    <div className="causerie rise" data-plein={plein || undefined} role="dialog" aria-label="Atlas">
+    <div
+      className="causerie rise"
+      data-plein={plein || undefined}
+      data-accueil={tours.length === 0 || undefined}
+      role="dialog"
+      aria-label="Atlas"
+    >
       <div className="causerie__tete">
-        <button className="causerie__oeil" onClick={fermer} aria-label="Fermer Atlas">
+        {/* LA CLÉ FAIT REJOUER L'ANIMATION D'ARRIVÉE.
+
+            Sans elle, l'œil de l'en-tête est monté depuis le début et
+            ne bouge jamais. Avec elle, il est démonté puis remonté à
+            l'instant où le fil cesse d'être vide — et il rejoue son
+            atterrissage, qui part du centre de la page en grand. C'est
+            ce qui fait lire « il rétrécit et va se ranger en haut à
+            gauche » plutôt que « un deuxième œil apparaît ». */}
+        <button
+          key={tours.length === 0 ? 'attente' : 'fil'}
+          className="causerie__oeil"
+          onClick={fermer}
+          aria-label="Fermer Atlas"
+        >
           <OeilAtlas size={22} mode="cause" flux />
         </button>
         <span className="causerie__nom">Atlas</span>
 
-        {/* PLUS AUCUNE MENTION D'IA À L'ÉCRAN.
+        {/* NI L'IA, NI LE COMPTE DE CE QU'IL SAIT.
 
-            Il y avait un interrupteur Règles / IA, puis un état
-            « sans IA » quand rien n'était branché. Les deux
-            promettaient une suite qui n'arrive pas : les paliers
-            gratuits se paient sur le contenu qu'on leur donne, et le
-            contenu ici, c'est un second cerveau.
+            L'en-tête a porté un interrupteur Règles / IA, puis un état
+            « sans IA », puis « 46 logiques · 97 sujets ». Les trois
+            parlaient de la mécanique plutôt que du service rendu.
 
-            Annoncer une absence, c'est encore parler de ce qui
-            manque. L'en-tête dit donc ce qu'Atlas SAIT, et rien
-            d'autre. La couture (`store/cerveau.ts`) reste en place,
-            dormante : le jour où un service payant en vaudra la
-            peine, il n'y aura qu'à la brancher. */}
-        <span className="causerie__etat">
-          {SCRIPTS.length} logiques · {NOMBRE_DE_SUJETS} sujets
-        </span>
+            Le chiffre était le plus coûteux des trois. Il donne la
+            MESURE EXACTE de ce qu'Atlas sait — donc de ce qu'il ne
+            sait pas — et invite à chercher les bords plutôt qu'à s'en
+            servir. Quarante-six règles, c'est beaucoup à écrire et peu
+            à annoncer : le nombre fait petit là où l'usage fait grand.
+            Une capacité se découvre en s'en servant, pas en lisant son
+            inventaire.
+
+            La couture IA (`store/cerveau.ts`) reste en place, dormante. */}
 
         <button
           className="btn btn--icon"
@@ -427,6 +487,35 @@ export function Causerie({ fermer }: { fermer: () => void }) {
         </button>
       </div>
 
+      {/* ATLAS ATTEND, ET IL OCCUPE LA PLACE.
+
+          Un fil vide avec un champ en bas ne dit rien : on ne sait ni
+          à qui on parle ni ce qu'on peut demander. L'œil au milieu le
+          dit sans une phrase de plus — et il n'y en a qu'un à l'écran,
+          celui de l'en-tête s'efface tant que l'accueil est là.
+
+          On peut le toucher. Il ne se passe rien, sinon qu'il proteste.
+          C'est le seul endroit de l'app où appuyer ne sert à rien, et
+          c'est très bien ainsi. */}
+      {tours.length === 0 ? (
+        <div className="causerie__accueil">
+          <button className="accueil__oeil" onClick={piquer} aria-label="Atlas t’écoute">
+            <OeilAtlas size={plein ? 132 : 84} mode="cause" flux />
+          </button>
+          <p className="accueil__mot">Je t’écoute.</p>
+
+          {aies.map((a) => (
+            <span
+              key={a.id}
+              className="aie"
+              aria-hidden="true"
+              style={{ left: `${a.x}%`, top: `${a.y}%`, ['--r' as string]: `${a.r}deg` }}
+            >
+              Aïe
+            </span>
+          ))}
+        </div>
+      ) : (
       <div className="causerie__fil">
         {tours.map((t, i) => (
           <TourRendu
@@ -446,6 +535,7 @@ export function Causerie({ fermer }: { fermer: () => void }) {
         ))}
         <div ref={fin} />
       </div>
+      )}
 
       <div className="causerie__raccourcis">
         {RACCOURCIS.map((r) => (
@@ -551,15 +641,13 @@ function TourRendu({
         <div className="carte-atlas">
           <div className="carte-atlas__titre">Ce que je sais faire</div>
           <p className="carte-atlas__pourquoi">
-            {SCRIPTS.length} règles, toutes explicables en une phrase. Appuie sur une famille pour
-            la déplier.
+            Des règles, toutes explicables en une phrase. Appuie sur une famille pour la déplier.
           </p>
           <div className="familles">
             {FAMILLES.map((f) => (
               <button key={f.id} className="famille" onClick={() => demander(f.nom)}>
                 <span className="famille__nom">{f.nom}</span>
                 <span className="famille__quoi">{f.quoi}</span>
-                <span className="famille__n">{scriptsDe(f.id).length}</span>
               </button>
             ))}
           </div>
@@ -584,15 +672,14 @@ function TourRendu({
         <div className="carte-atlas">
           <div className="carte-atlas__titre">De quoi je peux parler</div>
           <p className="carte-atlas__pourquoi">
-            {NOMBRE_DE_SUJETS} sujets, écrits à la main. Je ne dis que ce que je sais — mais ce que
-            je sais, je le sais vraiment.
+            Des sujets écrits à la main. Je ne dis que ce que je sais — mais ce que je sais, je le
+            sais vraiment.
           </p>
           <div className="familles">
             {THEMES.map((t) => (
               <button key={t.id} className="famille" onClick={() => demanderTheme(t.id)}>
                 <span className="famille__nom">{t.nom}</span>
                 <span className="famille__quoi">{t.quoi}</span>
-                <span className="famille__n">{sujetsDe(t.id).length}</span>
               </button>
             ))}
           </div>

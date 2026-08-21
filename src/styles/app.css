@@ -3010,15 +3010,15 @@
   border-bottom: 1px solid var(--border);
 }
 
-.causerie__nom { font-size: 14px; font-weight: 580; letter-spacing: -0.01em; }
-
-.causerie__etat {
+/* LE NOM PORTE L'ÉCART, depuis que le compte des connaissances a
+   disparu. C'était lui, le `flex: 1` qui repoussait les boutons vers
+   la droite ; le retirer sans le remplacer collait « Atlas » aux deux
+   icônes, en laissant un grand vide après elles. */
+.causerie__nom {
   flex: 1;
-  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-  font-size: 9.5px;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: var(--text-3);
+  font-size: 14px;
+  font-weight: 580;
+  letter-spacing: -0.01em;
 }
 
 .causerie__fil {

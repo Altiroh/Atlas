@@ -234,7 +234,7 @@
 
     function montrer(forme) {
       var corps = MQ.corps[forme];
-      vue.innerHTML = '<div class="mq" style="--mq-w:760;--mq-h:480">' + MQ.fond() +
+      vue.innerHTML = '<div class="mq mq--note">' + MQ.fond() +
         '<div class="mq__scene">' +
           '<div class="mq-volet mq-verre" style="flex:1"><div class="mq-post">' +
             MQ.barreNote(forme) + corps() +

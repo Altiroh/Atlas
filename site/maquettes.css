@@ -59,6 +59,19 @@
   user-select: none;
 }
 
+/* ========================================================
+   Les tailles de référence vivent ICI, pas en style inline
+
+   Un style inline l'emporte sur une classe : tant que `--mq-w` était
+   posé dans l'attribut `style`, aucune remise en page de téléphone ne
+   pouvait s'appliquer. Les trois écrans qui se remettent en page
+   déclarent donc leur taille dans la feuille.
+   ======================================================== */
+
+.mq--atelier { --mq-w: 1100; --mq-h: 660; }
+.mq--duo     { --mq-w: 820;  --mq-h: 580; }
+.mq--espaces { --mq-w: 820;  --mq-h: 520; }
+
 .mq__scene { height: 100%; }
 
 /* Les halos du fond, en version fixe : dans une maquette ils ne
@@ -1003,10 +1016,83 @@
 
 .maq { overflow-x: auto; overflow-y: hidden; -webkit-overflow-scrolling: touch; }
 
-.mq { min-width: calc(var(--mq-w) * 0.8px); }
+.mq { min-width: calc(var(--mq-w) * 0.74px); }
 
 /* La barre de défilement reste discrète : c'est un écran montré,
    pas un panneau d'administration. */
 .maq::-webkit-scrollbar { height: 6px; }
 .maq::-webkit-scrollbar-thumb { border-radius: 99px; background: var(--border-strong); }
 .maq::-webkit-scrollbar-track { background: transparent; }
+
+/* ========================================================
+   Sur téléphone, on REMET EN PAGE au lieu de trancher
+
+   Un écran dessiné pour 1 100 px montré dans 348 laisse voir 40 % de
+   lui-même, coupé au milieu d'un volet. On ne lit pas « panoramique »,
+   on lit « cassé ».
+
+   Ces écrans sont du HTML : on peut donc les remettre en page comme
+   l'app le fait elle-même. Et la remise en page est HONNÊTE — sur un
+   téléphone, Atlas montre bel et bien une seule colonne.
+   ======================================================== */
+
+@media (max-width: 700px) {
+  /* L'atelier devient ce qu'il est sur un téléphone : la colonne des
+     idées, seule. */
+  .mq--atelier {
+    --mq-w: 400;
+    --mq-h: 620;
+  }
+  .mq--atelier .mq-rail,
+  .mq--atelier .mq-volet--detail { display: none; }
+  .mq--atelier .mq-volet--liste { flex: 1; width: auto; }
+
+  /* Les projets : deux colonnes au lieu de trois, sans le rail. */
+  .mq--espaces {
+    --mq-w: 420;
+    --mq-h: 560;
+  }
+  .mq--espaces .mq-rail { display: none; }
+  .mq--espaces .mq-espaces { grid-template-columns: repeat(2, 1fr); }
+}
+
+/* ========================================================
+   Quand ça défile quand même, ça se dit
+
+   Le mot n'apparaît que si le défilement existe, et il s'efface dès
+   le premier glissement. Un cadre coupé sans indication se lit comme
+   un défaut ; le même avec deux mots se lit comme une vue large.
+   ======================================================== */
+
+.maq { position: relative; }
+
+.maq--glisse::after {
+  content: '↔ fais glisser';
+  position: sticky;
+  left: 0;
+  float: left;
+  margin: calc(-30 * var(--k, 1px)) 0 0 10px;
+  padding: 5px 10px;
+  border-radius: 99px;
+  font-family: var(--mono);
+  font-size: 10.5px;
+  letter-spacing: 0.08em;
+  color: var(--text-2);
+  background: var(--surface-strong);
+  border: 1px solid var(--border);
+  backdrop-filter: blur(10px);
+  pointer-events: none;
+  z-index: 2;
+}
+
+/* La note ouverte, sur téléphone : sa barre d'onglets disparaît —
+   les six formes sont déjà en boutons juste au-dessus du cadre, et
+   les répéter en tout petit dans le dessin n'apprend rien. */
+.mq--note { --mq-w: 760; --mq-h: 480; }
+
+@media (max-width: 700px) {
+  .mq--note { --mq-w: 430; --mq-h: 440; }
+  /* toute la barre part : vidée de son nom et de ses onglets, il ne
+     resterait qu'un liseré sans objet */
+  .mq--note .mq-post__bar { display: none; }
+}

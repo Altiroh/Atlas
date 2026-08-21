@@ -270,7 +270,7 @@
 
   /** Une note ouverte en pleine largeur, sur l'onglet demandé. */
   function note(onglet, corps) {
-    return '<div class="mq" style="--mq-w:760;--mq-h:480">' + fond() +
+    return '<div class="mq mq--note">' + fond() +
       '<div class="mq__scene">' +
         '<div class="mq-volet mq-verre" style="flex:1"><div class="mq-post">' +
           barreNote(onglet) + corps +
@@ -287,7 +287,7 @@
     'flux-bureau': {
       alt: 'Atlas sur un grand écran : le rail de navigation, la liste des idées et la note ouverte côte à côte.',
       html: function () {
-        return '<div class="mq" style="--mq-w:1100;--mq-h:660">' + fond() +
+        return '<div class="mq mq--atelier">' + fond() +
           '<div class="mq__scene">' +
             rail('flux') +
             listeIdees(5) +
@@ -301,7 +301,7 @@
     'flux-tablette': {
       alt: 'Atlas sur tablette : la liste des idées à gauche, la note ouverte à droite.',
       html: function () {
-        return '<div class="mq" style="--mq-w:820;--mq-h:580">' + fond() +
+        return '<div class="mq mq--duo">' + fond() +
           '<div class="mq__scene">' +
             rail('flux') +
             '<div class="mq-volet mq-volet--liste mq-verre" style="width:calc(300*var(--k))">' +
@@ -395,7 +395,7 @@
             '</div>';
         }).join('');
 
-        return '<div class="mq" style="--mq-w:820;--mq-h:520">' + fond() +
+        return '<div class="mq mq--espaces">' + fond() +
           '<div class="mq__scene">' +
             rail('espaces') +
             '<div class="mq-volet mq-verre" style="flex:1">' +
@@ -500,6 +500,26 @@
     hote.setAttribute('role', 'img');
     hote.setAttribute('aria-label', m.alt);
   });
+
+  /* Un écran plus large que son cadre est COUPÉ, et rien ne dit qu'il
+     se déplace : on lit « cassé », pas « panoramique ». Le mot n'est
+     posé que si le défilement existe vraiment, et il disparaît dès
+     qu'on a fait glisser. */
+  function marquerLesDefilables() {
+    document.querySelectorAll('.maq').forEach(function (cadre) {
+      var defile = cadre.scrollWidth > cadre.clientWidth * 1.12;
+      cadre.classList.toggle('maq--glisse', defile);
+      if (!defile) return;
+      if (cadre.dataset.ecoute) return;
+      cadre.dataset.ecoute = '1';
+      cadre.addEventListener('scroll', function () {
+        cadre.classList.toggle('maq--glisse', cadre.scrollLeft < 8);
+      }, { passive: true });
+    });
+  }
+
+  marquerLesDefilables();
+  window.addEventListener('resize', marquerLesDefilables, { passive: true });
 
   /* Ce que le bac à sable réemploie. */
   window.MQ = {

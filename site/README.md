@@ -49,11 +49,10 @@ engendré par le même calcul. S'il change dans l'app, c'est là qu'il faut le r
 
 ## Le vocabulaire de mise en page
 
-La page n'est pas une suite de grilles de cartes identiques. Six blocs, à alterner :
+La page n'est pas une suite de grilles de cartes identiques. Cinq blocs, à alterner :
 
 | Classe | Ce que c'est | Quand s'en servir |
 |---|---|---|
-| `.index` | Le numéro de section, en chiffres de machine, suivi d'un filet | En tête de chaque section |
 | `.etapes` / `.etape` | Un grand chiffre dans la marge, un titre, un texte | Pour une suite ordonnée de 3 ou 4 idées |
 | `.mosaique` | Une grille de 6 colonnes où les blocs prennent 2, 3 ou 6 parts | Quand les blocs n'ont pas la même importance |
 | `.bande` | Un panneau sombre en pleine largeur, une fois par page | Pour casser la valeur uniforme de la page |
@@ -68,6 +67,9 @@ Trois règles derrière ce vocabulaire :
   Une page dont toutes les sections ont le même souffle se lit comme un tableur.
 - **Le serif n'apparaît qu'en `.inflexion`**, sur un mot ou deux dans un titre. Jamais un
   paragraphe entier.
+- **Pas de chapeau au-dessus des titres.** Ni petit libellé en capitales précédé d'un trait
+  d'accent, ni numéro de section suivi d'un filet : c'est la décoration la plus reconnaissable
+  des pages faites à la chaîne. **Une section commence par son titre.**
 
 ## Les écrans montrés
 
@@ -145,14 +147,26 @@ bac à sable — essayer avant d'ouvrir un compte reste le meilleur chemin.
 |---|---|---|---|
 | Prix | 0 € | 12,50 €/mois · 125 €/an | 24,99 €/mois |
 | Disponibilité | **maintenant** | bientôt | bientôt |
-| Notes · images | 2 000 · 20 Mo | 20 000 · 500 Mo | illimité · 5 Go |
+| Place | des années d'idées | dix fois plus | sans compter |
 | Atlas regarde | — | briefing, rapprochements, relances | + mémoire d'espace, Emporter |
-| Table de travail | — | 150 échanges/mois | 600 échanges/mois |
-| Notes récapitulatives | — | 4/mois | 20/mois |
+| Table de travail | — | plusieurs séances par semaine | sans se rationner |
 
-Les chiffres viennent de [docs/09 § 2.7](../docs/09-ia-marche-et-cooperation.md) et
-[docs/11](../docs/11-la-table-de-travail.md). Ils se modifient à trois endroits de
-`tarifs.html` : les cartes, le tableau, et la FAQ.
+### Le site ne publie aucun chiffre de capacité
+
+**C'est délibéré, et c'est une règle à tenir.** Les quotas exacts, les poids unitaires et le
+raisonnement de coût vivent dans [docs/09](../docs/09-ia-marche-et-cooperation.md) et
+[docs/11](../docs/11-la-table-de-travail.md) — **pas sur le site.** Trois raisons :
+
+1. **Ça renseigne la concurrence.** Publier « une note pèse 500 octets, une image 10 Ko, et
+   le palier gratuit vaut exactement un usage intense » revient à donner sa structure de
+   coûts et à laisser calculer ses marges.
+2. **Ça engage sur des promesses non tenues.** Annoncer « 600 échanges par mois » pour une
+   fonction qui n'existe pas encore fixe une attente au chiffre près.
+3. **Un nombre précis appelle la vérification.** « Les 37 rangements » invite à demander
+   les trente-sept.
+
+Le site dit donc des **degrés** — « de quoi tenir des années », « dix fois plus », « sans
+compter » — et laisse les paliers exacts à l'app, où ils sont vrais au moment où on les lit.
 
 ## Le cadrage de l'IA sur le site
 
@@ -202,7 +216,6 @@ contenu.
 | Où | Quoi |
 |---|---|
 | Sections | Apparition en cascade — 70 ms de décalage par bloc, plafonné à cinq |
-| `.index` | Le filet se dessine de gauche à droite |
 | `.etape` | Le grand chiffre s'éclaircit et se décale au survol |
 | `.maq`, `.bloc`, `.plan` | Un soulèvement de deux ou trois pixels |
 | L'œil de l'ouverture | Il flotte, sur onze secondes |
@@ -281,3 +294,85 @@ cd site && npx vercel deploy --prod
 
 Le renommage du projet se fait depuis le tableau de bord Vercel ; l'adresse
 `atlas-site-gamma.vercel.app` suivrait.
+
+## Le rythme vertical
+
+Les marges de section **s'additionnent** : deux sections voisines apportent chacune la
+leur. Avec `padding-block: clamp(64px, 10vw, 132px)` de part et d'autre, ça faisait
+**264 px de vide entre deux phrases** — mesuré, pas supposé : 166 à 323 px selon les
+voisines.
+
+> **Les valeurs de `padding-block` sont la moitié de ce qu'on veut voir entre deux
+> sections, jamais le total.**
+
+| | Avant | Après |
+|---|---|---|
+| `.section` | 132 px | **64 px** |
+| `.section--serree` | 64 px | **40 px** |
+| `.section--ample` | 180 px | **88 px en haut, 64 en bas** |
+| `.bande` | 120 px | **80 px** |
+| `.section__tete + *` | 60 px | **44 px** |
+| `.duo + .duo` | 110 px | **72 px** |
+| **Vide réel entre sections** | 166–323 px | **86–163 px** |
+
+Trois trous se cachaient ailleurs :
+
+- **Les cartes de prix étirées.** `align-items: stretch` alignait leurs bas, donc la plus
+  courte laissait **162 px de vide** sous sa dernière ligne. En `start`, chacune prend sa
+  hauteur — et l'alignement qu'on croyait perdre était déjà là, les prix étant en haut.
+  Il ne manquait qu'un `min-height` sur `.plan__promesse`, parce que les promesses n'ont
+  pas toutes le même nombre de lignes.
+- **Une marge inline oubliée** sur la bande du comparatif, qui s'ajoutait à son propre
+  `padding` : 205 px à elle seule.
+- **Le pied sur téléphone** — quatre colonnes de liens qui s'empilaient une par une, faute
+  de pouvoir en loger deux : 170 px de largeur minimale et 28 px de gouttière ne tiennent
+  pas dans 350. À 165 et 20, elles tiennent. **1 482 px → 1 024 px.**
+
+Au total, l'accueil passe de **8 194 à 7 036 px** sans qu'une ligne de contenu disparaisse.
+
+## L'affichage sur téléphone
+
+### Les écrans se remettent en page, ils ne se tranchent pas
+
+Un écran dessiné pour 1 100 px montré dans 348 laissait voir **40 % de lui-même**, coupé au
+milieu d'un volet. On ne lit pas « panoramique », on lit « cassé ».
+
+Les maquettes étant du HTML, elles **se remettent en page comme l'app le fait elle-même** —
+et la remise en page est honnête : sur un téléphone, Atlas montre bel et bien une colonne.
+
+| Écran | Sur téléphone |
+|---|---|
+| `mq--atelier` | Le rail et le volet de détail disparaissent : il reste la colonne des idées |
+| `mq--espaces` | Le rail disparaît, les projets passent sur deux colonnes |
+| `mq--note` | La barre d'onglets disparaît — les six formes sont déjà en boutons au-dessus |
+| `flux-tablette` | **Masqué.** Son propos est d'avoir deux volets côte à côte ; coupé en deux, il ne démontre rien |
+
+Résultat : **les cinq écrans de la page produit sont visibles à 100 %.**
+
+> ⚠️ **Deux pièges d'ordre, tous deux silencieux :**
+>
+> 1. **Un style inline bat une classe.** Tant que `--mq-w` était posé dans l'attribut
+>    `style`, aucune requête média ne pouvait le surcharger. Les tailles des écrans qui se
+>    remettent en page vivent donc **dans la feuille**.
+> 2. **Une déclaration ajoutée en fin de fichier passe après la requête média qui la
+>    surcharge.** Les tailles de base doivent être écrites **avant** les blocs `@media`.
+
+Ce qui dépasse encore reçoit un mot — `↔ fais glisser` — posé par le script **seulement si
+la coupe dépasse 12 %**, et effacé au premier glissement.
+
+### L'en-tête
+
+Trois places fixes plutôt qu'une rangée qui se pousse : **le réglage du thème à gauche,
+Atlas au centre, le menu à droite**. `display: contents` sur `.entete__outils` fait remonter
+le sélecteur et le bouton dans la grille du parent — sans quoi ils resteraient solidaires
+dans une seule cellule, à droite.
+
+Le panneau du menu était en `--surface-strong` : du blanc à 80 % posé sur le fond animé,
+donc **gris et sale**. Il prend maintenant le fond de la page, franchement opaque, et ses
+liens l'encre pleine plutôt que le gris de service.
+
+### Les conteneurs centrés
+
+En une colonne, un bloc à largeur plafonnée reste **collé à gauche** s'il n'a pas de marge
+automatique — c'est ce qui donnait l'impression d'un conteneur mal posé. `.maq--tel`,
+`.reglage` et les onglets des formes reçoivent `margin-inline: auto` sous 900 px.

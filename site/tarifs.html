@@ -41,18 +41,14 @@
     </nav>
 
     <div class="entete__outils">
-      <div class="theme" role="group" aria-label="Thème">
-        <button class="theme__seg" type="button" data-mode="auto" aria-pressed="true" title="Automatique à l'heure">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.2"/><path d="M12 3.8v8.2l5 2.8"/></svg>
-          <span>Auto</span>
-        </button>
-        <button class="theme__seg" type="button" data-mode="light" aria-pressed="false" title="Toujours clair">
+      <div class="theme" role="group" aria-label="Jour ou nuit">
+        <button class="theme__seg" type="button" data-mode="light" aria-pressed="false" title="Mode jour">
           <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4.2"/><path d="M12 2.5v2M12 19.5v2M2.5 12h2M19.5 12h2M5.2 5.2l1.4 1.4M17.4 17.4l1.4 1.4M18.8 5.2l-1.4 1.4M6.6 17.4l-1.4 1.4"/></svg>
-          <span>Clair</span>
+          <span>Jour</span>
         </button>
-        <button class="theme__seg" type="button" data-mode="dark" aria-pressed="false" title="Toujours sombre">
+        <button class="theme__seg" type="button" data-mode="dark" aria-pressed="false" title="Mode nuit">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 14.2A8.4 8.4 0 0 1 9.8 4 8.4 8.4 0 1 0 20 14.2Z"/></svg>
-          <span>Sombre</span>
+          <span>Nuit</span>
         </button>
       </div>
       <button class="btn btn--icone burger" type="button" aria-label="Ouvrir le menu" aria-expanded="false" aria-controls="menu">
@@ -74,7 +70,6 @@
     <div class="contenu">
       <div class="hero__grille">
         <div>
-          <p class="hero__sur">Les prix</p>
           <h1 class="titre-affiche">
             Commence gratuitement.<br><span class="inflexion">Vraiment</span>.
           </h1>
@@ -115,7 +110,7 @@
           <ul class="plan__liste">
             <li class="plan__item">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4.5 12.5 9.5 17.5 19.5 6.5"/></svg>
-              <span><strong>2 000 notes</strong> et <strong>20 Mo d’images</strong>, soit environ 2 000 images</span>
+              <span><strong>De quoi tenir des années</strong> de notes et de planches d’images</span>
             </li>
             <li class="plan__item">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4.5 12.5 9.5 17.5 19.5 6.5"/></svg>
@@ -131,7 +126,7 @@
             </li>
             <li class="plan__item">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4.5 12.5 9.5 17.5 19.5 6.5"/></svg>
-              <span>Les <strong>37 rangements</strong> : classer, nettoyer, relancer, retrouver</span>
+              <span><strong>Les rangements automatiques</strong> : classer, nettoyer, relancer, retrouver</span>
             </li>
             <li class="plan__item">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4.5 12.5 9.5 17.5 19.5 6.5"/></svg>
@@ -164,7 +159,7 @@
             </li>
             <li class="plan__item">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4.5 12.5 9.5 17.5 19.5 6.5"/></svg>
-              <span><strong>20 000 notes</strong> et <strong>500 Mo d’images</strong></span>
+              <span><strong>Dix fois plus de place</strong>, notes et images</span>
             </li>
             <li class="plan__item">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4.5 12.5 9.5 17.5 19.5 6.5"/></svg>
@@ -180,11 +175,11 @@
             </li>
             <li class="plan__item">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4.5 12.5 9.5 17.5 19.5 6.5"/></svg>
-              <span><strong>150 échanges par mois</strong> à la table de travail</span>
+              <span><strong>La table de travail</strong>, plusieurs séances par semaine</span>
             </li>
             <li class="plan__item">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4.5 12.5 9.5 17.5 19.5 6.5"/></svg>
-              <span><strong>4 notes récapitulatives</strong> déposées dans tes espaces</span>
+              <span><strong>Des notes récapitulatives</strong> déposées dans tes espaces</span>
             </li>
             <li class="plan__item">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4.5 12.5 9.5 17.5 19.5 6.5"/></svg>
@@ -221,15 +216,15 @@
             </li>
             <li class="plan__item">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4.5 12.5 9.5 17.5 19.5 6.5"/></svg>
-              <span><strong>Notes illimitées</strong> et <strong>5 Go d’images</strong></span>
+              <span><strong>De la place sans compter</strong></span>
             </li>
             <li class="plan__item">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4.5 12.5 9.5 17.5 19.5 6.5"/></svg>
-              <span><strong>600 échanges par mois</strong> — vingt par jour ouvré</span>
+              <span><strong>La table de travail sans se rationner</strong></span>
             </li>
             <li class="plan__item">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4.5 12.5 9.5 17.5 19.5 6.5"/></svg>
-              <span><strong>20 notes récapitulatives</strong> : Atlas lit un espace entier et dépose sa synthèse dedans</span>
+              <span><strong>Les synthèses à la demande</strong> : Atlas lit un espace entier et dépose sa note dedans</span>
             </li>
             <li class="plan__item">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4.5 12.5 9.5 17.5 19.5 6.5"/></svg>
@@ -241,7 +236,7 @@
             </li>
             <li class="plan__item">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4.5 12.5 9.5 17.5 19.5 6.5"/></svg>
-              <span>Des <strong>images en pleine définition</strong>, jusqu’à 3000 px</span>
+              <span>Des <strong>images en pleine définition</strong></span>
             </li>
             <li class="plan__item">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4.5 12.5 9.5 17.5 19.5 6.5"/></svg>
@@ -263,10 +258,8 @@
   <!-- ========================================================
        Le tableau — sur la bande sombre
        ======================================================== -->
-  <section class="bande" id="comparer" style="margin-top:clamp(48px,7vw,96px)">
+  <section class="bande" id="comparer">
     <div class="contenu">
-      <p class="index revele"><span class="index__no">01</span> Point par point</p>
-
       <div class="section__tete revele">
         <h2 class="titre-section">Ce que contient<br>chaque <span class="inflexion">plan</span>.</h2>
         <p class="chapo">
@@ -296,22 +289,22 @@
 
             <tr class="groupe"><th scope="row" colspan="4">Volume</th></tr>
             <tr>
-              <th scope="row">Notes</th>
-              <td>2 000</td>
-              <td class="col-vedette">20 000</td>
-              <td>illimité</td>
+              <th scope="row">Place pour les notes</th>
+              <td>des années d’idées</td>
+              <td class="col-vedette">dix fois plus</td>
+              <td>sans compter</td>
             </tr>
             <tr>
-              <th scope="row">Images</th>
-              <td>20 Mo</td>
-              <td class="col-vedette">500 Mo</td>
-              <td>5 Go</td>
+              <th scope="row">Place pour les images</th>
+              <td>de quoi faire</td>
+              <td class="col-vedette">largement</td>
+              <td>sans compter</td>
             </tr>
             <tr>
-              <th scope="row">Définition des images</th>
-              <td>1600 px</td>
-              <td class="col-vedette">1600 px</td>
-              <td>3000 px</td>
+              <th scope="row">Images en pleine définition</th>
+              <td><span class="non">—</span></td>
+              <td class="col-vedette"><span class="non">—</span></td>
+              <td><span class="oui">oui</span></td>
             </tr>
             <tr>
               <th scope="row">Appareils</th>
@@ -346,7 +339,7 @@
               <td><span class="oui">oui</span></td>
             </tr>
             <tr>
-              <th scope="row">Les 37 rangements</th>
+              <th scope="row">Les rangements automatiques</th>
               <td><span class="oui">oui</span></td>
               <td class="col-vedette"><span class="oui">oui</span></td>
               <td><span class="oui">oui</span></td>
@@ -372,16 +365,16 @@
               <td><span class="oui">oui</span></td>
             </tr>
             <tr>
-              <th scope="row">Échanges à la table de travail</th>
+              <th scope="row">La table de travail</th>
               <td><span class="non">—</span></td>
-              <td class="col-vedette">150 / mois</td>
-              <td>600 / mois</td>
+              <td class="col-vedette">plusieurs séances par semaine</td>
+              <td>sans se rationner</td>
             </tr>
             <tr>
               <th scope="row">Notes récapitulatives</th>
               <td><span class="non">—</span></td>
-              <td class="col-vedette">4 / mois</td>
-              <td>20 / mois</td>
+              <td class="col-vedette"><span class="oui">oui</span></td>
+              <td><span class="oui">à la demande</span></td>
             </tr>
             <tr>
               <th scope="row">La mémoire d’espace</th>
@@ -424,62 +417,41 @@
   </section>
 
   <!-- ========================================================
-       Les chiffres
+       Pourquoi ces paliers
        ======================================================== -->
-  <section class="section" id="chiffres">
+  <section class="section" id="paliers">
     <div class="contenu">
-      <p class="index revele"><span class="index__no">02</span> Les chiffres</p>
-
       <div class="section__tete revele">
-        <h2 class="titre-section">D'où viennent<br>ces <span class="inflexion">plafonds</span>.</h2>
+        <h2 class="titre-section">Pourquoi le gratuit est<br>aussi <span class="inflexion">large</span>.</h2>
         <p class="chapo">
-          Ils sont calculés sur ce que pèse vraiment une idée, mesuré dans Atlas. C'est ce
-          qui permet de rendre le gratuit aussi large.
+          Parce qu'une idée ne pèse presque rien. Écrire, chercher et retrouver coûte si peu
+          qu'il n'y a aucune raison de le faire payer.
         </p>
       </div>
 
-      <div class="mesures revele">
-        <div class="mesure">
-          <p class="mesure__nombre">~500 o</p>
-          <p class="mesure__quoi">Le poids d'une note. Vingt mille notes tiennent dans une dizaine de méga-octets.</p>
-        </div>
-        <div class="mesure">
-          <p class="mesure__nombre">~10 Ko</p>
-          <p class="mesure__quoi">Le poids d'une image, une fois allégée. Une photo de 3 Mo descend jusque-là sans que ça se voie.</p>
-        </div>
-        <div class="mesure">
-          <p class="mesure__nombre" data-compte="2000">2 000</p>
-          <p class="mesure__quoi">Le nombre d'images qui tiennent dans le plan gratuit. De quoi remplir beaucoup de planches.</p>
-        </div>
-        <div class="mesure">
-          <p class="mesure__nombre">1×</p>
-          <p class="mesure__quoi">Le nombre de fois qu'une image est téléchargée par appareil. Ensuite, elle est chez toi.</p>
-        </div>
-      </div>
-
-      <div class="mosaique" style="margin-top:clamp(32px,4vw,52px)">
+      <div class="mosaique">
         <article class="bloc glass large revele">
-          <h3 class="bloc__titre">Pourquoi le gratuit est si large</h3>
+          <h3 class="bloc__titre">Le gratuit tient des années</h3>
           <p class="bloc__texte">
-            Parce qu'une idée ne pèse presque rien. Écrire, chercher et synchroniser du texte
-            coûte si peu qu'il n'y a aucune raison de le faire payer. Le plan gratuit tient
-            des années d'usage quotidien.
+            Ce n'est pas une version d'essai qu'on épuise en trois semaines. C'est Atlas en
+            entier, avec de quoi accumuler longtemps avant même d'y penser.
           </p>
         </article>
 
         <article class="bloc glass large revele">
-          <h3 class="bloc__titre">Pourquoi les plans payants existent</h3>
+          <h3 class="bloc__titre">Ce qu'ouvrent les plans payants</h3>
           <p class="bloc__texte">
-            Les images occupent de la place pour de bon, et la parole d'Atlas se calcule à
-            chaque phrase. Les plans payants couvrent exactement ces deux postes.
+            De la place pour les images, qui en occupent pour de bon — et la parole d'Atlas,
+            qui se calcule à chaque phrase. Ce sont les deux seules choses dont le coût
+            grandit avec l'usage.
           </p>
         </article>
 
         <article class="bloc bloc--nu pleine revele">
           <h3 class="bloc__titre">Ce qui reste gratuit, toujours</h3>
           <p class="bloc__texte" style="max-width:70ch">
-            Capturer, écrire, chercher, exporter, et la synchronisation des textes. C'est la
-            promesse d'Atlas : elle ne sera jamais un supplément.
+            Capturer, écrire, chercher, exporter, et retrouver ses idées d'un écran à
+            l'autre. C'est la promesse d'Atlas : elle ne sera jamais un supplément.
           </p>
         </article>
       </div>
@@ -491,8 +463,6 @@
        ======================================================== -->
   <section class="section" id="questions">
     <div class="contenu">
-      <p class="index revele"><span class="index__no">03</span> Les questions</p>
-
       <div class="questions revele">
         <details class="question">
           <summary>Est-ce qu’Atlas écrit à ma place&nbsp;?</summary>
@@ -513,7 +483,7 @@
         <details class="question">
           <summary>Que se passe-t-il quand j’épuise mes échanges&nbsp;?</summary>
           <div class="question__corps">
-            <p>Tout le reste continue de fonctionner — écrire, chercher, ranger, exporter, les 37 rangements. C’est la table de travail qui attend le mois suivant.</p>
+            <p>Tout le reste continue de fonctionner — écrire, chercher, ranger, exporter, les rangements automatiques. C’est la table de travail qui attend le mois suivant.</p>
             <p>Atlas te prévient bien avant, à quatre cinquièmes de tes échanges, et tu peux recharger à l’unité. S’il te faut recharger deux fois, il te dira lui-même que le plan au-dessus revient moins cher.</p>
           </div>
         </details>
@@ -627,7 +597,7 @@
         <ul class="pied__liste">
           <li><a href="tarifs.html#plans">Les trois plans</a></li>
           <li><a href="tarifs.html#comparer">Le comparatif</a></li>
-          <li><a href="tarifs.html#chiffres">D'où viennent les chiffres</a></li>
+          <li><a href="tarifs.html#paliers">Pourquoi ces paliers</a></li>
           <li><a href="tarifs.html#questions">Les questions</a></li>
         </ul>
       </div>

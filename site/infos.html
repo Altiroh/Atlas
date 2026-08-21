@@ -41,18 +41,14 @@
     </nav>
 
     <div class="entete__outils">
-      <div class="theme" role="group" aria-label="Thème">
-        <button class="theme__seg" type="button" data-mode="auto" aria-pressed="true" title="Automatique à l'heure">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.2"/><path d="M12 3.8v8.2l5 2.8"/></svg>
-          <span>Auto</span>
-        </button>
-        <button class="theme__seg" type="button" data-mode="light" aria-pressed="false" title="Toujours clair">
+      <div class="theme" role="group" aria-label="Jour ou nuit">
+        <button class="theme__seg" type="button" data-mode="light" aria-pressed="false" title="Mode jour">
           <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4.2"/><path d="M12 2.5v2M12 19.5v2M2.5 12h2M19.5 12h2M5.2 5.2l1.4 1.4M17.4 17.4l1.4 1.4M18.8 5.2l-1.4 1.4M6.6 17.4l-1.4 1.4"/></svg>
-          <span>Clair</span>
+          <span>Jour</span>
         </button>
-        <button class="theme__seg" type="button" data-mode="dark" aria-pressed="false" title="Toujours sombre">
+        <button class="theme__seg" type="button" data-mode="dark" aria-pressed="false" title="Mode nuit">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 14.2A8.4 8.4 0 0 1 9.8 4 8.4 8.4 0 1 0 20 14.2Z"/></svg>
-          <span>Sombre</span>
+          <span>Nuit</span>
         </button>
       </div>
       <button class="btn btn--icone burger" type="button" aria-label="Ouvrir le menu" aria-expanded="false" aria-controls="menu">
@@ -74,7 +70,6 @@
     <div class="contenu">
       <div class="hero__grille">
         <div>
-          <p class="hero__sur">Infos</p>
           <h1 class="titre-affiche">Atlas,<br>de <span class="inflexion">près</span>.</h1>
           <p class="chapo">
             D'où il vient, ce qui le guide, où vivent tes idées et comment nous joindre.
@@ -91,8 +86,6 @@
        ======================================================== -->
   <section class="section" id="histoire">
     <div class="contenu">
-      <p class="index revele"><span class="index__no">01</span> L'histoire</p>
-
       <div class="duo duo--penche">
         <div class="revele">
           <h2 class="titre-section">
@@ -116,7 +109,7 @@
         </div>
 
         <div class="revele">
-          <p class="index" style="margin-bottom:18px"><span class="index__no">·</span> Ce qui guide Atlas</p>
+          <p class="bloc__titre" style="margin-bottom:18px">Ce qui guide Atlas</p>
           <div class="points" style="margin-top:0">
             <p class="point">
               <span class="point__clef">01</span>
@@ -164,8 +157,6 @@
        ======================================================== -->
   <section class="bande" id="donnees">
     <div class="contenu">
-      <p class="index revele"><span class="index__no">02</span> Tes données</p>
-
       <div class="section__tete revele">
         <h2 class="titre-section">Où vivent tes <span class="inflexion">idées</span>.</h2>
         <p class="chapo">
@@ -230,8 +221,6 @@
        ======================================================== -->
   <section class="section" id="journal">
     <div class="contenu">
-      <p class="index revele"><span class="index__no">03</span> Les nouveautés</p>
-
       <div class="duo duo--penche">
         <div class="revele">
           <h2 class="titre-section">Ce qui a changé<br><span class="inflexion">récemment</span>.</h2>
@@ -262,7 +251,7 @@
           <details class="question">
             <summary>Les fondations</summary>
             <div class="question__corps">
-              <p>Atlas sait faire trente-sept choses, et il les dit.</p>
+              <p>Atlas sait faire beaucoup de choses, et il les dit.</p>
               <p>Une bibliothèque de mots, deux modes d'affichage, et du markdown à emporter.</p>
               <p>La loupe pour chercher, le bas de l'écran pour les questions.</p>
               <p>Choisir plusieurs idées d'un coup, les ranger, et se présenter.</p>
@@ -278,8 +267,6 @@
        ======================================================== -->
   <section class="section" id="questions">
     <div class="contenu">
-      <p class="index revele"><span class="index__no">04</span> Les questions</p>
-
       <div class="questions revele">
         <details class="question">
           <summary>À qui s'adresse Atlas&nbsp;?</summary>
@@ -408,7 +395,7 @@
         <ul class="pied__liste">
           <li><a href="tarifs.html#plans">Les trois plans</a></li>
           <li><a href="tarifs.html#comparer">Le comparatif</a></li>
-          <li><a href="tarifs.html#chiffres">D'où viennent les chiffres</a></li>
+          <li><a href="tarifs.html#paliers">Pourquoi ces paliers</a></li>
           <li><a href="tarifs.html#questions">Les questions</a></li>
         </ul>
       </div>
