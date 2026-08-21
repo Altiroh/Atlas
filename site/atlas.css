@@ -1,0 +1,1340 @@
+/* ---------------------------------------------------------------
+   Atlas — la vitrine.
+
+   Les couleurs, le verre et les rayons viennent de l'app
+   (src/styles/tokens.css). La mise en page, elle, est éditoriale :
+   des blocs de tailles inégales, des respirations différentes d'une
+   section à l'autre, et de la pleine page quand le sujet le mérite.
+   --------------------------------------------------------------- */
+
+/* ========================================================
+   0. Polices
+   ======================================================== */
+
+@font-face {
+  font-family: 'Inter Variable';
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url('polices/inter-latin-wght-normal.woff2') format('woff2-variations');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304,
+    U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+/* ========================================================
+   1. Remise à zéro
+   ======================================================== */
+
+*, *::before, *::after { box-sizing: border-box; }
+* { margin: 0; padding: 0; }
+
+html { -webkit-text-size-adjust: 100%; scroll-behavior: smooth; }
+
+body {
+  font-family: 'Inter Variable', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
+    Helvetica, Arial, sans-serif;
+  font-size: 16px;
+  line-height: 1.55;
+  color: var(--text);
+  background: var(--bg);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  overflow-x: hidden;
+}
+
+img, svg, video { display: block; max-width: 100%; }
+img { height: auto; }
+button, input, select, textarea { font: inherit; color: inherit; }
+button { background: none; border: 0; cursor: pointer; }
+a { color: inherit; text-decoration: none; }
+ul, ol { list-style: none; }
+
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 4px; }
+::selection { background: var(--accent-soft); color: var(--text); }
+
+/* ========================================================
+   2. Jetons — repris de src/styles/tokens.css
+   ======================================================== */
+
+:root {
+  --accent-h: 359;
+  --accent-s: 92%;
+  --accent-l: 58%;
+
+  --accent: hsl(var(--accent-h) var(--accent-s) var(--accent-l));
+  --accent-soft: hsl(var(--accent-h) var(--accent-s) var(--accent-l) / 0.16);
+  --accent-line: hsl(var(--accent-h) var(--accent-s) var(--accent-l) / 0.4);
+  --accent-glow: hsl(var(--accent-h) var(--accent-s) var(--accent-l) / 0.28);
+  --accent-ink: #ffffff;
+
+  --aur-h1: 359;
+  --aur-h2: 43;
+  --aur-h3: 315;
+
+  --r-xs: 8px;
+  --r-sm: 11px;
+  --r: 15px;
+  --r-lg: 20px;
+  --r-xl: 26px;
+
+  --blur: 22px;
+  --blur-strong: 34px;
+
+  --ease: cubic-bezier(0.32, 0.72, 0, 1);
+  --fast: 140ms;
+  --mid: 240ms;
+  --slow: 420ms;
+
+  --large: 1180px;
+  --etroit: 660px;
+
+  /* Le serif ne sert QUE d'accent, en italique, sur un mot ou deux.
+     Pris dans les polices du système : rien à télécharger. */
+  --serif: 'Iowan Old Style', 'Palatino Linotype', Palatino, 'Book Antiqua', Georgia,
+    'Times New Roman', serif;
+  --mono: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace;
+}
+
+:root,
+:root[data-theme='light'] {
+  color-scheme: light;
+
+  --bg: #eceff6;
+  --bg-deep: #e2e7f1;
+
+  --surface: rgba(255, 255, 255, 0.58);
+  --surface-strong: rgba(255, 255, 255, 0.8);
+  --surface-solid: #ffffff;
+  --surface-uni: #f6f8fc;
+  --surface-sunken: rgba(15, 23, 42, 0.035);
+
+  --border: rgba(15, 23, 42, 0.08);
+  --border-strong: rgba(15, 23, 42, 0.14);
+  --sheen: rgba(255, 255, 255, 0.65);
+
+  --text: #10141d;
+  --text-2: #576076;
+  --text-3: #8b93a6;
+
+  --shadow-sm: 0 1px 2px rgba(16, 24, 40, 0.04), 0 4px 14px rgba(16, 24, 40, 0.05);
+  --shadow: 0 2px 6px rgba(16, 24, 40, 0.05), 0 14px 40px rgba(16, 24, 40, 0.09);
+  --shadow-lg: 0 4px 12px rgba(16, 24, 40, 0.06), 0 34px 90px rgba(16, 24, 40, 0.16);
+
+  --accent-text: hsl(var(--accent-h) calc(var(--accent-s) * 0.85) 32%);
+  --aurora-opacity: 0.5;
+  --grain-opacity: 0.035;
+}
+
+:root[data-theme='dark'] {
+  color-scheme: dark;
+
+  --bg: #0b0d12;
+  --bg-deep: #060709;
+
+  --surface: rgba(255, 255, 255, 0.055);
+  --surface-strong: rgba(255, 255, 255, 0.095);
+  --surface-solid: #14171f;
+  --surface-uni: #151821;
+  --surface-sunken: rgba(255, 255, 255, 0.04);
+
+  --border: rgba(255, 255, 255, 0.09);
+  --border-strong: rgba(255, 255, 255, 0.16);
+  --sheen: rgba(255, 255, 255, 0.14);
+
+  --text: #f0f2f7;
+  --text-2: #a3abbd;
+  --text-3: #6d7488;
+
+  --shadow-sm: 0 2px 10px rgba(0, 0, 0, 0.4);
+  --shadow: 0 8px 40px rgba(0, 0, 0, 0.55);
+  --shadow-lg: 0 24px 80px rgba(0, 0, 0, 0.7);
+
+  --accent-text: hsl(var(--accent-h) var(--accent-s) calc(var(--accent-l) + 8%));
+  --aurora-opacity: 0.4;
+  --grain-opacity: 0.05;
+}
+
+:root.theme-ready body,
+:root.theme-ready .glass {
+  transition: background-color var(--slow) var(--ease), color var(--slow) var(--ease),
+    border-color var(--slow) var(--ease);
+}
+
+/* ========================================================
+   3. Le fond — halos, trame, grain
+   ======================================================== */
+
+.aurora {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+  background: radial-gradient(120% 90% at 50% 0%, var(--bg) 0%, var(--bg-deep) 100%);
+}
+
+.aurora__blob {
+  position: absolute;
+  width: 78vmax;
+  height: 78vmax;
+  border-radius: 50%;
+  opacity: var(--aurora-opacity);
+  will-change: transform;
+  transition: opacity var(--slow) var(--ease);
+}
+
+.aurora__blob--1 {
+  top: -34vmax;
+  left: -18vmax;
+  background: radial-gradient(circle at 50% 50%, hsl(var(--aur-h1) 92% 62% / 0.5), transparent 66%);
+  animation: drift-1 34s var(--ease) infinite alternate;
+}
+.aurora__blob--2 {
+  bottom: -40vmax;
+  right: -22vmax;
+  background: radial-gradient(circle at 50% 50%, hsl(var(--aur-h2) 88% 60% / 0.42), transparent 66%);
+  animation: drift-2 46s var(--ease) infinite alternate;
+}
+.aurora__blob--3 {
+  top: 18%;
+  right: -30vmax;
+  width: 60vmax;
+  height: 60vmax;
+  background: radial-gradient(circle at 50% 50%, hsl(var(--aur-h3) 85% 58% / 0.34), transparent 68%);
+  animation: drift-3 58s var(--ease) infinite alternate;
+}
+
+@keyframes drift-1 {
+  from { transform: translate3d(0, 0, 0) scale(1); }
+  to   { transform: translate3d(14vmax, 10vmax, 0) scale(1.14); }
+}
+@keyframes drift-2 {
+  from { transform: translate3d(0, 0, 0) scale(1.08); }
+  to   { transform: translate3d(-16vmax, -12vmax, 0) scale(1); }
+}
+@keyframes drift-3 {
+  from { transform: translate3d(0, 0, 0) scale(1); }
+  to   { transform: translate3d(-12vmax, 16vmax, 0) scale(1.2); }
+}
+
+.trame {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  --trame: hsl(var(--accent-h) 45% 42% / 0.05);
+  --trame-fine: hsl(var(--accent-h) 45% 42% / 0.026);
+  background-image:
+    linear-gradient(to right, var(--trame) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--trame) 1px, transparent 1px),
+    linear-gradient(to right, var(--trame-fine) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--trame-fine) 1px, transparent 1px);
+  background-size: 96px 96px, 96px 96px, 24px 24px, 24px 24px;
+}
+
+:root[data-theme='dark'] .trame {
+  --trame: hsl(var(--accent-h) 60% 70% / 0.045);
+  --trame-fine: hsl(var(--accent-h) 60% 70% / 0.02);
+}
+
+/* Le grain. Un aplat numérique est trop propre pour être regardé
+   longtemps ; un bruit très faible lui donne de la matière et casse
+   les bandes des dégradés. Généré en SVG, donc aucun fichier. */
+.grain {
+  position: absolute;
+  inset: -50%;
+  pointer-events: none;
+  opacity: var(--grain-opacity);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.82' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+/* ========================================================
+   4. Verre
+   ======================================================== */
+
+.glass {
+  position: relative;
+  background: var(--surface);
+  -webkit-backdrop-filter: blur(var(--blur)) saturate(170%);
+  backdrop-filter: blur(var(--blur)) saturate(170%);
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+}
+
+.glass::before {
+  content: '';
+  position: absolute;
+  inset: 0 0 auto;
+  height: 1px;
+  border-radius: inherit;
+  background: linear-gradient(90deg, transparent, var(--sheen) 22%, var(--sheen) 78%, transparent);
+  pointer-events: none;
+}
+
+/* ========================================================
+   5. Typographie
+   ======================================================== */
+
+h1, h2, h3, h4 { font-weight: 600; letter-spacing: -0.028em; line-height: 1.1; }
+
+/* L'affiche : une seule par page, et elle doit dominer franchement.
+   Un titre timide au-dessus d'un corps de texte donne une page de
+   documentation, pas une couverture. */
+.titre-affiche {
+  font-size: clamp(44px, 8.4vw, 96px);
+  font-weight: 660;
+  letter-spacing: -0.052em;
+  line-height: 0.96;
+}
+
+.titre-section {
+  font-size: clamp(28px, 4vw, 46px);
+  font-weight: 620;
+  letter-spacing: -0.04em;
+  line-height: 1.04;
+}
+
+.titre-bloc { font-size: 20px; font-weight: 600; letter-spacing: -0.025em; }
+
+/* Le mot mis en italique dans un titre. Le serif ne sert qu'à ça :
+   une inflexion de voix, jamais un paragraphe entier. */
+.inflexion {
+  font-family: var(--serif);
+  font-style: italic;
+  font-weight: 400;
+  letter-spacing: -0.02em;
+}
+
+.chapo {
+  font-size: clamp(17px, 1.45vw, 20px);
+  line-height: 1.6;
+  color: var(--text-2);
+  letter-spacing: -0.008em;
+  max-width: 54ch;
+}
+
+.texte { color: var(--text-2); line-height: 1.65; letter-spacing: -0.004em; max-width: 60ch; }
+.texte + .texte { margin-top: 15px; }
+.texte strong, .chapo strong { color: var(--text); font-weight: 560; }
+
+.accentue { color: var(--accent-text); }
+
+/* Le lien de texte : le trait se dessine, il n'apparaît pas. */
+.lien {
+  color: var(--text);
+  background-image: linear-gradient(var(--accent), var(--accent));
+  background-repeat: no-repeat;
+  background-position: 0 100%;
+  background-size: 100% 1px;
+  padding-bottom: 1px;
+  transition: background-size var(--mid) var(--ease), color var(--fast) var(--ease);
+}
+.lien:hover { background-size: 100% 2px; color: var(--accent-text); }
+
+/* ========================================================
+   6. Boutons
+   ======================================================== */
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 42px;
+  padding: 0 18px;
+  border-radius: 999px;
+  font-size: 15px;
+  font-weight: 520;
+  letter-spacing: -0.01em;
+  color: var(--text);
+  background: var(--surface-strong);
+  border: 1px solid var(--border);
+  white-space: nowrap;
+  transition: transform var(--fast) var(--ease), background var(--fast) var(--ease),
+    border-color var(--fast) var(--ease), box-shadow var(--mid) var(--ease);
+}
+.btn:active { transform: scale(0.97); }
+.btn:hover { border-color: var(--border-strong); }
+
+.btn--accent {
+  background: var(--accent);
+  color: var(--accent-ink);
+  border-color: transparent;
+  box-shadow: 0 4px 16px var(--accent-glow);
+}
+.btn--accent:hover {
+  border-color: transparent;
+  box-shadow: 0 10px 34px var(--accent-glow);
+  transform: translateY(-1px);
+}
+.btn--accent:active { transform: scale(0.97); }
+
+.btn--ghost { background: transparent; border-color: transparent; color: var(--text-2); }
+.btn--ghost:hover { background: var(--surface-sunken); color: var(--text); }
+
+.btn--grand { height: 50px; padding: 0 26px; font-size: 16px; }
+
+.btn--icone {
+  width: 38px;
+  height: 38px;
+  padding: 0;
+  border-radius: 50%;
+  color: var(--text-2);
+  background: transparent;
+  border-color: transparent;
+}
+.btn--icone:hover { background: var(--surface-sunken); color: var(--text); }
+.btn--icone svg { width: 19px; height: 19px; }
+
+/* ========================================================
+   7. Mise en page
+   ======================================================== */
+
+.page { position: relative; z-index: 1; }
+
+.contenu {
+  width: 100%;
+  max-width: var(--large);
+  margin-inline: auto;
+  padding-inline: clamp(20px, 5vw, 44px);
+}
+.contenu--etroit { max-width: var(--etroit); }
+
+/* Les respirations sont VOLONTAIREMENT inégales : une page dont
+   toutes les sections ont le même souffle se lit comme un tableur. */
+.section { padding-block: clamp(64px, 10vw, 132px); }
+.section--serree { padding-block: clamp(36px, 5vw, 64px); }
+.section--ample { padding-block: clamp(88px, 14vw, 180px); }
+
+.filet {
+  height: 1px;
+  border: 0;
+  background: var(--border-strong);
+  opacity: 0.7;
+}
+
+/* L'index de section : un numéro en chiffres de machine, un intitulé,
+   et un trait qui file jusqu'au bord. C'est ce qui donne à la page sa
+   structure lisible d'un coup d'œil. */
+.index {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: clamp(20px, 3vw, 34px);
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--text-3);
+}
+.index::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--border-strong);
+  opacity: 0.6;
+}
+.index__no { color: var(--accent-text); }
+
+.section__tete { max-width: 720px; }
+.section__tete .chapo { margin-top: 18px; }
+.section__tete + * { margin-top: clamp(32px, 5vw, 60px); }
+
+/* ========================================================
+   8. L'en-tête
+   ======================================================== */
+
+.entete {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  background: color-mix(in srgb, var(--bg) 70%, transparent);
+  -webkit-backdrop-filter: blur(var(--blur-strong)) saturate(170%);
+  backdrop-filter: blur(var(--blur-strong)) saturate(170%);
+  border-bottom: 1px solid transparent;
+  transition: border-color var(--mid) var(--ease);
+}
+.entete[data-defile='true'] { border-bottom-color: var(--border); }
+
+.entete__barre {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  height: 66px;
+  max-width: var(--large);
+  margin-inline: auto;
+  padding-inline: clamp(20px, 5vw, 44px);
+}
+
+.marque { display: flex; align-items: center; gap: 10px; flex: none; }
+.marque__nom { font-size: 18px; font-weight: 620; letter-spacing: -0.035em; }
+
+.nav { display: flex; align-items: center; gap: 4px; margin-left: 26px; flex: 1; }
+
+.nav__lien {
+  position: relative;
+  padding: 8px 12px;
+  font-size: 14.5px;
+  font-weight: 480;
+  color: var(--text-2);
+  transition: color var(--fast) var(--ease);
+}
+.nav__lien:hover { color: var(--text); }
+
+/* La page courante porte un point, pas un fond : plus discret, et ça
+   ne fabrique pas un bouton là où il n'y a qu'un lien. */
+.nav__lien[aria-current='page'] { color: var(--text); font-weight: 560; }
+.nav__lien[aria-current='page']::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  bottom: 1px;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--accent);
+  transform: translateX(-50%);
+}
+
+.entete__outils { display: flex; align-items: center; gap: 6px; flex: none; margin-left: auto; }
+
+.burger { display: none; }
+
+@media (max-width: 880px) {
+  .nav {
+    position: absolute;
+    top: 66px;
+    left: 0;
+    right: 0;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 2px;
+    margin: 0;
+    padding: 10px clamp(20px, 5vw, 44px) 18px;
+    background: var(--surface-strong);
+    -webkit-backdrop-filter: blur(var(--blur-strong)) saturate(170%);
+    backdrop-filter: blur(var(--blur-strong)) saturate(170%);
+    border-bottom: 1px solid var(--border);
+    transform: translateY(-8px);
+    opacity: 0;
+    pointer-events: none;
+    transition: transform var(--mid) var(--ease), opacity var(--mid) var(--ease);
+  }
+  .nav[data-ouvert='true'] { transform: none; opacity: 1; pointer-events: auto; }
+  .nav__lien { padding: 13px 0; font-size: 17px; }
+  .nav__lien[aria-current='page']::after { left: auto; right: 2px; bottom: 50%; }
+  .burger { display: inline-flex; }
+  .entete__cta { display: none; }
+}
+
+/* ========================================================
+   9. L'ouverture
+
+   Deux colonnes inégales : le texte à gauche sur sept douzièmes,
+   l'œil à droite. Un héros centré avec deux boutons sous le titre est
+   la mise en page par défaut de tout le web ; celle-ci a une assise.
+   ======================================================== */
+
+.hero {
+  position: relative;
+  padding-block: clamp(52px, 9vw, 108px) clamp(40px, 6vw, 80px);
+}
+
+.hero__grille {
+  display: grid;
+  grid-template-columns: minmax(0, 7fr) minmax(0, 5fr);
+  gap: clamp(24px, 5vw, 64px);
+  align-items: center;
+}
+
+.hero__oeil { display: flex; justify-content: center; }
+
+.hero__sur {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 22px;
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--text-3);
+}
+.hero__sur::before {
+  content: '';
+  width: 26px;
+  height: 1px;
+  background: var(--accent);
+}
+
+.hero .chapo { margin-top: 24px; }
+
+.hero__actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 34px; }
+
+.hero__note {
+  margin-top: 20px;
+  font-size: 13.5px;
+  color: var(--text-3);
+  letter-spacing: -0.004em;
+}
+
+@media (max-width: 900px) {
+  .hero__grille { grid-template-columns: 1fr; }
+  /* l'œil passe au-dessus du titre, et rétrécit */
+  .hero__oeil { order: -1; justify-content: flex-start; margin-left: -18px; }
+}
+
+/* ========================================================
+   10. Les blocs
+   ======================================================== */
+
+.grille {
+  display: grid;
+  gap: clamp(14px, 1.6vw, 20px);
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr));
+}
+.grille--2 { grid-template-columns: repeat(auto-fit, minmax(min(100%, 400px), 1fr)); }
+
+/* La mosaïque : des blocs de tailles DIFFÉRENTES. C'est le contraire
+   d'une grille de cartes toutes identiques, et c'est ce qui fait
+   qu'une page se regarde au lieu de se parcourir. */
+.mosaique {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: clamp(14px, 1.6vw, 20px);
+}
+.mosaique > * { grid-column: span 2; }
+.mosaique > .large { grid-column: span 3; }
+.mosaique > .pleine { grid-column: span 6; }
+
+@media (max-width: 980px) {
+  .mosaique { grid-template-columns: repeat(2, 1fr); }
+  .mosaique > *, .mosaique > .large { grid-column: span 1; }
+  .mosaique > .pleine { grid-column: span 2; }
+}
+@media (max-width: 620px) {
+  .mosaique { grid-template-columns: 1fr; }
+  .mosaique > *, .mosaique > .large, .mosaique > .pleine { grid-column: span 1; }
+}
+
+/* Un bloc n'a pas systématiquement de cadre. Le cadre se mérite : il
+   sert à isoler ce qui doit l'être, pas à remplir la page. */
+.bloc { padding: clamp(22px, 2.4vw, 32px); border-radius: var(--r-lg); }
+
+.bloc--nu {
+  padding: 0;
+  padding-top: 22px;
+  border-top: 1px solid var(--border-strong);
+  border-radius: 0;
+}
+
+.bloc__titre { font-size: 19px; font-weight: 600; letter-spacing: -0.025em; margin-bottom: 10px; }
+.bloc__texte { color: var(--text-2); font-size: 15.5px; line-height: 1.62; letter-spacing: -0.004em; }
+
+/* La petite mention à côté d'un titre. Discrète : un mot, pas une
+   décoration. */
+.mention {
+  display: inline-block;
+  margin-left: 8px;
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--accent-text);
+  vertical-align: 3px;
+}
+.mention--sourde { color: var(--text-3); }
+
+/* ========================================================
+   11. Les étapes — le grand chiffre dans la marge
+   ======================================================== */
+
+.etapes { border-top: 1px solid var(--border-strong); }
+
+.etape {
+  display: grid;
+  grid-template-columns: minmax(84px, 1fr) minmax(0, 4fr) minmax(0, 5fr);
+  gap: clamp(16px, 3vw, 40px);
+  align-items: start;
+  padding-block: clamp(28px, 3.6vw, 46px);
+  border-bottom: 1px solid var(--border-strong);
+}
+
+.etape__no {
+  font-size: clamp(38px, 4.6vw, 62px);
+  font-weight: 300;
+  letter-spacing: -0.05em;
+  line-height: 0.86;
+  color: var(--text);
+  opacity: 0.16;
+}
+
+.etape__titre {
+  font-size: clamp(20px, 2.2vw, 27px);
+  font-weight: 580;
+  letter-spacing: -0.032em;
+  line-height: 1.14;
+}
+
+.etape__texte {
+  color: var(--text-2);
+  font-size: 15.5px;
+  line-height: 1.68;
+  letter-spacing: -0.004em;
+}
+
+@media (max-width: 820px) {
+  .etape { grid-template-columns: 54px minmax(0, 1fr); }
+  .etape__texte { grid-column: 2; margin-top: 10px; }
+  .etape__no { font-size: 34px; }
+}
+
+/* ========================================================
+   12. La bande — le contraste de la page
+
+   Un panneau sombre en pleine largeur, une fois par page. Sans lui,
+   toute la page a la même valeur du haut jusqu'en bas, et c'est cette
+   uniformité qu'on lit comme « fait à la chaîne ».
+   ======================================================== */
+
+.bande {
+  position: relative;
+  overflow: hidden;
+  background: #0b0d12;
+  color: #f0f2f7;
+  padding-block: clamp(64px, 9vw, 120px);
+}
+
+.bande::before {
+  content: '';
+  position: absolute;
+  top: -30%;
+  left: 50%;
+  width: 130%;
+  aspect-ratio: 2 / 1;
+  transform: translateX(-50%);
+  background: radial-gradient(circle at 50% 50%,
+    hsl(var(--accent-h) var(--accent-s) 52% / 0.3), transparent 62%);
+  pointer-events: none;
+}
+.bande > * { position: relative; z-index: 1; }
+
+/* Dans la bande, le texte gris de la page serait illisible : on
+   redéfinit les valeurs plutôt que de repeindre chaque élément. */
+.bande {
+  --text: #f0f2f7;
+  --text-2: #a3abbd;
+  --text-3: #767d90;
+  --border: rgba(255, 255, 255, 0.1);
+  --border-strong: rgba(255, 255, 255, 0.18);
+  --surface: rgba(255, 255, 255, 0.05);
+  --surface-strong: rgba(255, 255, 255, 0.09);
+  --surface-sunken: rgba(255, 255, 255, 0.045);
+  --sheen: rgba(255, 255, 255, 0.14);
+  --accent-text: hsl(var(--accent-h) var(--accent-s) calc(var(--accent-l) + 10%));
+}
+
+/* ========================================================
+   13. Les écrans montrés
+
+   Les écrans d'Atlas ne sont pas des captures en PNG : ils sont
+   redessinés en HTML (voir maquettes.css). Ce qui suit ne concerne
+   donc que leur PLACE dans la page — la légende qui les accompagne,
+   et les deux libertés qu'on leur laisse prendre.
+   ======================================================== */
+
+.legende {
+  margin-top: 14px;
+  font-family: var(--mono);
+  font-size: 10.5px;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+  color: var(--text-3);
+  line-height: 1.5;
+}
+
+/* Le téléphone garde sa largeur : étiré sur une colonne entière, il
+   cesse de ressembler à un téléphone. */
+.maq--tel { max-width: 280px; }
+
+/* L'écran qui sort de sa colonne vers le bord de la page : le geste
+   qui donne de l'ampleur, et il ne coûte qu'une marge négative. */
+.maq--deborde { margin-right: calc(-1 * clamp(20px, 5vw, 44px)); }
+@media (max-width: 900px) { .maq--deborde { margin-right: 0; } }
+
+/* Trois colonnes, pour qu'une capture puisse en occuper deux : deux
+   images de largeur égale se regardent comme un avant/après, ce qui
+   n'est pas le propos. */
+.galerie {
+  display: grid;
+  gap: clamp(16px, 2.4vw, 32px);
+  grid-template-columns: repeat(3, 1fr);
+  align-items: end;
+}
+@media (max-width: 760px) {
+  .galerie { grid-template-columns: 1fr; }
+  .galerie > * { grid-column: span 1 !important; }
+}
+
+/* ========================================================
+   14. Les duos texte / image
+   ======================================================== */
+
+.duo {
+  display: grid;
+  gap: clamp(28px, 5vw, 72px);
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 330px), 1fr));
+  align-items: center;
+}
+.duo + .duo { margin-top: clamp(56px, 9vw, 110px); }
+
+@media (min-width: 900px) {
+  .duo--inverse > :first-child { order: 2; }
+  /* colonnes inégales : deux moitiés parfaites font une planche de
+     présentation, pas une page */
+  .duo--penche { grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); }
+  .duo--penche.duo--inverse { grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); }
+}
+
+.points { margin-top: 24px; display: grid; gap: 0; }
+
+.point {
+  display: flex;
+  gap: 14px;
+  align-items: baseline;
+  padding-block: 13px;
+  border-top: 1px solid var(--border);
+  font-size: 15.5px;
+  color: var(--text-2);
+  line-height: 1.55;
+}
+.point:last-child { border-bottom: 1px solid var(--border); }
+.point__clef {
+  flex: none;
+  width: 26px;
+  font-family: var(--mono);
+  font-size: 10.5px;
+  letter-spacing: 0.1em;
+  color: var(--accent-text);
+}
+.point strong { color: var(--text); font-weight: 560; }
+
+/* ========================================================
+   15. Le mur des formes
+   ======================================================== */
+
+.formes {
+  display: grid;
+  gap: 1px;
+  background: var(--border);
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  overflow: hidden;
+  grid-template-columns: repeat(3, 1fr);
+}
+@media (max-width: 720px) { .formes { grid-template-columns: repeat(2, 1fr); } }
+
+/* Les six formes ne sont pas six cartes flottantes : c'est un bloc
+   unique découpé par des filets. Elles se lisent comme un ensemble. */
+.forme {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  padding: clamp(18px, 2vw, 26px);
+  background: var(--surface);
+  -webkit-backdrop-filter: blur(var(--blur)) saturate(170%);
+  backdrop-filter: blur(var(--blur)) saturate(170%);
+  transition: background var(--mid) var(--ease);
+}
+.forme:hover { background: var(--surface-strong); }
+
+.forme__no {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  letter-spacing: 0.14em;
+  color: var(--text-3);
+}
+.forme__nom { font-size: 17px; font-weight: 580; letter-spacing: -0.022em; }
+.forme__quoi { font-size: 13.5px; color: var(--text-3); line-height: 1.5; }
+
+/* ========================================================
+   16. Les plans
+   ======================================================== */
+
+.plans {
+  display: grid;
+  gap: clamp(14px, 1.6vw, 20px);
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr));
+  align-items: stretch;
+}
+
+.plan {
+  display: flex;
+  flex-direction: column;
+  padding: clamp(24px, 2.8vw, 34px);
+  border-radius: var(--r-xl);
+}
+
+.plan--vedette { border-color: var(--accent-line); box-shadow: 0 14px 50px var(--accent-glow); }
+.plan--venir { border-style: dashed; }
+
+.plan__tete { display: flex; align-items: baseline; gap: 8px; }
+.plan__nom { font-size: 22px; font-weight: 620; letter-spacing: -0.03em; }
+
+.plan__promesse {
+  margin-top: 12px;
+  font-size: 15px;
+  color: var(--text-2);
+  line-height: 1.55;
+  letter-spacing: -0.004em;
+}
+
+.plan__prix { display: flex; align-items: baseline; gap: 8px; margin-top: 26px; flex-wrap: wrap; }
+.plan__montant { font-size: clamp(38px, 4vw, 46px); font-weight: 640; letter-spacing: -0.05em; line-height: 1; }
+.plan__par { font-size: 14px; color: var(--text-3); }
+.plan__annee { width: 100%; margin-top: 9px; font-size: 13px; color: var(--text-3); line-height: 1.5; }
+
+.plan .btn { margin-top: 24px; width: 100%; }
+
+.plan__filet { margin: 26px 0 20px; }
+
+.plan__liste { display: grid; gap: 12px; }
+
+.plan__item {
+  display: flex;
+  gap: 11px;
+  align-items: flex-start;
+  font-size: 14.5px;
+  color: var(--text-2);
+  line-height: 1.5;
+  letter-spacing: -0.004em;
+}
+.plan__item strong { color: var(--text); font-weight: 560; }
+.plan__item svg { flex: none; width: 15px; height: 15px; margin-top: 4px; color: var(--accent-text); }
+.plan__item--non { color: var(--text-3); }
+.plan__item--non svg { color: var(--text-3); }
+
+/* ========================================================
+   17. Le tableau
+   ======================================================== */
+
+.tableau-boite {
+  overflow-x: auto;
+  border-radius: var(--r-lg);
+  border: 1px solid var(--border);
+  background: var(--surface);
+  -webkit-backdrop-filter: blur(var(--blur)) saturate(170%);
+  backdrop-filter: blur(var(--blur)) saturate(170%);
+}
+
+table.tableau { width: 100%; min-width: 680px; border-collapse: collapse; font-size: 14.5px; }
+
+.tableau th,
+.tableau td {
+  padding: 15px 20px;
+  text-align: left;
+  border-bottom: 1px solid var(--border);
+  vertical-align: top;
+}
+
+.tableau thead th {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--text-3);
+  white-space: nowrap;
+}
+
+.tableau tbody th { font-weight: 460; color: var(--text-2); }
+.tableau td { color: var(--text); }
+.tableau tr:last-child th,
+.tableau tr:last-child td { border-bottom: 0; }
+
+.tableau .col-vedette { background: var(--accent-soft); }
+.tableau .oui { color: var(--accent-text); font-weight: 560; }
+.tableau .non { color: var(--text-3); }
+
+.tableau .groupe th {
+  padding-top: 26px;
+  font-family: var(--mono);
+  font-size: 10.5px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--text-3);
+}
+
+/* ========================================================
+   18. Les questions
+   ======================================================== */
+
+/* Pas de cartes empilées : une liste, des filets, et le titre qui
+   glisse d'un cheveu au survol. */
+.questions { border-top: 1px solid var(--border-strong); }
+
+.question { border-bottom: 1px solid var(--border-strong); }
+
+.question > summary {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 22px 4px;
+  font-size: clamp(17px, 1.6vw, 19px);
+  font-weight: 540;
+  letter-spacing: -0.022em;
+  cursor: pointer;
+  list-style: none;
+  transition: padding-left var(--mid) var(--ease), color var(--fast) var(--ease);
+}
+.question > summary::-webkit-details-marker { display: none; }
+.question > summary:hover { padding-left: 10px; color: var(--accent-text); }
+
+.question > summary::after {
+  content: '';
+  flex: none;
+  width: 10px;
+  height: 10px;
+  margin-left: auto;
+  border-right: 1.5px solid var(--text-3);
+  border-bottom: 1.5px solid var(--text-3);
+  transform: rotate(45deg) translate(-2px, -2px);
+  transition: transform var(--mid) var(--ease);
+}
+.question[open] > summary::after { transform: rotate(225deg) translate(-2px, -2px); }
+
+.question__corps {
+  padding: 0 4px 24px;
+  max-width: 60ch;
+  font-size: 15.5px;
+  color: var(--text-2);
+  line-height: 1.68;
+}
+.question__corps p + p { margin-top: 13px; }
+
+/* ========================================================
+   19. Le réglage de couleur
+   ======================================================== */
+
+.reglage {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  padding: 18px 22px;
+  border-radius: 999px;
+}
+
+.teintes { display: flex; align-items: center; gap: 9px; flex-wrap: wrap; }
+
+.teinte {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.12);
+  transition: transform var(--fast) var(--ease), border-color var(--fast) var(--ease);
+}
+.teinte:hover { transform: scale(1.14); }
+.teinte[aria-pressed='true'] { border-color: var(--text); transform: scale(1.08); }
+
+.roue {
+  flex: 1;
+  min-width: 150px;
+  height: 26px;
+  appearance: none;
+  -webkit-appearance: none;
+  background: linear-gradient(90deg,
+    hsl(0 90% 58%), hsl(45 90% 58%), hsl(90 90% 58%), hsl(140 90% 58%),
+    hsl(190 90% 58%), hsl(230 90% 58%), hsl(280 90% 58%), hsl(320 90% 58%), hsl(360 90% 58%));
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  cursor: pointer;
+}
+.roue::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #fff;
+  border: 2px solid rgba(0, 0, 0, 0.25);
+}
+.roue::-moz-range-thumb {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #fff;
+  border: 2px solid rgba(0, 0, 0, 0.25);
+}
+
+/* ========================================================
+   20. Les chiffres
+   ======================================================== */
+
+.mesures {
+  display: grid;
+  gap: 0;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 190px), 1fr));
+  border-top: 1px solid var(--border-strong);
+}
+
+.mesure {
+  padding: clamp(22px, 2.6vw, 32px) clamp(18px, 2vw, 26px) clamp(22px, 2.6vw, 32px) 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.mesure__nombre {
+  font-size: clamp(32px, 3.6vw, 44px);
+  font-weight: 640;
+  letter-spacing: -0.05em;
+  line-height: 1;
+  color: var(--text);
+}
+.mesure__quoi {
+  margin-top: 10px;
+  font-size: 14px;
+  color: var(--text-2);
+  line-height: 1.55;
+  max-width: 30ch;
+}
+
+/* ========================================================
+   21. La citation
+   ======================================================== */
+
+/* Une phrase seule, en grand, sans guillemets décoratifs ni cadre.
+   Elle sert de respiration entre deux sections denses. */
+.cite {
+  font-family: var(--serif);
+  font-style: italic;
+  font-weight: 400;
+  font-size: clamp(24px, 3.4vw, 40px);
+  line-height: 1.28;
+  letter-spacing: -0.02em;
+  color: var(--text);
+  max-width: 22ch;
+}
+.cite__sous {
+  margin-top: 20px;
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--text-3);
+}
+
+/* ========================================================
+   22. Le pied de page
+   ======================================================== */
+
+.pied {
+  padding-block: clamp(48px, 6vw, 76px) clamp(28px, 3vw, 40px);
+  border-top: 1px solid var(--border);
+  background: color-mix(in srgb, var(--bg-deep) 55%, transparent);
+}
+
+/* Colonnes de même nature : mêler une piste souple et un `auto-fit`
+   fabrique des pistes fantômes à zéro pixel, et l'alignement se
+   dérègle sans qu'on voie pourquoi. */
+.pied__grille {
+  display: grid;
+  gap: clamp(28px, 4vw, 52px);
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 170px), 1fr));
+}
+
+.pied__titre {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--text-3);
+  margin-bottom: 14px;
+}
+
+.pied__liste { display: grid; gap: 10px; }
+.pied__liste a,
+.pied__liste button {
+  font-size: 14.5px;
+  color: var(--text-2);
+  text-align: left;
+  transition: color var(--fast) var(--ease);
+}
+.pied__liste a:hover,
+.pied__liste button:hover { color: var(--text); }
+
+.pied__bas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 22px;
+  align-items: center;
+  margin-top: clamp(36px, 5vw, 60px);
+  padding-top: 22px;
+  border-top: 1px solid var(--border);
+  font-size: 13px;
+  color: var(--text-3);
+}
+
+/* ========================================================
+   23. L'appel final
+   ======================================================== */
+
+/* Pleine page, sans cadre. Le halo et le grand titre suffisent ;
+   une carte de plus au même endroit ne ferait qu'un cadre de plus. */
+.final { position: relative; text-align: center; }
+.final .titre-section { max-width: 16ch; margin-inline: auto; }
+.final .chapo { margin: 18px auto 0; text-align: center; }
+.final .hero__actions { justify-content: center; }
+
+/* ========================================================
+   24. L'apparition au défilement
+   ======================================================== */
+
+:root.js .revele {
+  opacity: 0;
+  transform: translateY(16px);
+  transition: opacity var(--slow) var(--ease), transform var(--slow) var(--ease);
+}
+:root.js .revele[data-vu='true'] { opacity: 1; transform: none; }
+
+/* ========================================================
+   25. L'œil — repris de l'app
+   ======================================================== */
+
+.oeil { display: block; overflow: visible; }
+
+.oeil {
+  --iris-clair: hsl(var(--accent-h) calc(var(--accent-s) * 0.9) 68%);
+  --iris-vif: hsl(var(--accent-h) var(--accent-s) 52%);
+  --iris-sombre: hsl(var(--accent-h) calc(var(--accent-s) * 0.95) 26%);
+  --pupille-coeur: hsl(var(--accent-h) 62% 7%);
+  --pupille-bord: hsl(var(--accent-h) 58% 13%);
+  --pupille-halo: hsl(var(--accent-h) 70% 20%);
+  --paupiere-haut: #d9dbe2;
+  --paupiere-bas: #eceef3;
+}
+:root[data-theme='dark'] .oeil,
+.bande .oeil { --paupiere-haut: #c6c9d3; --paupiere-bas: #dcdfe7; }
+
+.oeil__blanc { fill: #fbfbfd; }
+:root[data-theme='dark'] .oeil__blanc,
+.bande .oeil__blanc { fill: #eef0f6; }
+
+.oeil__cerne { fill: none; stroke: rgba(15, 23, 42, 0.16); stroke-width: 2; }
+:root[data-theme='dark'] .oeil__cerne,
+.bande .oeil__cerne { stroke: rgba(255, 255, 255, 0.22); }
+
+.oeil__strie { stroke: var(--pupille-coeur); stroke-width: 1.1; stroke-linecap: round; }
+.oeil__anneau { fill: none; stroke: var(--iris-sombre); stroke-width: 1.8; opacity: 0.6; }
+.oeil__lueur { fill: #fff; opacity: 0.9; }
+.oeil__eclat { fill: #fff; opacity: 0.45; }
+.oeil__ombre { fill: rgba(20, 24, 34, 0.42); }
+.oeil__cil { fill: none; stroke: rgba(20, 24, 34, 0.28); stroke-width: 1.6; }
+
+.oeil__regard { animation: regard 14s cubic-bezier(0.6, 0, 0.2, 1) infinite; }
+@keyframes regard {
+  0%, 16%   { transform: translate(0, 0); }
+  22%, 38%  { transform: translate(7px, -2px); }
+  44%, 58%  { transform: translate(-7px, 1px); }
+  64%, 74%  { transform: translate(2px, 5px); }
+  80%, 100% { transform: translate(0, 0); }
+}
+
+.oeil__lueur { animation: lueur 9s ease-in-out infinite; }
+@keyframes lueur {
+  0%, 100% { transform: translate(0, 0); opacity: 0.9; }
+  35%      { transform: translate(4px, 2px); opacity: 0.62; }
+  70%      { transform: translate(-3px, 3px); opacity: 0.8; }
+}
+
+.oeil__paupiere { animation: cligner 7.4s cubic-bezier(0.4, 0, 0.3, 1) infinite; }
+@keyframes cligner {
+  0%, 90.5% { transform: translateY(0); }
+  93%       { transform: translateY(106px); }
+  93.8%     { transform: translateY(106px); }
+  97.5%     { transform: translateY(0); }
+  100%      { transform: translateY(0); }
+}
+
+.oeil__voile { animation: paupiere-suit 14s cubic-bezier(0.6, 0, 0.2, 1) infinite; }
+@keyframes paupiere-suit {
+  0%, 16%   { transform: translateY(0); }
+  22%, 38%  { transform: translateY(-1px); }
+  44%, 58%  { transform: translateY(0.4px); }
+  64%, 74%  { transform: translateY(2.4px); }
+  80%, 100% { transform: translateY(0); }
+}
+
+.oeil__couronne { transform-box: view-box; transform-origin: 90px 90px; }
+
+.oeil__langue[data-ton='0'],
+.oeil__braise[data-ton='0'] { fill: hsl(var(--accent-h) var(--accent-s) var(--accent-l)); }
+.oeil__langue[data-ton='1'],
+.oeil__braise[data-ton='1'] { fill: hsl(calc(var(--accent-h) + 14) var(--accent-s) calc(var(--accent-l) + 9%)); }
+.oeil__langue[data-ton='2'],
+.oeil__braise[data-ton='2'] { fill: hsl(calc(var(--accent-h) - 6) calc(var(--accent-s) * 0.94) calc(var(--accent-l) - 20%)); }
+
+.oeil__langue {
+  transform-box: view-box;
+  transform-origin: 90px 90px;
+  animation-name: langue-fremit;
+  animation-timing-function: cubic-bezier(0.45, 0, 0.35, 1);
+  animation-iteration-count: infinite;
+  animation-direction: alternate;
+  will-change: transform;
+}
+@keyframes langue-fremit {
+  from { transform: rotate(-2.6deg) scale(0.93); opacity: 0.7; }
+  to   { transform: rotate(2.8deg) scale(1.06); opacity: 1; }
+}
+
+.oeil__braise {
+  transform-box: view-box;
+  transform-origin: 90px 90px;
+  animation-name: braise-derive;
+  animation-timing-function: ease-in-out;
+  animation-iteration-count: infinite;
+  animation-direction: alternate;
+}
+@keyframes braise-derive {
+  from { transform: rotate(-3deg) scale(0.9); opacity: 0.45; }
+  to   { transform: rotate(4deg) scale(1.12); opacity: 0.95; }
+}
+
+/* ========================================================
+   26. Divers
+   ======================================================== */
+
+.pastilles { display: flex; flex-wrap: wrap; gap: 8px; }
+
+.pastille {
+  padding: 7px 14px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 470;
+  color: var(--text-2);
+  background: var(--surface-sunken);
+  border: 1px solid var(--border);
+}
+
+.saut-lien { position: absolute; left: -9999px; z-index: 100; }
+.saut-lien:focus {
+  left: 12px;
+  top: 12px;
+  padding: 10px 16px;
+  border-radius: var(--r-sm);
+  background: var(--surface-solid);
+  border: 1px solid var(--border-strong);
+}
+
+/* ========================================================
+   28. « Réduire les animations » fait foi
+   ======================================================== */
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  :root.js .revele { opacity: 1; transform: none; }
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}

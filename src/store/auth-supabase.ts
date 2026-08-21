@@ -33,6 +33,7 @@ function versSession(user: User): Session {
     id: user.id,
     email: user.email ?? '',
     nom,
+    apparence: user.user_metadata?.apparence,
     depuis: Date.parse(user.last_sign_in_at ?? user.created_at) || Date.now(),
   }
 }
@@ -146,6 +147,16 @@ export class AuthSupabase implements Authentification {
 
   async majProfil(nom: string): Promise<Session> {
     const { data, error } = await supabase().auth.updateUser({ data: { nom: nom.trim() } })
+    if (error) throw traduire(error)
+    if (!data.user) throw new Error('Aucune session')
+    return versSession(data.user)
+  }
+
+  /* Même champ que le nom, même mécanisme : `updateUser` FUSIONNE les
+     métadonnées, il ne les remplace pas — écrire l'apparence n'efface
+     donc pas le nom, et inversement. */
+  async habiller(apparence: unknown): Promise<Session> {
+    const { data, error } = await supabase().auth.updateUser({ data: { apparence } })
     if (error) throw traduire(error)
     if (!data.user) throw new Error('Aucune session')
     return versSession(data.user)

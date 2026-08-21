@@ -1,0 +1,988 @@
+/* ---------------------------------------------------------------
+   Les écrans d'Atlas, reconstruits.
+
+   Plutôt que des captures d'écran en PNG, les écrans sont REDESSINÉS
+   en HTML avec les jetons de l'app. Trois raisons, et ce ne sont pas
+   des raisons de confort :
+
+   · c'est net à n'importe quelle résolution, et ça ne pèse rien ;
+   · ça suit le thème du visiteur et la couleur qu'il a choisie,
+     donc l'accent qu'il essaie se retrouve DANS les écrans montrés ;
+   · ça ne périme pas à chaque évolution de l'app comme le ferait une
+     image prise un mardi.
+
+   ── L'UNITÉ
+
+   Chaque maquette est dessinée dans un repère en PIXELS DE PLAN, puis
+   l'ensemble se met à l'échelle de la place disponible. `--k` vaut un
+   pixel de plan : la largeur du conteneur divisée par la largeur de
+   référence du dessin (`--mq-w`). Toutes les dimensions s'écrivent
+   donc `calc(N * var(--k))`, où N est la valeur qu'aurait l'app.
+
+   C'est plus bavard qu'un `px`, et c'est le prix d'un dessin qui
+   garde exactement ses proportions du téléphone au grand écran.
+
+   ── PAS D'INTERACTION
+
+   Une maquette ne réagit à rien : elle représente un instant de
+   l'app, pas l'app. Elle est donc annoncée aux lecteurs d'écran comme
+   une image, avec sa description.
+   --------------------------------------------------------------- */
+
+.maq {
+  container-type: inline-size;
+  position: relative;
+  overflow: hidden;
+  border-radius: var(--r-lg);
+  border: 1px solid var(--border-strong);
+  background: var(--bg);
+  box-shadow: var(--shadow-lg);
+}
+
+/* Le dessin lui-même. `--mq-w` est la largeur de référence, et elle
+   change selon l'appareil représenté. */
+.mq {
+  --mq-w: 1100;
+  --mq-h: 660;
+  --k: calc(100cqw / var(--mq-w));
+  /* La hauteur découle du dessin : le cadre ne se déforme jamais,
+     quelle que soit la colonne dans laquelle on le pose. */
+  aspect-ratio: var(--mq-w) / var(--mq-h);
+  position: relative;
+  display: flex;
+  overflow: hidden;
+  background: radial-gradient(120% 90% at 50% 0%, var(--bg) 0%, var(--bg-deep) 100%);
+  font-family: 'Inter Variable', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  color: var(--text);
+  letter-spacing: -0.01em;
+  user-select: none;
+}
+
+.mq__scene { height: 100%; }
+
+/* Les halos du fond, en version fixe : dans une maquette ils ne
+   dérivent pas, sinon trois écrans côte à côte respirent chacun de
+   leur côté et la page se met à clignoter. */
+.mq__halo {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: var(--aurora-opacity);
+  background:
+    radial-gradient(closest-side at 12% 6%, hsl(var(--aur-h1) 92% 62% / 0.4), transparent),
+    radial-gradient(closest-side at 92% 88%, hsl(var(--aur-h2) 88% 60% / 0.32), transparent),
+    radial-gradient(closest-side at 88% 18%, hsl(var(--aur-h3) 85% 58% / 0.26), transparent);
+}
+
+.mq__trame {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image:
+    linear-gradient(to right, hsl(var(--accent-h) 45% 42% / 0.05) 1px, transparent 1px),
+    linear-gradient(to bottom, hsl(var(--accent-h) 45% 42% / 0.05) 1px, transparent 1px);
+  background-size: calc(96 * var(--k)) calc(96 * var(--k));
+}
+:root[data-theme='dark'] .mq__trame,
+.bande .mq__trame {
+  background-image:
+    linear-gradient(to right, hsl(var(--accent-h) 60% 70% / 0.05) 1px, transparent 1px),
+    linear-gradient(to bottom, hsl(var(--accent-h) 60% 70% / 0.05) 1px, transparent 1px);
+}
+
+.mq__scene {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  gap: calc(10 * var(--k));
+  width: 100%;
+  padding: calc(10 * var(--k));
+}
+
+/* ========================================================
+   Le verre — la matière commune
+   ======================================================== */
+
+.mq-verre {
+  position: relative;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: calc(26 * var(--k));
+  box-shadow: var(--shadow-sm);
+}
+
+.mq-verre::before {
+  content: '';
+  position: absolute;
+  inset: 0 0 auto;
+  height: 1px;
+  border-radius: inherit;
+  background: linear-gradient(90deg, transparent, var(--sheen) 22%, var(--sheen) 78%, transparent);
+}
+
+/* ========================================================
+   Le rail de navigation — 66 px, jamais une colonne pleine
+   ======================================================== */
+
+.mq-rail {
+  flex: none;
+  width: calc(66 * var(--k));
+  display: flex;
+  flex-direction: column;
+  gap: calc(3 * var(--k));
+  padding: calc(10 * var(--k)) calc(9 * var(--k));
+}
+
+.mq-rail__item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: calc(3 * var(--k));
+  height: calc(54 * var(--k));
+  border-radius: calc(11 * var(--k));
+  font-size: calc(10 * var(--k));
+  color: var(--text-3);
+}
+
+.mq-rail__item svg {
+  width: calc(20 * var(--k));
+  height: calc(20 * var(--k));
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 1.7;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.mq-rail__item[data-actif] {
+  background: var(--accent-soft);
+  color: var(--text);
+  font-weight: 550;
+}
+.mq-rail__item[data-actif] svg { color: var(--accent-text); }
+
+.mq-rail__vide { flex: 1; }
+
+.mq-rail__oeil {
+  display: flex;
+  justify-content: center;
+  padding-bottom: calc(8 * var(--k));
+}
+.mq-rail__oeil .oeil { width: calc(30 * var(--k)); height: calc(30 * var(--k)); }
+
+/* ========================================================
+   Les volets
+   ======================================================== */
+
+.mq-volet {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.mq-volet--liste { flex: none; width: calc(340 * var(--k)); }
+.mq-volet--detail { flex: 1; }
+
+.mq-tete {
+  display: flex;
+  align-items: baseline;
+  gap: calc(10 * var(--k));
+  padding: calc(16 * var(--k)) calc(16 * var(--k)) calc(10 * var(--k));
+}
+
+.mq-tete__titre {
+  flex: 1;
+  font-size: calc(19 * var(--k));
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+
+/* Le bonjour manuscrit, comme en tête du flux. */
+.mq-tete__main {
+  flex: 1;
+  font-family: 'Snell Roundhand', 'Segoe Script', 'Bradley Hand', 'Brush Script MT', cursive;
+  font-weight: 700;
+  font-size: calc(25 * var(--k));
+  color: var(--text);
+}
+
+.mq-rond {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: calc(30 * var(--k));
+  height: calc(30 * var(--k));
+  border-radius: 50%;
+  background: var(--accent);
+  color: var(--accent-ink);
+  font-size: calc(17 * var(--k));
+  line-height: 1;
+  box-shadow: 0 calc(4 * var(--k)) calc(14 * var(--k)) var(--accent-glow);
+}
+
+.mq-recherche {
+  display: flex;
+  align-items: center;
+  gap: calc(9 * var(--k));
+  height: calc(40 * var(--k));
+  margin: 0 calc(16 * var(--k)) calc(12 * var(--k));
+  padding: 0 calc(12 * var(--k));
+  border-radius: calc(11 * var(--k));
+  background: var(--surface-sunken);
+  color: var(--text-3);
+  font-size: calc(15 * var(--k));
+}
+.mq-recherche svg {
+  width: calc(16 * var(--k));
+  height: calc(16 * var(--k));
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 1.8;
+}
+
+.mq-jour {
+  padding: calc(14 * var(--k)) calc(18 * var(--k)) calc(7 * var(--k));
+  font-size: calc(11 * var(--k));
+  font-weight: 580;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--text-3);
+}
+
+/* ========================================================
+   Une ligne du flux
+   ======================================================== */
+
+.mq-item {
+  display: flex;
+  gap: calc(11 * var(--k));
+  align-items: flex-start;
+  margin: 0 calc(10 * var(--k));
+  padding: calc(11 * var(--k)) calc(12 * var(--k));
+  border-radius: calc(15 * var(--k));
+  border: 1px solid transparent;
+}
+
+.mq-item[data-actif] {
+  background: var(--surface-strong);
+  border-color: var(--border);
+}
+
+.mq-item__vignette {
+  flex: none;
+  width: calc(46 * var(--k));
+  height: calc(46 * var(--k));
+  border-radius: calc(8 * var(--k));
+  background: var(--surface-sunken);
+}
+
+.mq-item__corps { min-width: 0; flex: 1; }
+
+.mq-item__titre {
+  font-size: calc(14.5 * var(--k));
+  font-weight: 550;
+  line-height: 1.35;
+  letter-spacing: -0.008em;
+}
+
+.mq-item__extrait {
+  margin-top: calc(2 * var(--k));
+  font-size: calc(13 * var(--k));
+  line-height: 1.42;
+  color: var(--text-2);
+}
+
+.mq-item__meta {
+  display: flex;
+  align-items: center;
+  gap: calc(7 * var(--k));
+  margin-top: calc(6 * var(--k));
+  font-size: calc(11.5 * var(--k));
+  color: var(--text-3);
+}
+
+.mq-item__espace {
+  display: inline-flex;
+  align-items: center;
+  gap: calc(5 * var(--k));
+  color: var(--text-2);
+  font-weight: 480;
+}
+.mq-item__espace i {
+  width: calc(6 * var(--k));
+  height: calc(6 * var(--k));
+  border-radius: 50%;
+  background: hsl(var(--h, var(--accent-h)) 75% 55%);
+}
+
+/* ========================================================
+   Le balayage
+   ======================================================== */
+
+/* Une ligne tirée vers la droite laisse voir l'action posée dessous.
+   C'est exactement ce que fait l'app : l'action n'arrive pas
+   par-dessus, elle était déjà là. */
+.mq-balaye { position: relative; overflow: hidden; }
+
+.mq-balaye__fond {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  gap: calc(8 * var(--k));
+  margin: 0 calc(10 * var(--k));
+  padding-left: calc(20 * var(--k));
+  border-radius: calc(15 * var(--k));
+  background: var(--accent-soft);
+  color: var(--accent-text);
+  font-size: calc(13.5 * var(--k));
+  font-weight: 550;
+}
+.mq-balaye__fond svg {
+  width: calc(17 * var(--k));
+  height: calc(17 * var(--k));
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.mq-balaye .mq-item {
+  position: relative;
+  transform: translateX(calc(112 * var(--k)));
+  background: var(--surface-solid);
+  border-color: var(--border);
+  box-shadow: calc(-6 * var(--k)) 0 calc(18 * var(--k)) rgba(0, 0, 0, 0.08);
+}
+
+/* ========================================================
+   Le détail d'une note
+   ======================================================== */
+
+.mq-post { display: flex; flex-direction: column; flex: 1; min-height: 0; }
+
+.mq-post__bar {
+  display: flex;
+  align-items: center;
+  gap: calc(10 * var(--k));
+  padding: calc(12 * var(--k)) calc(16 * var(--k));
+  border-bottom: 1px solid var(--border);
+}
+
+.mq-post__nom {
+  font-size: calc(13.5 * var(--k));
+  font-weight: 550;
+  color: var(--text-2);
+}
+
+/* Les onglets de forme : c'est là que se lit « une note, six formes ». */
+.mq-onglets {
+  display: flex;
+  gap: calc(4 * var(--k));
+  margin-left: auto;
+  padding: calc(3 * var(--k));
+  border-radius: calc(11 * var(--k));
+  background: var(--surface-sunken);
+}
+
+.mq-onglet {
+  padding: calc(5 * var(--k)) calc(11 * var(--k));
+  border-radius: calc(8 * var(--k));
+  font-size: calc(12 * var(--k));
+  font-weight: 500;
+  color: var(--text-3);
+}
+.mq-onglet[data-actif] {
+  background: var(--surface-solid);
+  color: var(--text);
+  box-shadow: var(--shadow-sm);
+}
+
+.mq-corps { flex: 1; min-height: 0; padding: calc(20 * var(--k)) calc(24 * var(--k)); }
+
+.mq-couverture {
+  height: calc(150 * var(--k));
+  border-radius: calc(15 * var(--k));
+  margin-bottom: calc(18 * var(--k));
+}
+
+.mq-titre {
+  font-size: calc(27 * var(--k));
+  font-weight: 620;
+  letter-spacing: -0.03em;
+  line-height: 1.15;
+}
+
+.mq-texte {
+  margin-top: calc(12 * var(--k));
+  font-size: calc(15 * var(--k));
+  line-height: 1.62;
+  color: var(--text-2);
+}
+.mq-texte + .mq-texte { margin-top: calc(11 * var(--k)); }
+
+/* Les lignes de texte suggérées : au-delà de trois vraies phrases, on
+   ne lit plus, on regarde une masse. Autant la dessiner. */
+.mq-lignes { display: grid; gap: calc(9 * var(--k)); margin-top: calc(16 * var(--k)); }
+.mq-lignes span {
+  height: calc(7 * var(--k));
+  border-radius: 99px;
+  background: var(--text-3);
+  opacity: 0.24;
+}
+
+/* ========================================================
+   Les images suggérées
+
+   Aucune photo : des aplats dégradés. Une fausse photo dans une
+   maquette attire l'œil sur elle et détourne du sujet, en plus de
+   poser une question de droits pour rien.
+   ======================================================== */
+
+.mq-im { background-image: var(--im1); background-size: cover; }
+.mq-im[data-im='2'] { background-image: var(--im2); }
+.mq-im[data-im='3'] { background-image: var(--im3); }
+.mq-im[data-im='4'] { background-image: var(--im4); }
+.mq-im[data-im='5'] { background-image: var(--im5); }
+.mq-im[data-im='6'] { background-image: var(--im6); }
+
+.mq {
+  --im1: linear-gradient(140deg, hsl(var(--accent-h) 60% 62%), hsl(calc(var(--accent-h) + 40) 55% 44%));
+  --im2: linear-gradient(160deg, hsl(calc(var(--accent-h) + 190) 42% 66%), hsl(calc(var(--accent-h) + 150) 38% 38%));
+  --im3: linear-gradient(120deg, hsl(calc(var(--accent-h) + 90) 30% 70%), hsl(calc(var(--accent-h) + 60) 34% 42%));
+  --im4: linear-gradient(200deg, hsl(calc(var(--accent-h) + 300) 40% 68%), hsl(calc(var(--accent-h) + 330) 48% 40%));
+  --im5: linear-gradient(100deg, hsl(calc(var(--accent-h) + 220) 26% 58%), hsl(calc(var(--accent-h) + 260) 30% 34%));
+  --im6: linear-gradient(170deg, hsl(calc(var(--accent-h) + 20) 52% 70%), hsl(calc(var(--accent-h) - 20) 46% 44%));
+}
+
+/* ========================================================
+   Le téléphone
+   ======================================================== */
+
+.mq--tel .mq__scene { flex-direction: column; padding: 0; gap: 0; }
+
+.mq-tel__haut {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: calc(12 * var(--k)) calc(18 * var(--k)) calc(2 * var(--k));
+  font-size: calc(11 * var(--k));
+  font-weight: 600;
+  color: var(--text-2);
+}
+.mq-tel__signal { display: flex; align-items: center; gap: calc(4 * var(--k)); }
+.mq-tel__signal i {
+  width: calc(3 * var(--k));
+  border-radius: 99px;
+  background: var(--text-2);
+  opacity: 0.7;
+}
+.mq-tel__signal i:nth-child(1) { height: calc(5 * var(--k)); }
+.mq-tel__signal i:nth-child(2) { height: calc(8 * var(--k)); }
+.mq-tel__signal i:nth-child(3) { height: calc(11 * var(--k)); }
+
+.mq-tel__corps { flex: 1; display: flex; flex-direction: column; min-height: 0; }
+
+.mq-capture {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  margin: calc(10 * var(--k)) calc(12 * var(--k)) calc(18 * var(--k));
+  padding: calc(20 * var(--k));
+  border-radius: calc(26 * var(--k));
+}
+
+.mq-capture__champ {
+  flex: 1;
+  font-size: calc(20 * var(--k));
+  line-height: 1.45;
+  color: var(--text-3);
+  font-weight: 380;
+}
+
+/* Le curseur clignotant : c'est LUI la promesse de l'écran de
+   capture, donc c'est la seule chose qui bouge dans les maquettes. */
+.mq-curseur {
+  display: inline-block;
+  width: calc(2 * var(--k));
+  height: calc(21 * var(--k));
+  margin-left: calc(2 * var(--k));
+  vertical-align: calc(-3 * var(--k));
+  background: var(--accent);
+  animation: mq-bat 1.1s steps(1) infinite;
+}
+@keyframes mq-bat { 0%, 49% { opacity: 1; } 50%, 100% { opacity: 0; } }
+
+.mq-chips { display: flex; flex-wrap: wrap; gap: calc(6 * var(--k)); padding-top: calc(14 * var(--k)); }
+
+.mq-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: calc(6 * var(--k));
+  height: calc(30 * var(--k));
+  padding: 0 calc(11 * var(--k));
+  border-radius: 99px;
+  border: 1px solid var(--border);
+  background: var(--surface-sunken);
+  color: var(--text-2);
+  font-size: calc(12.5 * var(--k));
+  font-weight: 480;
+}
+.mq-chip[data-actif] {
+  background: var(--accent-soft);
+  border-color: var(--accent-line);
+  color: var(--text);
+}
+.mq-chip i {
+  width: calc(7 * var(--k));
+  height: calc(7 * var(--k));
+  border-radius: 50%;
+  background: hsl(var(--h, var(--accent-h)) 75% 55%);
+}
+
+.mq-capture__pied {
+  display: flex;
+  align-items: center;
+  gap: calc(8 * var(--k));
+  padding-top: calc(14 * var(--k));
+  margin-top: calc(14 * var(--k));
+  border-top: 1px solid var(--border);
+  font-size: calc(12 * var(--k));
+  color: var(--text-3);
+}
+
+.mq-tabbar {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 1fr;
+  align-items: center;
+  margin: 0 calc(12 * var(--k)) calc(12 * var(--k));
+  padding: calc(6 * var(--k));
+  border-radius: calc(20 * var(--k));
+}
+
+.mq-tab {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: calc(3 * var(--k));
+  padding: calc(6 * var(--k)) 0;
+  border-radius: calc(14 * var(--k));
+  font-size: calc(9.5 * var(--k));
+  color: var(--text-3);
+}
+.mq-tab svg {
+  width: calc(19 * var(--k));
+  height: calc(19 * var(--k));
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 1.7;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.mq-tab[data-actif] { background: var(--accent-soft); color: var(--text); font-weight: 550; }
+.mq-tab[data-actif] svg { color: var(--accent-text); }
+
+/* ========================================================
+   Les espaces
+   ======================================================== */
+
+.mq-espaces {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: calc(10 * var(--k));
+  padding: calc(4 * var(--k)) calc(16 * var(--k)) calc(20 * var(--k));
+}
+
+.mq-espace {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  gap: calc(4 * var(--k));
+  min-height: calc(112 * var(--k));
+  padding: calc(14 * var(--k));
+  border-radius: calc(20 * var(--k));
+  overflow: hidden;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-sm);
+}
+
+/* Le halo teinté : c'est ce qui fait reconnaître un espace avant même
+   d'en avoir lu le nom. */
+.mq-espace__halo {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(closest-side at 78% 12%, hsl(var(--h) 80% 58% / 0.42), transparent);
+}
+
+.mq-espace__filigrane {
+  position: absolute;
+  right: calc(10 * var(--k));
+  top: calc(2 * var(--k));
+  font-size: calc(46 * var(--k));
+  font-weight: 700;
+  letter-spacing: -0.05em;
+  color: hsl(var(--h) 70% 45%);
+  opacity: 0.16;
+}
+
+.mq-espace__marque {
+  position: relative;
+  width: calc(26 * var(--k));
+  height: calc(26 * var(--k));
+  border-radius: calc(8 * var(--k));
+  margin-bottom: calc(6 * var(--k));
+  background: hsl(var(--h) 78% 55%);
+  box-shadow: 0 calc(4 * var(--k)) calc(14 * var(--k)) hsl(var(--h) 78% 55% / 0.4);
+}
+
+.mq-espace__nom {
+  position: relative;
+  font-size: calc(15 * var(--k));
+  font-weight: 550;
+}
+.mq-espace__compte {
+  position: relative;
+  font-size: calc(12.5 * var(--k));
+  color: var(--text-3);
+}
+
+/* ========================================================
+   La carte mentale
+   ======================================================== */
+
+.mq-carte {
+  position: relative;
+  flex: 1;
+  min-height: calc(330 * var(--k));
+  background-image: radial-gradient(circle at 1px 1px, var(--border-strong) 1px, transparent 0);
+  background-size: calc(26 * var(--k)) calc(26 * var(--k));
+}
+
+.mq-carte svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+.mq-carte svg path { fill: none; stroke: var(--accent-line); stroke-width: 2; }
+
+.mq-noeud {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  width: calc(172 * var(--k));
+  height: calc(48 * var(--k));
+  padding: 0 calc(13 * var(--k));
+  border-radius: calc(15 * var(--k));
+  background: var(--surface-solid);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-sm);
+  font-size: calc(13.5 * var(--k));
+  font-weight: 500;
+  line-height: 1.3;
+}
+
+.mq-noeud[data-racine] {
+  background: var(--accent);
+  border-color: transparent;
+  color: var(--accent-ink);
+  font-weight: 600;
+  box-shadow: 0 calc(6 * var(--k)) calc(22 * var(--k)) var(--accent-glow);
+}
+
+.mq-noeud[data-actif] {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 calc(3 * var(--k)) var(--accent-soft), var(--shadow);
+}
+
+/* ========================================================
+   Le dessin
+   ======================================================== */
+
+.mq-dessin {
+  position: relative;
+  flex: 1;
+  min-height: calc(330 * var(--k));
+  background: var(--surface-uni);
+}
+.mq-dessin svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+.mq-dessin path {
+  fill: none;
+  stroke: var(--text);
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  opacity: 0.8;
+}
+.mq-dessin path[data-accent] { stroke: var(--accent); opacity: 1; }
+
+.mq-outils {
+  position: absolute;
+  left: 50%;
+  bottom: calc(16 * var(--k));
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: calc(8 * var(--k));
+  padding: calc(8 * var(--k)) calc(12 * var(--k));
+  border-radius: 99px;
+}
+
+.mq-outils i {
+  width: calc(18 * var(--k));
+  height: calc(18 * var(--k));
+  border-radius: 50%;
+  background: var(--text-3);
+  opacity: 0.4;
+}
+.mq-outils i[data-actif] { background: var(--accent); opacity: 1; }
+
+/* ========================================================
+   La planche
+   ======================================================== */
+
+.mq-planche {
+  flex: 1;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  grid-auto-rows: calc(96 * var(--k));
+  gap: calc(10 * var(--k));
+  padding: calc(20 * var(--k)) calc(24 * var(--k));
+}
+.mq-planche > * { border-radius: calc(11 * var(--k)); }
+.mq-planche > *:nth-child(1) { grid-column: span 2; grid-row: span 2; }
+.mq-planche > *:nth-child(4) { grid-row: span 2; }
+.mq-planche > *:nth-child(6) { grid-column: span 2; }
+
+/* ========================================================
+   La table
+   ======================================================== */
+
+.mq-table {
+  flex: 1;
+  margin: calc(18 * var(--k)) calc(20 * var(--k));
+  border: 1px solid var(--border);
+  border-radius: calc(15 * var(--k));
+  overflow: hidden;
+  font-size: calc(13 * var(--k));
+}
+
+.mq-tr {
+  display: grid;
+  grid-template-columns: 2.2fr 1.3fr 1fr calc(44 * var(--k));
+  align-items: center;
+  gap: calc(12 * var(--k));
+  padding: calc(11 * var(--k)) calc(14 * var(--k));
+  border-bottom: 1px solid var(--border);
+}
+.mq-tr:last-child { border-bottom: 0; }
+
+.mq-tr--tete {
+  background: var(--surface-sunken);
+  font-size: calc(10.5 * var(--k));
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-3);
+  font-weight: 560;
+}
+
+.mq-etiq {
+  display: inline-flex;
+  align-items: center;
+  padding: calc(3 * var(--k)) calc(9 * var(--k));
+  border-radius: 99px;
+  font-size: calc(11.5 * var(--k));
+  font-weight: 520;
+  color: hsl(var(--h) 62% 30%);
+  background: hsl(var(--h) 70% 55% / 0.18);
+  border: 1px solid hsl(var(--h) 70% 55% / 0.34);
+}
+:root[data-theme='dark'] .mq-etiq,
+.bande .mq-etiq { color: hsl(var(--h) 78% 74%); }
+
+.mq-case {
+  width: calc(16 * var(--k));
+  height: calc(16 * var(--k));
+  border-radius: calc(5 * var(--k));
+  border: 1.5px solid var(--border-strong);
+}
+.mq-case[data-coche] { background: var(--accent); border-color: transparent; }
+
+/* ========================================================
+   La chronologie
+   ======================================================== */
+
+.mq-frise {
+  position: relative;
+  flex: 1;
+  min-height: calc(300 * var(--k));
+  margin: calc(24 * var(--k)) calc(28 * var(--k));
+}
+
+.mq-frise__axe {
+  position: absolute;
+  left: calc(64 * var(--k));
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background: var(--border-strong);
+}
+
+.mq-evt {
+  position: relative;
+  display: grid;
+  grid-template-columns: calc(64 * var(--k)) 1fr;
+  gap: calc(18 * var(--k));
+  padding-bottom: calc(24 * var(--k));
+}
+
+.mq-evt__date {
+  text-align: right;
+  padding-right: calc(16 * var(--k));
+  font-size: calc(11.5 * var(--k));
+  color: var(--text-3);
+  padding-top: calc(3 * var(--k));
+}
+
+.mq-evt__pastille {
+  position: absolute;
+  left: calc(60 * var(--k));
+  top: calc(5 * var(--k));
+  width: calc(9 * var(--k));
+  height: calc(9 * var(--k));
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 0 calc(3 * var(--k)) var(--accent-soft);
+}
+
+.mq-evt__nom { font-size: calc(14.5 * var(--k)); font-weight: 550; }
+.mq-evt__quoi {
+  margin-top: calc(3 * var(--k));
+  font-size: calc(12.5 * var(--k));
+  color: var(--text-2);
+  line-height: 1.5;
+}
+
+/* ========================================================
+   Les réglages
+   ======================================================== */
+
+.mq-reglages {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: calc(14 * var(--k));
+  padding: calc(4 * var(--k)) calc(16 * var(--k)) calc(20 * var(--k));
+}
+
+.mq-reglage { padding: calc(16 * var(--k)); border-radius: calc(20 * var(--k)); }
+.mq-reglage__label { font-size: calc(14.5 * var(--k)); font-weight: 550; }
+.mq-reglage__aide {
+  margin-top: calc(3 * var(--k));
+  font-size: calc(12.5 * var(--k));
+  color: var(--text-3);
+  line-height: 1.5;
+}
+.mq-reglage__corps { margin-top: calc(13 * var(--k)); }
+
+.mq-segments {
+  display: flex;
+  gap: calc(4 * var(--k));
+  padding: calc(3 * var(--k));
+  border-radius: calc(11 * var(--k));
+  background: var(--surface-sunken);
+}
+.mq-segment {
+  flex: 1;
+  text-align: center;
+  padding: calc(7 * var(--k)) 0;
+  border-radius: calc(8 * var(--k));
+  font-size: calc(12.5 * var(--k));
+  color: var(--text-3);
+}
+.mq-segment[data-actif] {
+  background: var(--surface-solid);
+  color: var(--text);
+  font-weight: 550;
+  box-shadow: var(--shadow-sm);
+}
+
+.mq-pastilles { display: flex; gap: calc(9 * var(--k)); }
+.mq-pastille {
+  position: relative;
+  width: calc(34 * var(--k));
+  height: calc(34 * var(--k));
+  border-radius: 50%;
+  background: hsl(var(--h) 82% 56%);
+  box-shadow: 0 calc(3 * var(--k)) calc(12 * var(--k)) hsl(var(--h) 82% 56% / 0.45);
+}
+.mq-pastille[data-actif]::after {
+  content: '';
+  position: absolute;
+  inset: calc(-4 * var(--k));
+  border-radius: 50%;
+  border: 2px solid var(--text);
+  opacity: 0.75;
+}
+
+.mq-roue {
+  height: calc(26 * var(--k));
+  margin-top: calc(12 * var(--k));
+  border-radius: 99px;
+  border: 1px solid var(--border);
+  position: relative;
+  background: linear-gradient(to right,
+    hsl(0 95% 55%), hsl(60 95% 55%), hsl(120 95% 55%),
+    hsl(180 95% 55%), hsl(240 95% 55%), hsl(300 95% 55%), hsl(360 95% 55%));
+}
+.mq-roue::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: calc(var(--accent-h) * 100% / 360);
+  width: calc(22 * var(--k));
+  height: calc(22 * var(--k));
+  border-radius: 50%;
+  background: var(--accent);
+  border: calc(2.5 * var(--k)) solid #fff;
+  box-shadow: 0 calc(2 * var(--k)) calc(8 * var(--k)) rgba(0, 0, 0, 0.3);
+  transform: translate(-50%, -50%);
+}
+
+.mq-maintenant {
+  display: inline-flex;
+  align-items: center;
+  gap: calc(6 * var(--k));
+  margin-top: calc(11 * var(--k));
+  padding: calc(5 * var(--k)) calc(10 * var(--k));
+  border-radius: 99px;
+  background: var(--surface-sunken);
+  font-size: calc(12 * var(--k));
+  color: var(--text-2);
+}
+
+/* ========================================================
+   La bande sombre — les maquettes y passent en thème nuit
+   ======================================================== */
+
+/* Sans ça, une maquette posée sur le panneau sombre garderait ses
+   surfaces claires et ferait une tache blanche au milieu. */
+.bande .maq { border-color: rgba(255, 255, 255, 0.16); }
+
+.bande .mq {
+  --bg: #0b0d12;
+  --bg-deep: #060709;
+  --surface-solid: #14171f;
+  --surface-uni: #151821;
+  --accent-text: hsl(var(--accent-h) var(--accent-s) calc(var(--accent-l) + 8%));
+  --shadow-sm: 0 2px 10px rgba(0, 0, 0, 0.4);
+  --shadow: 0 8px 40px rgba(0, 0, 0, 0.55);
+}
+
+/* ========================================================
+   Sans JavaScript
+   ======================================================== */
+
+/* Les maquettes sont engendrées par le script. Tant qu'il n'a pas
+   tourné, le cadre ne doit pas rester béant : il disparaît. */
+.maq:empty { display: none; }

@@ -52,6 +52,59 @@
   will-change: transform;
 }
 
+/* ── LES TRAITS D'UNE PLANCHE
+
+   Le calque est un SYSTÈME DE COORDONNÉES, pas une surface : taille
+   nulle, débordement visible. Il vit dans le monde transformé, donc
+   il hérite du déplacement et du zoom sans un seul calcul, et un
+   trait ne peut pas se désolidariser de ce qu'il relie.
+
+   `z-index: 0` le pose sous les pièces — elles commencent à 1 (leur
+   rang plus un). Un trait passe donc DERRIÈRE les images qu'il joint,
+   ce qui est la seule façon lisible : par-dessus, il barrerait
+   justement ce qu'il désigne.
+
+   Il n'intercepte rien : on relie par appui, pas en visant un trait
+   de deux pixels. */
+.planche__liens {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 1px;
+  height: 1px;
+  overflow: visible;
+  z-index: 0;
+  pointer-events: none;
+}
+
+.planche__liens line {
+  stroke: var(--accent);
+  stroke-width: 2;
+  stroke-linecap: round;
+  opacity: 0.5;
+}
+
+/* La consigne du mode relier : posée en haut, hors de la barre
+   d'outils, parce qu'elle parle du geste en cours et non d'un
+   réglage. */
+.planche__consigne {
+  position: absolute;
+  top: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 6;
+  max-width: min(420px, calc(100% - 24px));
+  padding: 9px 14px;
+  border-radius: 99px;
+  background: var(--surface-solid);
+  border: 1px solid var(--accent);
+  box-shadow: var(--shadow-sm);
+  color: var(--text-2);
+  font-size: 12.5px;
+  line-height: 1.45;
+  text-align: center;
+}
+
 /* Une pièce : posée, pas alignée. L'ombre est plus marquée que
    partout ailleurs dans Atlas — c'est elle qui donne l'empilement,
    et l'empilement est tout le propos de la forme. */
@@ -71,6 +124,22 @@
 .piece:active { cursor: grabbing; }
 
 .piece[data-actif='true'] {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+
+/* Pendant qu'on relie : le départ est tenu, les cibles s'offrent.
+
+   Le curseur change AUSSI, et ce n'est pas un détail — c'est la seule
+   trace du mode quand la consigne est sortie du champ de vision. */
+.piece[data-depart] {
+  outline: 2px dashed var(--accent);
+  outline-offset: 5px;
+}
+.piece[data-cible] {
+  cursor: crosshair;
+}
+.piece[data-cible]:hover {
   outline: 2px solid var(--accent);
   outline-offset: 3px;
 }

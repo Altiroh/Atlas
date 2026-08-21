@@ -274,6 +274,21 @@ export const IconPivoter = ({ size = 20, className, style }: Props) => (
   </svg>
 )
 
+/* Quatre coins qui s'écartent : la page s'ouvre en grand. Pas une
+   flèche unique — on ne va nulle part, on occupe l'espace. */
+export const IconPleinEcran = ({ size = 20, className, style }: Props) => (
+  <svg {...base(size)} className={className} style={style} aria-hidden="true">
+    <path d="M8 3H3v5M16 3h5v5M16 21h5v-5M8 21H3v-5" />
+  </svg>
+)
+
+/* Les mêmes coins, rentrés. */
+export const IconReduire = ({ size = 20, className, style }: Props) => (
+  <svg {...base(size)} className={className} style={style} aria-hidden="true">
+    <path d="M3 8h5V3M21 8h-5V3M21 16h-5v5M3 16h5v5" />
+  </svg>
+)
+
 export const IconCoche = ({ size = 20, className, style }: Props) => (
   <svg {...base(size)} strokeWidth={2.6} className={className} style={style} aria-hidden="true">
     <path d="m5 12.5 4.5 4.5L19 7" />

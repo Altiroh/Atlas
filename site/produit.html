@@ -1,0 +1,539 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Le produit — Atlas</title>
+<meta name="description" content="La capture en dix secondes, six formes pour une note, trois façons de ranger, le hors-ligne et l'export complet. Tout ce qu'Atlas sait faire, en images.">
+<meta name="theme-color" content="#eceff6">
+
+<link rel="icon" type="image/png" sizes="32x32" href="images/favicon-32.png">
+<link rel="icon" type="image/png" sizes="48x48" href="images/favicon-48.png">
+<link rel="apple-touch-icon" href="images/icone-180.png">
+
+<link rel="stylesheet" href="atlas.css">
+<link rel="stylesheet" href="maquettes.css">
+</head>
+
+<body>
+<a class="saut-lien" href="#principal">Aller au contenu</a>
+
+<div class="aurora" aria-hidden="true">
+  <div class="aurora__blob aurora__blob--1"></div>
+  <div class="aurora__blob aurora__blob--2"></div>
+  <div class="aurora__blob aurora__blob--3"></div>
+  <div class="trame"></div>
+  <div class="grain"></div>
+</div>
+
+<header class="entete">
+  <div class="entete__barre">
+    <a class="marque" href="index.html" aria-label="Atlas, accueil">
+      <span data-oeil="26" data-flux="non"></span>
+      <span class="marque__nom">Atlas</span>
+    </a>
+
+    <nav class="nav" id="menu" aria-label="Navigation principale">
+      <a class="nav__lien" href="index.html">Accueil</a>
+      <a class="nav__lien" href="produit.html">Produit</a>
+      <a class="nav__lien" href="tarifs.html">Prix</a>
+      <a class="nav__lien" href="infos.html">Infos</a>
+    </nav>
+
+    <div class="entete__outils">
+      <button class="btn btn--icone bascule-theme" type="button" aria-label="Changer de thème">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="12" cy="12" r="4.2"/>
+          <path d="M12 2.5v2M12 19.5v2M2.5 12h2M19.5 12h2M5.2 5.2l1.4 1.4M17.4 17.4l1.4 1.4M18.8 5.2l-1.4 1.4M6.6 17.4l-1.4 1.4"/>
+        </svg>
+      </button>
+      <button class="btn btn--icone burger" type="button" aria-label="Ouvrir le menu" aria-expanded="false" aria-controls="menu">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" aria-hidden="true">
+          <path d="M4 7h16M4 12h16M4 17h16"/>
+        </svg>
+      </button>
+      <a class="btn btn--accent entete__cta" href="https://atlas.vercel.app">Ouvrir Atlas</a>
+    </div>
+  </div>
+</header>
+
+<main class="page" id="principal">
+
+  <!-- ========================================================
+       L'ouverture
+       ======================================================== -->
+  <section class="hero">
+    <div class="contenu">
+      <div class="hero__grille">
+        <div>
+          <p class="hero__sur">Le produit</p>
+          <h1 class="titre-affiche">Ce qu'Atlas<br>sait <span class="inflexion">faire</span>.</h1>
+          <p class="chapo">
+            De la première idée jetée en dix secondes au chapitre terminé, en passant par
+            les planches d'ambiance et les plans qui se ramifient.
+          </p>
+          <div class="hero__actions">
+            <a class="btn btn--accent btn--grand" href="https://atlas.vercel.app">Essayer</a>
+            <a class="btn btn--grand" href="#formes">Les six formes</a>
+          </div>
+        </div>
+
+        <div class="hero__oeil" data-oeil="120"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========================================================
+       01 · La capture
+       ======================================================== -->
+  <section class="section" id="capture">
+    <div class="contenu">
+      <p class="index"><span class="index__no">01</span> La capture</p>
+
+      <div class="duo duo--penche duo--inverse">
+        <figure class="revele">
+          <div class="maq maq--tel" data-maq="capture-mobile"></div>
+          <figcaption class="legende">Un champ · un curseur · tes projets à portée de pouce</figcaption>
+        </figure>
+
+        <div class="revele">
+          <h2 class="titre-section">Dix secondes,<br>montre en <span class="inflexion">main</span>.</h2>
+          <p class="texte" style="margin-top:20px">
+            L'app s'ouvre directement sur le curseur, clavier déjà levé. Entrée enregistre,
+            Maj+Entrée passe à la ligne. Le titre, le projet et les étiquettes viennent plus
+            tard, si tu en as envie.
+          </p>
+          <div class="points">
+            <p class="point">
+              <span class="point__clef">01</span>
+              <span>Un <strong>raccourci sur l'écran d'accueil</strong> pour aller encore plus vite.</span>
+            </p>
+            <p class="point">
+              <span class="point__clef">02</span>
+              <span><strong>Le partage du système</strong> : depuis un navigateur, une vidéo ou une
+              photo, ça atterrit dans Atlas.</span>
+            </p>
+            <p class="point">
+              <span class="point__clef">03</span>
+              <span><strong>La dictée du clavier</strong> fonctionne, pour capturer en marchant.</span>
+            </p>
+            <p class="point">
+              <span class="point__clef">04</span>
+              <span>Des <strong>pastilles de projets</strong> sous le champ, pour classer d'un doigt.</span>
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========================================================
+       02 · Le tri
+       ======================================================== -->
+  <section class="section" id="tri">
+    <div class="contenu">
+      <p class="index"><span class="index__no">02</span> Le tri</p>
+
+      <div class="duo duo--penche">
+        <div class="revele">
+          <h2 class="titre-section">Ranger au pouce,<br>sans rien <span class="inflexion">ouvrir</span>.</h2>
+          <p class="texte" style="margin-top:20px">
+            Un balayage franc suffit à envoyer une idée dans un projet ou aux archives. Le
+            geste reste fluide, le défilement de la page continue de répondre normalement,
+            et une hésitation revient toute seule en arrière.
+          </p>
+          <p class="texte">
+            Ce que tu archives reste consultable en bas de liste et se restaure d'un geste.
+            Supprimer un projet libère ses idées : elles retournent simplement dans la liste
+            générale.
+          </p>
+        </div>
+
+        <figure class="revele">
+          <div class="maq maq--deborde" data-maq="flux-balayage"></div>
+          <figcaption class="legende">Vers la droite pour classer · vers la gauche pour archiver</figcaption>
+        </figure>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========================================================
+       03 · Le classement
+       ======================================================== -->
+  <section class="section" id="classement">
+    <div class="contenu">
+      <p class="index"><span class="index__no">03</span> Le classement</p>
+
+      <div class="section__tete revele">
+        <h2 class="titre-section">Trois façons de retrouver,<br>aucune <span class="inflexion">obligation</span>.</h2>
+        <p class="chapo">
+          Une idée de vidéo sur un personnage de ton roman appartient aux deux mondes.
+          Dans Atlas, elle ressort des deux côtés.
+        </p>
+      </div>
+
+      <div class="mosaique">
+        <article class="bloc glass revele">
+          <h3 class="bloc__titre">Le projet<span class="mention mention--sourde">quand tu veux</span></h3>
+          <p class="bloc__texte">
+            Le roman, la chaîne, le court-métrage, le perso. Chaque projet a sa teinte et son
+            image. Un clic dessus et tu ne vois plus que lui.
+          </p>
+        </article>
+
+        <article class="bloc glass revele">
+          <h3 class="bloc__titre">La forme<span class="mention">automatique</span></h3>
+          <p class="bloc__texte">
+            Note, carte, planche, chronologie. Atlas la reconnaît à ce que tu ajoutes, tu n'as
+            jamais à la déclarer.
+          </p>
+        </article>
+
+        <article class="bloc glass revele">
+          <h3 class="bloc__titre">Les étiquettes<span class="mention mention--sourde">libres</span></h3>
+          <p class="bloc__texte">
+            Un personnage, un lieu, une ambiance, un thème. Autant que tu veux, écrites comme
+            tu les penses.
+          </p>
+        </article>
+
+        <figure class="pleine revele" style="margin-top:clamp(10px,1.5vw,20px)">
+          <div class="maq" data-maq="espaces"></div>
+          <figcaption class="legende">Tes projets · chacun avec sa teinte et son image de couverture</figcaption>
+        </figure>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========================================================
+       04 · Les six formes — sur la bande sombre
+       ======================================================== -->
+  <section class="bande" id="formes">
+    <div class="contenu">
+      <p class="index"><span class="index__no">04</span> Les six formes</p>
+
+      <div class="section__tete revele">
+        <h2 class="titre-section">Une note qui grandit<br>avec l'<span class="inflexion">idée</span>.</h2>
+        <p class="chapo">
+          Chaque note peut porter plusieurs formes, en onglets. Un plan de roman et sa planche
+          d'ambiance vivent au même endroit, à un clic l'un de l'autre.
+        </p>
+      </div>
+
+      <div class="mosaique">
+
+        <article class="bloc glass large revele">
+          <h3 class="bloc__titre">Fiche</h3>
+          <p class="bloc__texte">
+            Un titre, un corps de texte qui s'étend tout seul, une image de couverture.
+            Tout est enregistré au fil de la frappe : il n'y a pas de bouton à chercher.
+          </p>
+          <div class="maq" data-maq="forme-fiche" style="margin-top:20px"></div>
+        </article>
+
+        <article class="bloc glass large revele">
+          <h3 class="bloc__titre">Carte mentale</h3>
+          <p class="bloc__texte">
+            Un univers qui se ramifie, un plan de chapitres, une arborescence de sujets. Les
+            nœuds se déplacent, se renomment, se replient. Zoom à la molette ou au pincement.
+          </p>
+          <div class="maq" data-maq="forme-carte" style="margin-top:20px"></div>
+        </article>
+
+        <article class="bloc glass large revele">
+          <h3 class="bloc__titre">Planche</h3>
+          <p class="bloc__texte">
+            Des images côte à côte pour poser une direction visuelle. Atlas les allège au
+            passage : une photo de trois méga-octets en pèse une dizaine de milliers, sans
+            que ça se voie à l'écran.
+          </p>
+          <div class="maq" data-maq="forme-planche" style="margin-top:20px"></div>
+        </article>
+
+        <article class="bloc glass large revele">
+          <h3 class="bloc__titre">Table</h3>
+          <p class="bloc__texte">
+            Des colonnes qui savent ce qu'elles contiennent : texte, nombre, date, étiquette,
+            case à cocher, image. Les étiquettes se colorent toutes seules et forment ton
+            vocabulaire au fil de la frappe.
+          </p>
+          <div class="maq" data-maq="forme-table" style="margin-top:20px"></div>
+        </article>
+
+        <article class="bloc glass large revele">
+          <h3 class="bloc__titre">Dessin</h3>
+          <p class="bloc__texte">
+            Un croquis au doigt ou à la souris, pour ce qu'une phrase ne dit pas : un cadrage,
+            une silhouette, une flèche entre deux idées.
+          </p>
+          <div class="maq" data-maq="forme-dessin" style="margin-top:20px"></div>
+        </article>
+
+        <article class="bloc glass large revele">
+          <h3 class="bloc__titre">Chronologie</h3>
+          <p class="bloc__texte">
+            Des événements posés dans l'ordre sur une frise. Pour un récit, un tournage, ou
+            simplement pour voir ce qui s'est passé quand.
+          </p>
+          <div class="maq" data-maq="forme-frise" style="margin-top:20px"></div>
+        </article>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- ========================================================
+       05 · Le rangement
+       ======================================================== -->
+  <section class="section" id="rangement">
+    <div class="contenu">
+      <p class="index"><span class="index__no">05</span> Le rangement</p>
+
+      <div class="section__tete revele">
+        <h2 class="titre-section">Atlas range pendant<br>que tu <span class="inflexion">crées</span>.</h2>
+        <p class="chapo">
+          Trente-sept petites mains, à appeler quand tu en as besoin : classer les idées
+          libres, faire remonter ce qui dort, retrouver une note perdue, transformer une
+          liste de dates en chronologie.
+        </p>
+      </div>
+
+      <div class="etapes">
+        <article class="etape revele">
+          <p class="etape__no">01</p>
+          <h3 class="etape__titre">Chacune s'explique</h3>
+          <p class="etape__texte">
+            Une phrase suffit à dire ce qu'elle va faire, et Atlas l'affiche avant d'agir.
+            Tu sais toujours ce qui va se passer.
+          </p>
+        </article>
+
+        <article class="etape revele">
+          <p class="etape__no">02</p>
+          <h3 class="etape__titre">Elle montre tout</h3>
+          <p class="etape__texte">
+            Les douze notes concernées sont listées et nommées. Tu décoches celles que tu veux
+            garder de côté avant de valider.
+          </p>
+        </article>
+
+        <article class="etape revele">
+          <p class="etape__no">03</p>
+          <h3 class="etape__titre">Elle s'annule</h3>
+          <p class="etape__texte">
+            Un bouton et tout revient comme avant. Tu peux donc essayer sans réfléchir à
+            deux fois.
+          </p>
+        </article>
+
+        <article class="etape revele">
+          <p class="etape__no">04</p>
+          <h3 class="etape__titre">C'est toi qui demandes</h3>
+          <p class="etape__texte">
+            Atlas attend qu'on l'appelle. Il ne prend jamais l'initiative de réorganiser ton
+            travail dans ton dos.
+          </p>
+        </article>
+      </div>
+
+      <div class="pastilles revele" style="margin-top:clamp(24px,3vw,36px)">
+        <span class="pastille">Créer</span>
+        <span class="pastille">Ranger</span>
+        <span class="pastille">Nettoyer</span>
+        <span class="pastille">Relancer</span>
+        <span class="pastille">Rendre compte</span>
+        <span class="pastille">Vérifier</span>
+        <span class="pastille">Transformer</span>
+        <span class="pastille">Retrouver</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========================================================
+       06 · Partout
+       ======================================================== -->
+  <section class="section" id="partout">
+    <div class="contenu">
+      <p class="index"><span class="index__no">06</span> Partout</p>
+
+      <div class="section__tete revele">
+        <h2 class="titre-section">Sur tous tes écrans,<br>avec ou sans <span class="inflexion">réseau</span>.</h2>
+        <p class="chapo">
+          Atlas écrit d'abord sur ton appareil. Le réseau sert à retrouver tes idées ailleurs,
+          jamais à te laisser attendre.
+        </p>
+      </div>
+
+      <div class="mosaique">
+        <article class="bloc glass large revele">
+          <h3 class="bloc__titre">Hors ligne</h3>
+          <p class="bloc__texte">
+            L'app se lance et tes idées s'affichent, même sans une barre de réseau. Tout ce
+            que tu écris entre-temps repart dès que la connexion revient.
+          </p>
+        </article>
+
+        <article class="bloc glass large revele">
+          <h3 class="bloc__titre">La synchronisation</h3>
+          <p class="bloc__texte">
+            Textes et images retrouvés à l'identique sur un appareil neuf. Si tu modifies la
+            même note à deux endroits, c'est la plus récente qui gagne.
+          </p>
+        </article>
+
+        <article class="bloc bloc--nu revele">
+          <h3 class="bloc__titre">L'export en un clic</h3>
+          <p class="bloc__texte">
+            Une archive avec ton markdown et tes images d'origine, qui s'ouvre dans n'importe
+            quel éditeur de texte.
+          </p>
+        </article>
+
+        <article class="bloc bloc--nu revele">
+          <h3 class="bloc__titre">Sur l'écran d'accueil</h3>
+          <p class="bloc__texte">
+            Atlas s'installe depuis le navigateur et s'ouvre en plein écran avec son icône.
+            Rien à télécharger.
+          </p>
+        </article>
+
+        <article class="bloc bloc--nu revele">
+          <h3 class="bloc__titre">Trois mises en page</h3>
+          <p class="bloc__texte">
+            Téléphone, tablette, ordinateur. Atlas se réorganise selon la largeur, pas selon
+            la marque de l'appareil.
+          </p>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========================================================
+       07 · À ton image
+       ======================================================== -->
+  <section class="section" id="theme">
+    <div class="contenu">
+      <p class="index"><span class="index__no">07</span> À ton image</p>
+
+      <div class="duo duo--penche">
+        <div class="revele">
+          <h2 class="titre-section">Un lieu où l'on<br>se sent <span class="inflexion">bien</span>.</h2>
+          <p class="texte" style="margin-top:20px">
+            Des surfaces translucides posées sur un fond qui respire lentement, un arrondi
+            doux, et un mouvement qu'on remarque à peine. Atlas reste calme pendant que tu
+            travailles.
+          </p>
+          <div class="points">
+            <p class="point">
+              <span class="point__clef">01</span>
+              <span><strong>Clair, sombre, ou automatique</strong> selon l'heure qu'il est.</span>
+            </p>
+            <p class="point">
+              <span class="point__clef">02</span>
+              <span><strong>Ta couleur</strong> teinte les boutons, les halos du fond et le regard d'Atlas.</span>
+            </p>
+            <p class="point">
+              <span class="point__clef">03</span>
+              <span><strong>Des surfaces opaques</strong> si tu préfères, en un réglage.</span>
+            </p>
+            <p class="point">
+              <span class="point__clef">04</span>
+              <span><strong>Fluide sur téléphone</strong>, jusqu'aux plus petits écrans.</span>
+            </p>
+          </div>
+        </div>
+
+        <div class="revele">
+          <div class="reglage glass">
+            <div class="teintes" role="group" aria-label="Couleur d'accent">
+              <button class="teinte" type="button" data-h="359" data-s="92" data-l="58" style="background:hsl(359 92% 58%)" aria-label="Rouge"></button>
+              <button class="teinte" type="button" data-h="205" data-s="90" data-l="56" style="background:hsl(205 90% 56%)" aria-label="Ciel"></button>
+              <button class="teinte" type="button" data-h="48" data-s="95" data-l="58" style="background:hsl(48 95% 58%)" aria-label="Soleil"></button>
+              <button class="teinte" type="button" data-h="158" data-s="72" data-l="46" style="background:hsl(158 72% 46%)" aria-label="Menthe"></button>
+              <button class="teinte" type="button" data-h="272" data-s="80" data-l="62" style="background:hsl(272 80% 62%)" aria-label="Violet"></button>
+            </div>
+            <input class="roue" type="range" min="0" max="359" value="359" aria-label="Roue de teinte">
+          </div>
+          <p class="legende">Le réglage ci-dessus est celui de l'app, à l'identique</p>
+
+          <figure style="margin-top:26px">
+            <div class="maq" data-maq="reglages"></div>
+          </figure>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========================================================
+       L'appel
+       ======================================================== -->
+  <section class="section section--ample">
+    <div class="contenu">
+      <div class="final revele">
+        <div class="hero__oeil" data-oeil="76" style="justify-content:center;margin-bottom:26px"></div>
+        <h2 class="titre-affiche">Le plus simple reste<br>d'<span class="inflexion">essayer</span>.</h2>
+        <p class="chapo" style="max-width:44ch">
+          Sans compte et sans installation. Tout ce que tu écris reste sur ton appareil tant
+          que tu ne demandes rien d'autre.
+        </p>
+        <div class="hero__actions">
+          <a class="btn btn--accent btn--grand" href="https://atlas.vercel.app">Ouvrir Atlas</a>
+          <a class="btn btn--grand" href="tarifs.html">Voir les prix</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<footer class="pied">
+  <div class="contenu">
+    <div class="pied__grille">
+      <div>
+        <a class="marque" href="index.html" aria-label="Atlas, accueil">
+          <span data-oeil="26" data-flux="non"></span>
+          <span class="marque__nom">Atlas</span>
+        </a>
+        <p class="texte" style="margin-top:14px;font-size:14px;max-width:30ch">
+          Un endroit pour tout ce que tu crées. Pensé par un créatif, fait pour tout le monde.
+        </p>
+      </div>
+      <div>
+        <p class="pied__titre">Le produit</p>
+        <ul class="pied__liste">
+          <li><a href="produit.html#capture">La capture</a></li>
+          <li><a href="produit.html#formes">Les six formes</a></li>
+          <li><a href="produit.html#partout">Partout, même hors ligne</a></li>
+          <li><a href="tarifs.html">Les prix</a></li>
+        </ul>
+      </div>
+      <div>
+        <p class="pied__titre">Atlas</p>
+        <ul class="pied__liste">
+          <li><a href="infos.html#histoire">L'histoire</a></li>
+          <li><a href="infos.html#donnees">Tes données</a></li>
+          <li><a href="infos.html#journal">Les nouveautés</a></li>
+          <li><a href="infos.html#contact">Nous écrire</a></li>
+        </ul>
+      </div>
+      <div>
+        <p class="pied__titre">Le thème</p>
+        <ul class="pied__liste">
+          <li><button type="button" data-mode="auto" aria-pressed="false">Automatique à l'heure</button></li>
+          <li><button type="button" data-mode="light" aria-pressed="false">Toujours clair</button></li>
+          <li><button type="button" data-mode="dark" aria-pressed="false">Toujours sombre</button></li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="pied__bas">
+      <span>© 2026 Atlas</span>
+      <span style="margin-left:auto"><a class="lien" href="infos.html#donnees">Tes données</a></span>
+    </div>
+  </div>
+</footer>
+
+<script src="maquettes.js"></script>
+<script src="atlas.js"></script>
+</body>
+</html>

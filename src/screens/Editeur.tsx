@@ -1390,6 +1390,26 @@ function MenuBloc({
       >
         {feuille && <span className="ed__poignetteFeuille" aria-hidden="true" />}
         <div className="menu__section">{decrire(bloc)?.libelle ?? 'Bloc'}</div>
+
+        {/* CHANGER DE TYPE EN PREMIER, et c'est un ordre pesé.
+
+            Monter / Descendre / Dupliquer viennent d'abord dans la
+            plupart des éditeurs, par habitude. Mais on n'ouvre pas ce
+            menu pour déplacer un bloc — on l'attrape et on le glisse.
+            On l'ouvre parce qu'un paragraphe devrait être un titre, ou
+            une citation. C'est la raison la plus fréquente, elle passe
+            donc devant, et son libellé dit ce qu'on quitte autant que
+            ce qu'on cherche. */}
+        <button
+          className="menu__item menu__item--court"
+          onClick={(e) => {
+            fermer()
+            outils.ouvrirCatalogue('transformer', bloc.id, e.currentTarget)
+          }}
+        >
+          Transformer en…
+        </button>
+        <div className="menu__sep" />
         <button
           className="menu__item menu__item--court"
           disabled={premier}
@@ -1407,20 +1427,12 @@ function MenuBloc({
         <button className="menu__item menu__item--court" onClick={acte(() => outils.dupliquer(bloc.id))}>
           Dupliquer
         </button>
-        <button
-          className="menu__item menu__item--court"
-          onClick={(e) => {
-            fermer()
-            outils.ouvrirCatalogue('transformer', bloc.id, e.currentTarget)
-          }}
-        >
-          Transformer en…
-        </button>
+        <div className="menu__sep" />
         <button
           className="menu__item menu__item--court menu__item--danger"
           onClick={acte(() => outils.supprimer(bloc.id))}
         >
-          Supprimer
+          Supprimer la ligne
         </button>
       </div>
     </>,

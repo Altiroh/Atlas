@@ -6,6 +6,19 @@
       "runtimeExecutable": "npm",
       "runtimeArgs": ["run", "dev"],
       "port": 3870
+    },
+    {
+      "name": "atlas-site",
+      "runtimeExecutable": "node",
+      "runtimeArgs": [
+        "C:/nvm4w/nodejs/node_modules/npm/bin/npx-cli.js",
+        "serve",
+        "site",
+        "-l",
+        "3872",
+        "--no-clipboard"
+      ],
+      "port": 3872
     }
   ]
 }

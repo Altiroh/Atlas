@@ -71,6 +71,23 @@ export type Piece = {
    * comment.
    */
   z: number
+  /**
+   * LES PIÈCES QU'ELLE RELIE, par identifiant.
+   *
+   * Une planche montre des rapprochements ; jusqu'ici elle ne pouvait
+   * les dire que par la POSITION — deux images côte à côte, et au
+   * lecteur de deviner. Ça marche pour trois pièces, plus du tout pour
+   * vingt, et ça ne survit pas au premier réarrangement : déplacer une
+   * image effaçait l'idée qu'elle portait.
+   *
+   * Le lien est stocké SUR UNE SEULE DES DEUX PIÈCES, celle d'où on
+   * est parti, alors qu'il se lit dans les deux sens. Le noter des
+   * deux côtés obligerait à tenir deux écritures cohérentes à chaque
+   * geste — et deux appareils qui fusionnent en auraient tôt fait
+   * d'en garder une moitié. Une seule source, un seul endroit à
+   * nettoyer quand une pièce disparaît.
+   */
+  vers?: string[]
 }
 
 /**

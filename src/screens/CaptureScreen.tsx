@@ -39,6 +39,7 @@ import { Dictee } from '../ui/Dictee'
 export function CaptureScreen({ autoFocus = true }: { autoFocus?: boolean }) {
   const espaces = useAtlas((s) => s.espaces)
   const creerPost = useAtlas((s) => s.creerPost)
+  const majPost = useAtlas((s) => s.majPost)
   const select = useAtlas((s) => s.select)
   const setNav = useAtlas((s) => s.setNav)
 
@@ -53,10 +54,42 @@ export function CaptureScreen({ autoFocus = true }: { autoFocus?: boolean }) {
     if (autoFocus) ref.current?.focus()
   }, [autoFocus])
 
+  /**
+   * Jusqu'où une première ligne peut servir de titre.
+   *
+   * Au-delà, ce n'est plus un titre mais une phrase : la promouvoir
+   * donnerait un intitulé qu'on ne peut pas lire d'un coup d'œil dans
+   * le flux, et une note vide en dessous. Une idée jetée en trois
+   * lignes reste du corps de texte, et `titreDe` sait déjà en tirer un
+   * libellé pour la liste.
+   */
+  const TITRE_MAX = 72
+
+  /* LA PREMIÈRE LIGNE DEVIENT LE TITRE, LE RESTE LE CORPS.
+
+     La capture partait entièrement dans le texte, et la note s'ouvrait
+     sur un champ de titre vide — « Sans titre » en gris, au-dessus de
+     la phrase qu'on venait justement d'écrire. Il fallait la recopier
+     à la main pour nommer sa propre note.
+
+     On coupe donc à la première ligne. Rien n'est dupliqué : ce qui
+     monte dans le titre quitte le corps, et une capture d'une seule
+     ligne donne une note titrée dont la fiche est vierge — prête à
+     être développée, ce qui est exactement l'état d'une idée qu'on
+     vient d'attraper. */
+  const decouper = (brut: string) => {
+    const lignes = brut.split('\n')
+    const premiere = lignes[0].trim()
+    if (!premiere || premiere.length > TITRE_MAX) return { titre: '', corps: brut }
+    return { titre: premiere, corps: lignes.slice(1).join('\n').trim() }
+  }
+
   const valider = () => {
     const propre = texte.trim()
     if (!propre) return
-    const id = creerPost(propre, espaceId)
+    const { titre, corps } = decouper(propre)
+    const id = creerPost(corps, espaceId)
+    if (titre) majPost(id, { titre })
     setTexte('')
     /* Le texte devient de vrais blocs à l'ouverture (`depuisAncienModele`),
        donc la note s'ouvre sur ce qu'on vient d'écrire, prêt à être

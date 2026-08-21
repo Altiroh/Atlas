@@ -12,6 +12,7 @@ import { traiterLienEntrant } from './store/lienEntrant'
 import { SUPABASE_CONFIGURE } from './store/config'
 import { useCompte } from './store/compte'
 import { useSync } from './store/sync'
+import { brancherApparence } from './theme/apparence'
 import { applyTheme, useTheme } from './theme/theme'
 import { Aurora } from './ui/Aurora'
 import { BulleAtlas } from './ui/BulleAtlas'
@@ -67,6 +68,12 @@ export default function App() {
       arreter?.()
     }
   }, [hydrater, setNav])
+
+  /* --- L'apparence suit le compte ---
+     Branché une fois pour toutes, et sans condition : le module ne
+     fait rien tant qu'aucune session n'est ouverte, ce qui laisse
+     l'app locale se comporter exactement comme avant. --- */
+  useEffect(brancherApparence, [])
 
   /* --- Thème appliqué au DOM --- */
   useEffect(() => {

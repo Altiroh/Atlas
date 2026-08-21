@@ -440,6 +440,81 @@
    @media, elles font tomber tout le bloc à l'analyse — le panneau
    restait alors une fenêtre de 370 px sans qu'aucune erreur ne
    paraisse. */
+/* ========================================================
+   LA PLEINE PAGE
+
+   Une seule règle, hors de toute media query, et volontairement : la
+   pleine page vaut sur téléphone comme sur écran large. Sur l'un elle
+   recouvre la barre d'onglets, sur l'autre le rail — dans les deux cas
+   c'est le même besoin, travailler sans rien autour.
+
+   Le panneau de droite convient à une question : on garde sa note sous
+   les yeux, on demande, on referme. Il ne convient plus dès qu'Atlas
+   rend une carte à travailler — quarante-deux pour cent de la largeur
+   pour douze notes à cocher, chacune avec son détail, c'est une
+   colonne où tout se replie sur deux lignes.
+
+   Le z-index passe devant TOUTE la navigation (le rail est à 55, la
+   feuille montante à 60, la barre d'onglets à 75). Laisser un bout de
+   rail dépasser sur le côté suffirait à défaire la promesse : « sans
+   navigation » ne se négocie pas à quarante pixels près.
+
+   Les quatre côtés sont écrits séparément plutôt qu'en un « inset » :
+   la version courte serait battue par les top/right/bottom/left
+   individuels de la règle d'écran large, qui vient après dans le
+   fichier et pèse le même poids.
+
+   ── ET LE SÉLECTEUR PORTE UN `[data-shell]` QUI NE SERT À RIEN
+
+   Sauf à peser. `.app[data-shell='compact'] .causerie` fixe le bas à
+   156 px pour laisser passer la barre d'onglets ; il pèse trois
+   classes, contre deux pour un `.causerie[data-plein]` nu. La pleine
+   page s'ouvrait donc sur toute la largeur mais s'arrêtait cent
+   cinquante-six pixels avant le bas de l'écran, en laissant un vide
+   sous elle — sans qu'aucune de ces deux règles ne soit fausse.
+
+   L'attribut sans valeur ajoute la classe qui manque et vaut dans les
+   deux postures. Une valeur précise (`[data-shell='compact']`) aurait
+   marché sur téléphone et laissé le bureau sans correctif.
+   ======================================================== */
+.app[data-shell] .causerie[data-plein] {
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  max-width: none;
+  max-height: none;
+  z-index: 90;
+  border-radius: 0;
+  border-left: 0;
+  box-shadow: none;
+  animation: none;
+}
+
+/* Le fil ne s'étale pas sur toute la largeur d'un grand écran : une
+   ligne de texte de mille pixels ne se lit pas. Il se centre, et c'est
+   la page qui est pleine, pas la colonne. */
+.causerie[data-plein] .causerie__fil,
+.causerie[data-plein] .causerie__tete,
+.causerie[data-plein] .causerie__raccourcis,
+.causerie[data-plein] .causerie__pied {
+  width: min(760px, 100%);
+  margin-inline: auto;
+}
+
+.causerie[data-plein] .causerie__fil {
+  padding: 22px 20px 10px;
+  gap: 14px;
+}
+
+/* La bulle s'efface aussi en pleine page, et sur tous les écrans : il
+   n'y a jamais deux Atlas à la fois. */
+.app:has(.causerie[data-plein]) .bulle {
+  opacity: 0;
+  pointer-events: none;
+}
+
 @keyframes causerie-glisse {
   from { opacity: 0; transform: translateX(24px); }
   to { opacity: 1; transform: none; }

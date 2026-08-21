@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import {
+  chercherConsigne,
   chercherFamille,
   chercherScriptEtScore,
   FAMILLES,
@@ -23,7 +24,14 @@ import {
   type Theme,
 } from '../store/conversation'
 import { Confirmation } from './Confirmation'
-import { IconChevron, IconClose, IconCoche, IconRestore } from './Icon'
+import {
+  IconChevron,
+  IconClose,
+  IconCoche,
+  IconPleinEcran,
+  IconReduire,
+  IconRestore,
+} from './Icon'
 import { OeilAtlas } from './OeilAtlas'
 
 /* ---------------------------------------------------------------
@@ -92,6 +100,20 @@ export function Causerie({ fermer }: { fermer: () => void }) {
     ...lancer('briefing'),
   ])
   const [texte, setTexte] = useState('')
+  /* LA PLEINE PAGE.
+
+     Le panneau de droite convient à une question — on garde sa note
+     sous les yeux, on demande, on referme. Il ne convient plus dès
+     qu'Atlas rend une carte à travailler : quarante-deux pour cent de
+     la largeur pour une liste de douze notes à cocher, chacune avec
+     son détail, c'est une colonne où tout se replie sur deux lignes.
+
+     La pleine page n'est donc pas un confort d'affichage, c'est le
+     mode de travail : plus de rail, plus d'onglets, plus de note
+     derrière — la conversation et rien d'autre. On y entre et on en
+     sort d'un même bouton, et l'état ne survit pas à la fermeture :
+     rouvrir Atlas pour une question doit redonner la petite fenêtre. */
+  const [plein, setPlein] = useState(false)
   const [aConfirmer, setAConfirmer] = useState<{ tour: number; ids: string[] } | null>(null)
   const champ = useRef<HTMLInputElement>(null)
   const fin = useRef<HTMLDivElement>(null)
@@ -143,6 +165,18 @@ export function Causerie({ fermer }: { fermer: () => void }) {
 
     const politesse = civilite(d)
     if (politesse) return ajouter(bulle(politesse))
+
+    /* UNE CONSIGNE PASSE AVANT TOUT LE RESTE.
+
+       « Crée un espace Roman noir » ne laisse aucun doute sur
+       l'intention, et le nom à donner est DANS la phrase. La recherche
+       floue, elle, n'y verrait que le mot « espace » et lancerait « Un
+       espace à naître » — qui scrute la base au lieu de faire ce qu'on
+       demande. Deviner quand on a été explicite est la pire des
+       réponses ; c'est exactement ce qui faisait dire à Atlas qu'il ne
+       savait pas créer d'espace. */
+    const consigne = chercherConsigne(d)
+    if (consigne) return ajouter(...lancer(consigne.id, d))
 
     /* Un seul mot qui nomme une famille : on déplie la famille plutôt
        que de lancer le premier script qui y ressemble. « Nettoie »
@@ -213,7 +247,7 @@ export function Causerie({ fermer }: { fermer: () => void }) {
     enAttente?.res.sorte === 'proposition' ? enAttente.res : null
 
   return (
-    <div className="causerie rise" role="dialog" aria-label="Atlas">
+    <div className="causerie rise" data-plein={plein || undefined} role="dialog" aria-label="Atlas">
       <div className="causerie__tete">
         <button className="causerie__oeil" onClick={fermer} aria-label="Fermer Atlas">
           <OeilAtlas size={22} mode="cause" flux />
@@ -237,6 +271,14 @@ export function Causerie({ fermer }: { fermer: () => void }) {
           {SCRIPTS.length} logiques · {NOMBRE_DE_SUJETS} sujets
         </span>
 
+        <button
+          className="btn btn--icon"
+          onClick={() => setPlein(!plein)}
+          aria-label={plein ? 'Réduire la conversation' : 'Ouvrir en pleine page'}
+          aria-pressed={plein}
+        >
+          {plein ? <IconReduire size={17} /> : <IconPleinEcran size={17} />}
+        </button>
         <button className="btn btn--icon" onClick={fermer} aria-label="Fermer">
           <IconClose size={17} />
         </button>
@@ -623,10 +665,17 @@ function ResultatRendu({
 /* ================= utilitaires ================= */
 
 /** Lance un script et fabrique le tour qui montre son résultat. */
-function lancer(scriptId: string): Tour[] {
+/**
+ * La demande passe au script, et c'est ce qui permet les CONSIGNES.
+ *
+ * Les autres logiques n'en ont pas besoin : elles scrutent la base, la
+ * phrase qui les a appelées ne leur apprend rien. Une consigne, si —
+ * « crée un espace Roman noir » n'a de sens qu'avec « Roman noir ».
+ */
+function lancer(scriptId: string, demande?: string): Tour[] {
   const s = scriptParId(scriptId)
   if (!s) return [{ k: 'dit', texte: 'Cette logique n’existe pas.' }]
-  const res = s.chercher()
+  const res = s.chercher(demande)
   const pris =
     res.sorte === 'proposition' ? res.elements.filter((e) => e.pris).map((e) => e.id) : []
   return [{ k: 'resultat', scriptId, res, pris }]

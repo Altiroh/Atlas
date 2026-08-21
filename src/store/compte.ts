@@ -30,6 +30,17 @@ export type Session = {
    * donc à reposer. C'est dit dans l'écran, pas caché.
    */
   imageId?: string | null
+  /**
+   * L'APPARENCE, TELLE QUE LE COMPTE LA CONNAÎT.
+   *
+   * Non typée ici, et c'est délibéré : elle vient d'un champ libre du
+   * fournisseur d'authentification, donc elle n'est fiable qu'après
+   * relecture (`theme/apparence.ts`). L'annoncer `Apparence` dans ce
+   * fichier ferait croire au reste du code qu'elle a été vérifiée, et
+   * ferait remonter le thème jusque dans le module des comptes, qui
+   * n'a aucune raison de le connaître.
+   */
+  apparence?: unknown
   depuis: number
 }
 
@@ -43,6 +54,15 @@ export interface Authentification {
   connecter(email: string, motDePasse: string): Promise<Demande>
   deconnecter(): Promise<void>
   majProfil(nom: string): Promise<Session>
+  /**
+   * Range l'apparence avec le compte.
+   *
+   * Elle voyage dans les métadonnées de l'utilisateur, à côté du nom :
+   * pas de table à créer, pas de règle de sécurité à poser, pas de
+   * script SQL à faire passer. Trois nombres et deux mots ne valent
+   * pas une migration de plus.
+   */
+  habiller(apparence: unknown): Promise<Session>
   /**
    * Envoie un lien de réinitialisation.
    *
@@ -117,7 +137,14 @@ export function verifierMotDePasse(mdp: string) {
 const CLE_SESSION = 'atlas.compte.session'
 const CLE_COMPTES = 'atlas.compte.comptes'
 
-type CompteStocke = { id: string; email: string; nom: string; sel: string; empreinte: string }
+type CompteStocke = {
+  id: string
+  email: string
+  nom: string
+  sel: string
+  empreinte: string
+  apparence?: unknown
+}
 
 /** Empreinte SHA-256 du mot de passe salé. */
 async function empreinter(mdp: string, sel: string) {
@@ -167,6 +194,7 @@ export class AuthLocale implements Authentification {
       id: compte.id,
       email: compte.email,
       nom: compte.nom,
+      apparence: compte.apparence,
       depuis: Date.now(),
     }
     try {
@@ -261,6 +289,21 @@ export class AuthLocale implements Authentification {
     }
     return maj
   }
+
+  async habiller(apparence: unknown): Promise<Session> {
+    const session = await this.session()
+    if (!session) throw new Error('Aucune session')
+    ecrireComptes(
+      lireComptes().map((c) => (c.id === session.id ? { ...c, apparence } : c)),
+    )
+    const maj = { ...session, apparence }
+    try {
+      localStorage.setItem(CLE_SESSION, JSON.stringify(maj))
+    } catch {
+      /* sans importance */
+    }
+    return maj
+  }
 }
 
 /* ================= store ================= */
@@ -277,6 +320,8 @@ type CompteStore = {
   connecter: (email: string, mdp: string) => Promise<Session | null>
   deconnecter: () => Promise<void>
   renommer: (nom: string) => Promise<void>
+  /** range l'apparence courante avec le compte */
+  habiller: (apparence: unknown) => Promise<void>
   /** rend vrai si la demande est partie — le message est le même dans tous les cas */
   demanderNouveauMotDePasse: (email: string) => Promise<boolean>
   /** rend vrai si le mot de passe a bien été changé */
@@ -312,6 +357,15 @@ export const useCompte = create<CompteStore>((set, get) => ({
   deconnecter: async () => {
     await get().auth.deconnecter()
     set({ session: null, confirmationEnvoyee: null, erreur: null })
+  },
+
+  /* Elle ne passe PAS par `tenter` : celui-ci pose `occupe` et
+     affiche l'erreur à l'écran. Un réglage de couleur qui n'a pas pu
+     voyager ne doit ni bloquer un bouton ni alarmer qui que ce soit —
+     l'apparence est déjà juste sur cet appareil. */
+  habiller: async (apparence) => {
+    const session = await get().auth.habiller(apparence)
+    set({ session: avecPortrait(session) })
   },
 
   renommer: async (nom) => {

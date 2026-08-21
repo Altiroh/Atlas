@@ -5,6 +5,7 @@ import { lisible, peutAjouterImage, QUOTA_IMAGES } from '../store/quota'
 import {
   IconFocus,
   IconImage,
+  IconLien,
   IconMoins,
   IconPivoter,
   IconPlanche,
@@ -76,6 +77,79 @@ export function Planche({
   const [taille, setTaille] = useState<{ id: string; l: number } | null>(null)
   const [envoi, setEnvoi] = useState(false)
 
+  /* LE MODE RELIER — une pièce de départ, et l'attente de la seconde.
+
+     Il aurait été plus court de tirer un fil depuis une poignée, comme
+     on redimensionne. Ça demande de viser un point précis sur une
+     pièce inclinée, puis de tenir le doigt jusqu'à une autre pièce qui
+     peut être hors champ — donc de défiler en glissant. Deux appuis
+     nets font le même travail sans rien viser, et se rattrapent d'un
+     appui sur le fond. */
+  const [relierDepuis, setRelierDepuis] = useState<string | null>(null)
+
+  /* LES HAUTEURS, MESURÉES ET NON DÉDUITES.
+
+     Une pièce n'a qu'une largeur dans le modèle : sa hauteur dépend de
+     l'image qu'elle porte, et n'est connue qu'une fois celle-ci
+     chargée. Or un trait doit partir du CENTRE, sinon il sort par le
+     coin et l'œil ne suit plus. On observe donc les éléments — et
+     l'observateur est indispensable, pas un luxe : la hauteur d'une
+     vignette change à l'instant où son image arrive, bien après le
+     rendu qui l'a posée. */
+  const monde = useRef<HTMLDivElement>(null)
+  const [hauteurs, setHauteurs] = useState<Record<string, number>>({})
+  const empreinte = pieces.map((p) => p.id).join(',')
+
+  useEffect(() => {
+    const racine = monde.current
+    if (!racine || typeof ResizeObserver === 'undefined') return
+    const ro = new ResizeObserver((entrees) => {
+      setHauteurs((avant) => {
+        let change = false
+        const suite = { ...avant }
+        for (const e of entrees) {
+          const id = (e.target as HTMLElement).dataset.piece
+          if (!id) continue
+          const h = Math.round(e.contentRect.height)
+          if (suite[id] !== h) {
+            suite[id] = h
+            change = true
+          }
+        }
+        return change ? suite : avant
+      })
+    })
+    racine.querySelectorAll<HTMLElement>('[data-piece]').forEach((el) => ro.observe(el))
+    return () => ro.disconnect()
+  }, [empreinte])
+
+  /* Le centre d'une pièce, en coordonnées du plan. La rotation ne
+     compte pas : elle tourne autour de ce point-là, qui ne bouge donc
+     pas d'un pixel. */
+  const centreDe = (p: Piece) => ({
+    x: p.x + p.l / 2,
+    y: p.y + (hauteurs[p.id] ?? 120) / 2,
+  })
+
+  /** Pose ou retire le lien entre deux pièces, dans le sens qu'il a déjà. */
+  const basculerLien = (a: string, b: string) => {
+    if (a === b) return
+    const existant = pieces.find(
+      (p) =>
+        (p.id === a && (p.vers ?? []).includes(b)) || (p.id === b && (p.vers ?? []).includes(a)),
+    )
+    if (existant) {
+      const autre = existant.id === a ? b : a
+      ecrire(
+        pieces.map((p) =>
+          p.id === existant.id ? { ...p, vers: (p.vers ?? []).filter((v) => v !== autre) } : p,
+        ),
+      )
+      return
+    }
+    ecrire(pieces.map((p) => (p.id === a ? { ...p, vers: [...(p.vers ?? []), b] } : p)))
+  }
+
   /* Le centre de la vue, en coordonnées du plan : c'est là qu'atterrit
      tout ce qu'on ajoute — jamais au coin, jamais hors champ. */
   const centreDuPlan = useCallback(() => {
@@ -113,8 +187,20 @@ export function Planche({
 
   const retirer = (p: Piece) => {
     if (p.imageId) oublierImage(p.imageId)
-    ecrire(pieces.filter((x) => x.id !== p.id))
+    /* LES LIENS QUI LA DÉSIGNAIENT PARTENT AVEC ELLE. Les laisser
+       pendre ne se verrait pas — le rendu ignore un identifiant
+       inconnu — mais ils reviendraient à la vie le jour où une
+       fusion ramène la pièce, et se traîneraient dans chaque
+       sauvegarde en attendant. */
+    ecrire(
+      pieces
+        .filter((x) => x.id !== p.id)
+        .map((x) =>
+          (x.vers ?? []).includes(p.id) ? { ...x, vers: x.vers!.filter((v) => v !== p.id) } : x,
+        ),
+    )
     setSelection(null)
+    setRelierDepuis(null)
   }
 
   /* --- importer une ou plusieurs images --- */
@@ -247,6 +333,7 @@ export function Planche({
     if (e.target !== e.currentTarget) return
     setSelection(null)
     setEdition(null)
+    setRelierDepuis(null)
     doigts.current.set(e.pointerId, { x: e.clientX, y: e.clientY })
     try {
       e.currentTarget.setPointerCapture(e.pointerId)
@@ -289,6 +376,20 @@ export function Planche({
   const pieceDown = (e: React.PointerEvent, p: Piece) => {
     if (edition === p.id) return
     e.stopPropagation()
+
+    /* EN MODE RELIER, LA PIÈCE NE SE DÉPLACE PAS. Laisser le glissé
+       vivre en même temps ferait qu'on relie ET qu'on bouge d'un même
+       appui — deux effets pour un geste, dont un qu'on n'a pas
+       demandé. Le second appui ferme le mode : relier trois pièces
+       d'affilée se fait en repartant de la première, ce qui est aussi
+       la façon de dire qu'on a fini. */
+    if (relierDepuis) {
+      basculerLien(relierDepuis, p.id)
+      setRelierDepuis(null)
+      setSelection(p.id)
+      return
+    }
+
     setSelection(p.id)
     depart.current = { sx: e.clientX, sy: e.clientY, x: p.x, y: p.y }
     setGlisse({ id: p.id, x: p.x, y: p.y })
@@ -364,6 +465,22 @@ export function Planche({
   const rangees = [...pieces].sort((a, b) => a.z - b.z)
   const choisie = pieces.find((p) => p.id === selection) ?? null
 
+  /* Les traits se calculent sur la position AFFICHÉE, celle que
+     `position` corrige pendant un glissé : sans quoi le trait resterait
+     accroché à l'ancienne place et ne rattraperait la pièce qu'au
+     relâchement. Un lien qui désigne une pièce disparue est simplement
+     sauté — c'est la seule tolérance, et elle évite qu'une fusion
+     bancale ne fasse tomber la planche entière. */
+  const traits = pieces.flatMap((a) =>
+    (a.vers ?? []).flatMap((idB) => {
+      const b = pieces.find((x) => x.id === idB)
+      if (!b) return []
+      const ca = centreDe(position(a))
+      const cb = centreDe(position(b))
+      return [{ cle: `${a.id}-${idB}`, x1: ca.x, y1: ca.y, x2: cb.x, y2: cb.y }]
+    }),
+  )
+
   return (
     <div className="planche">
       <input
@@ -387,9 +504,23 @@ export function Planche({
         onPointerCancel={fondUp}
       >
         <div
+          ref={monde}
           className="planche__monde"
           style={{ transform: `translate3d(${vue.x}px, ${vue.y}px, 0) scale(${vue.k})` }}
         >
+          {/* LES TRAITS SOUS LES PIÈCES, dans le même plan.
+
+              Le calque vit DANS le monde transformé : il hérite donc du
+              déplacement et du zoom sans une ligne de calcul, et un
+              trait ne peut pas se désolidariser de ce qu'il relie. Sa
+              taille est nulle et son débordement visible — c'est un
+              système de coordonnées, pas une surface. */}
+          <svg className="planche__liens" aria-hidden="true">
+            {traits.map((t) => (
+              <line key={t.cle} x1={t.x1} y1={t.y1} x2={t.x2} y2={t.y2} />
+            ))}
+          </svg>
+
           {rangees.map((brute) => {
             const p = position(brute)
             const l = largeur(brute)
@@ -398,7 +529,10 @@ export function Planche({
               <div
                 key={p.id}
                 className="piece"
+                data-piece={p.id}
                 data-actif={actif}
+                data-depart={relierDepuis === p.id || undefined}
+                data-cible={(relierDepuis && relierDepuis !== p.id) || undefined}
                 data-mot={!p.imageId || undefined}
                 style={{
                   transform: `translate3d(${p.x}px, ${p.y}px, 0) rotate(${p.rot}deg)`,
@@ -444,6 +578,20 @@ export function Planche({
           })}
         </div>
       </div>
+
+      {/* UNE CONSIGNE PENDANT L'ATTENTE, et elle dit les deux issues.
+
+          Un mode dans lequel on est entré sans s'en rendre compte est
+          un mode dont on ne sait pas sortir. Celui-ci change ce que
+          fait un appui sur une pièce : il doit donc se voir, dire ce
+          qu'il attend, et dire comment en sortir — les trois dans la
+          même phrase. */}
+      {relierDepuis && (
+        <div className="planche__consigne" role="status">
+          Touche la pièce à relier. Un appui sur le fond annule ; sur une pièce déjà reliée, le
+          trait s’efface.
+        </div>
+      )}
 
       {/* Les commandes de la pièce choisie sont ANCRÉES À LA BARRE, pas
           collées à la pièce : une pièce inclinée emporterait ses boutons
@@ -516,6 +664,19 @@ export function Planche({
               onClick={() => maj(choisie.id, { rot: Math.round((choisie.rot + 8) % 360) })}
             >
               <IconPivoter size={17} />
+            </OutilCanevas>
+            <OutilCanevas
+              titre={
+                relierDepuis === choisie.id
+                  ? 'Choisis la pièce à relier'
+                  : 'Relier à une autre pièce'
+              }
+              actif={relierDepuis === choisie.id}
+              onClick={() =>
+                setRelierDepuis(relierDepuis === choisie.id ? null : choisie.id)
+              }
+            >
+              <IconLien size={17} />
             </OutilCanevas>
             <OutilCanevas titre="Retirer" onClick={() => retirer(choisie)}>
               <IconTrash size={16} />

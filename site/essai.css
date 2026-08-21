@@ -1,0 +1,287 @@
+/* ---------------------------------------------------------------
+   Le bac à sable.
+
+   Un vrai morceau d'Atlas, posé dans la page : on tape, on garde, on
+   classe, on archive, on annule. Rien n'est envoyé nulle part et rien
+   n'est gardé au rechargement — c'est un essai, pas un compte.
+
+   Contrairement aux maquettes, ce bloc N'EST PAS mis à l'échelle :
+   on écrit dedans, donc le texte doit garder sa vraie taille. Il
+   emprunte la matière d'Atlas, pas son unité de dessin.
+   --------------------------------------------------------------- */
+
+.essai {
+  padding: clamp(18px, 2.4vw, 26px);
+  border-radius: var(--r-xl);
+}
+
+.essai__tete {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.essai__main {
+  flex: 1;
+  font-family: 'Snell Roundhand', 'Segoe Script', 'Bradley Hand', 'Brush Script MT', cursive;
+  font-weight: 700;
+  font-size: 25px;
+  color: var(--text);
+}
+
+.essai__ref {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+  color: var(--text-3);
+}
+
+/* ---------- la capture ---------- */
+
+.essai__capture {
+  padding: 16px 18px 14px;
+  border-radius: var(--r-lg);
+  background: var(--surface-sunken);
+  border: 1px solid var(--border);
+  transition: border-color var(--fast) var(--ease), background var(--fast) var(--ease);
+}
+.essai__capture:focus-within { border-color: var(--accent-line); background: var(--surface-strong); }
+
+.essai__champ {
+  display: block;
+  width: 100%;
+  resize: none;
+  border: 0;
+  background: none;
+  font-size: 19px;
+  line-height: 1.45;
+  letter-spacing: -0.01em;
+  color: var(--text);
+  outline: none;
+}
+.essai__champ::placeholder { color: var(--text-3); font-weight: 380; }
+
+.essai__chips { display: flex; flex-wrap: wrap; gap: 7px; padding-top: 14px; }
+
+.essai__chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  height: 32px;
+  padding: 0 12px;
+  border-radius: 99px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text-2);
+  font-size: 13px;
+  font-weight: 480;
+  transition: transform var(--fast) var(--ease), background var(--fast) var(--ease),
+    border-color var(--fast) var(--ease), color var(--fast) var(--ease);
+}
+.essai__chip:hover { border-color: var(--border-strong); color: var(--text); }
+.essai__chip:active { transform: scale(0.95); }
+.essai__chip[aria-pressed='true'] {
+  background: hsl(var(--h) 70% 55% / 0.16);
+  border-color: hsl(var(--h) 70% 55% / 0.45);
+  color: var(--text);
+}
+.essai__chip i {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: hsl(var(--h) 72% 55%);
+}
+
+.essai__pied {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding-top: 14px;
+  margin-top: 14px;
+  border-top: 1px solid var(--border);
+}
+.essai__astuce { flex: 1; font-size: 12px; color: var(--text-3); }
+.essai__pied .btn { height: 36px; padding: 0 16px; font-size: 14px; }
+
+/* ---------- la liste ---------- */
+
+.essai__jour {
+  padding: 20px 4px 4px;
+  font-family: var(--mono);
+  font-size: 10.5px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--text-3);
+}
+
+.essai__liste { display: block; }
+
+.essai__idee {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 13px 12px;
+  border-radius: var(--r);
+  border: 1px solid transparent;
+  transition: background var(--fast) var(--ease), border-color var(--fast) var(--ease);
+}
+.essai__idee:hover { background: var(--surface-sunken); border-color: var(--border); }
+
+/* L'entrée d'une idée : elle arrive du haut et se pose. Sans ce
+   mouvement, une ligne qui apparaît d'un coup passe inaperçue —
+   or c'est exactement le moment qu'on veut faire ressentir. */
+.essai__idee[data-neuve] { animation: essai-arrive 460ms var(--ease) both; }
+
+@keyframes essai-arrive {
+  from { opacity: 0; transform: translateY(-10px) scale(0.98); }
+  to   { opacity: 1; transform: none; }
+}
+
+/* La sortie : elle glisse vers la gauche et se referme, comme un
+   balayage qui aboutit. */
+.essai__idee[data-part] {
+  animation: essai-part 320ms var(--ease) both;
+  pointer-events: none;
+}
+
+@keyframes essai-part {
+  to { opacity: 0; transform: translateX(-26px); }
+}
+
+.essai__marque {
+  flex: none;
+  width: 8px;
+  height: 8px;
+  margin-top: 7px;
+  border-radius: 50%;
+  background: hsl(var(--h) 72% 55%);
+  box-shadow: 0 0 0 3px hsl(var(--h) 72% 55% / 0.16);
+}
+
+.essai__corps { flex: 1; min-width: 0; }
+
+.essai__titre {
+  font-size: 15px;
+  font-weight: 520;
+  line-height: 1.4;
+  letter-spacing: -0.008em;
+  color: var(--text);
+  overflow-wrap: anywhere;
+}
+
+.essai__meta {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin-top: 5px;
+  font-size: 11.5px;
+  color: var(--text-3);
+}
+.essai__projet { color: var(--text-2); font-weight: 480; }
+
+/* Les actions n'apparaissent qu'au survol sur grand écran : la liste
+   reste calme tant qu'on ne s'en approche pas. Au doigt, elles sont
+   toujours là — il n'y a pas de survol. */
+.essai__actions { display: flex; gap: 4px; flex: none; opacity: 0; transition: opacity var(--fast) var(--ease); }
+.essai__idee:hover .essai__actions,
+.essai__idee:focus-within .essai__actions { opacity: 1; }
+
+@media (hover: none) { .essai__actions { opacity: 1; } }
+
+.essai__action {
+  padding: 6px 10px;
+  border-radius: 99px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-2);
+  border: 1px solid var(--border);
+  background: var(--surface);
+  transition: color var(--fast) var(--ease), border-color var(--fast) var(--ease);
+}
+.essai__action:hover { color: var(--text); border-color: var(--border-strong); }
+
+.essai__vide {
+  padding: 26px 12px;
+  font-size: 14.5px;
+  color: var(--text-3);
+  line-height: 1.6;
+}
+
+/* ---------- le rattrapage ---------- */
+
+/* Rien ne se perd : ce qui sort de la liste laisse un mot, et le mot
+   propose de revenir en arrière. C'est la promesse d'Atlas, montrée
+   plutôt qu'écrite. */
+.essai__mot {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-top: 14px;
+  padding: 12px 16px;
+  border-radius: 99px;
+  background: var(--surface-strong);
+  border: 1px solid var(--border);
+  font-size: 13.5px;
+  color: var(--text-2);
+  animation: essai-mot 320ms var(--ease) both;
+}
+@keyframes essai-mot {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: none; }
+}
+.essai__mot span { flex: 1; }
+.essai__mot button {
+  font-size: 13.5px;
+  font-weight: 550;
+  color: var(--accent-text);
+}
+.essai__mot button:hover { text-decoration: underline; }
+
+/* ========================================================
+   Les six formes, à essayer
+   ======================================================== */
+
+.formes-vives { display: grid; gap: 18px; }
+
+.formes-vives__onglets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 5px;
+  border-radius: 99px;
+  align-self: start;
+}
+
+.formes-vives__onglet {
+  padding: 9px 17px;
+  border-radius: 99px;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-2);
+  transition: color var(--fast) var(--ease), background var(--fast) var(--ease);
+}
+.formes-vives__onglet:hover { color: var(--text); }
+.formes-vives__onglet[aria-selected='true'] {
+  background: var(--accent);
+  color: var(--accent-ink);
+  font-weight: 550;
+  box-shadow: 0 4px 16px var(--accent-glow);
+}
+
+/* Le changement d'onglet ne remplace pas brutalement : la nouvelle
+   forme monte d'un cran. Sans ça on doute d'avoir cliqué. */
+.formes-vives__vue > * { animation: forme-entre 380ms var(--ease) both; }
+
+@keyframes forme-entre {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .essai__idee[data-neuve],
+  .essai__idee[data-part],
+  .essai__mot,
+  .formes-vives__vue > * { animation: none; }
+}

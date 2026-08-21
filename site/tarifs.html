@@ -1,0 +1,607 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Les prix — Atlas</title>
+<meta name="description" content="Trois plans : Bricoleur gratuit, Compagnon à 12,50 €/mois, Créatif bientôt. Des plafonds calculés sur ce que coûte vraiment une idée.">
+<meta name="theme-color" content="#eceff6">
+
+<link rel="icon" type="image/png" sizes="32x32" href="images/favicon-32.png">
+<link rel="icon" type="image/png" sizes="48x48" href="images/favicon-48.png">
+<link rel="apple-touch-icon" href="images/icone-180.png">
+
+<link rel="stylesheet" href="atlas.css">
+<link rel="stylesheet" href="maquettes.css">
+</head>
+
+<body>
+<a class="saut-lien" href="#principal">Aller au contenu</a>
+
+<div class="aurora" aria-hidden="true">
+  <div class="aurora__blob aurora__blob--1"></div>
+  <div class="aurora__blob aurora__blob--2"></div>
+  <div class="aurora__blob aurora__blob--3"></div>
+  <div class="trame"></div>
+  <div class="grain"></div>
+</div>
+
+<header class="entete">
+  <div class="entete__barre">
+    <a class="marque" href="index.html" aria-label="Atlas, accueil">
+      <span data-oeil="26" data-flux="non"></span>
+      <span class="marque__nom">Atlas</span>
+    </a>
+
+    <nav class="nav" id="menu" aria-label="Navigation principale">
+      <a class="nav__lien" href="index.html">Accueil</a>
+      <a class="nav__lien" href="produit.html">Produit</a>
+      <a class="nav__lien" href="tarifs.html">Prix</a>
+      <a class="nav__lien" href="infos.html">Infos</a>
+    </nav>
+
+    <div class="entete__outils">
+      <button class="btn btn--icone bascule-theme" type="button" aria-label="Changer de thème">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="12" cy="12" r="4.2"/>
+          <path d="M12 2.5v2M12 19.5v2M2.5 12h2M19.5 12h2M5.2 5.2l1.4 1.4M17.4 17.4l1.4 1.4M18.8 5.2l-1.4 1.4M6.6 17.4l-1.4 1.4"/>
+        </svg>
+      </button>
+      <button class="btn btn--icone burger" type="button" aria-label="Ouvrir le menu" aria-expanded="false" aria-controls="menu">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" aria-hidden="true">
+          <path d="M4 7h16M4 12h16M4 17h16"/>
+        </svg>
+      </button>
+      <a class="btn btn--accent entete__cta" href="https://atlas.vercel.app">Ouvrir Atlas</a>
+    </div>
+  </div>
+</header>
+
+<main class="page" id="principal">
+
+  <!-- ========================================================
+       L'ouverture
+       ======================================================== -->
+  <section class="hero">
+    <div class="contenu">
+      <div class="hero__grille">
+        <div>
+          <p class="hero__sur">Les prix</p>
+          <h1 class="titre-affiche">
+            Commence gratuitement.<br><span class="inflexion">Vraiment</span>.
+          </h1>
+          <p class="chapo">
+            Le plan gratuit contient Atlas en entier, avec de quoi tenir des années d'idées.
+            Les plans suivants ouvrent de la place et font parler Atlas.
+          </p>
+        </div>
+
+        <div class="hero__oeil" data-oeil="110"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========================================================
+       Les trois plans
+       ======================================================== -->
+  <section class="section--serree" id="plans">
+    <div class="contenu">
+      <div class="plans">
+
+        <!-- ---------- Bricoleur ---------- -->
+        <article class="plan glass revele">
+          <div class="plan__tete">
+            <h2 class="plan__nom">Bricoleur</h2>
+          </div>
+          <p class="plan__promesse">
+            Pour capturer, écrire et faire mûrir. Tout Atlas, sans jamais sortir sa carte.
+          </p>
+
+          <div class="plan__prix">
+            <span class="plan__montant">0 €</span>
+            <span class="plan__par">pour toujours</span>
+            <span class="plan__annee">Aucune carte demandée, aucun compte obligatoire.</span>
+          </div>
+
+          <a class="btn" href="https://atlas.vercel.app">Commencer</a>
+
+          <hr class="filet plan__filet">
+
+          <ul class="plan__liste">
+            <li class="plan__item">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4.5 12.5 9.5 17.5 19.5 6.5"/></svg>
+              <span><strong>2 000 notes</strong></span>
+            </li>
+            <li class="plan__item">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4.5 12.5 9.5 17.5 19.5 6.5"/></svg>
+              <span><strong>20 Mo d'images</strong>, soit environ 2 000 images</span>
+            </li>
+            <li class="plan__item">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4.5 12.5 9.5 17.5 19.5 6.5"/></svg>
+              <span>Les <strong>six formes</strong>, toutes</span>
+            </li>
+            <li class="plan__item">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4.5 12.5 9.5 17.5 19.5 6.5"/></svg>
+              <span><strong>La synchronisation</strong>, textes et images, sur autant d'appareils que tu veux</span>
+            </li>
+            <li class="plan__item">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4.5 12.5 9.5 17.5 19.5 6.5"/></svg>
+              <span>Hors ligne, installable, <strong>export complet</strong></span>
+            </li>
+            <li class="plan__item">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4.5 12.5 9.5 17.5 19.5 6.5"/></svg>
+              <span>Les <strong>37 rangements</strong> : classer, nettoyer, relancer, retrouver</span>
+            </li>
+          </ul>
+        </article>
+
+        <!-- ---------- Compagnon ---------- -->
+        <article class="plan glass plan--vedette revele">
+          <div class="plan__tete">
+            <h2 class="plan__nom">Compagnon</h2>
+            <span class="mention">recommandé</span>
+          </div>
+          <p class="plan__promesse">
+            Le jour où Atlas prend la parole : il te briefe, il rapproche ce que tu avais
+            oublié avoir écrit, il relance ce qui dort.
+          </p>
+
+          <div class="plan__prix">
+            <span class="plan__montant">12,50 €</span>
+            <span class="plan__par">par mois</span>
+            <span class="plan__annee">ou <strong>125 € par an</strong>, deux mois offerts</span>
+          </div>
+
+          <a class="btn btn--accent" href="infos.html#contact">Passer au Compagnon</a>
+
+          <hr class="filet plan__filet">
+
+          <ul class="plan__liste">
+            <li class="plan__item">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4.5 12.5 9.5 17.5 19.5 6.5"/></svg>
+              <span><strong>Tout le plan Bricoleur</strong>, et&nbsp;:</span>
+            </li>
+            <li class="plan__item">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4.5 12.5 9.5 17.5 19.5 6.5"/></svg>
+              <span><strong>20 000 notes</strong> et <strong>500 Mo d'images</strong></span>
+            </li>
+            <li class="plan__item">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4.5 12.5 9.5 17.5 19.5 6.5"/></svg>
+              <span><strong>Le briefing</strong> : ce qui compte aujourd'hui, en trois lignes, à l'ouverture</span>
+            </li>
+            <li class="plan__item">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4.5 12.5 9.5 17.5 19.5 6.5"/></svg>
+              <span><strong>Les rapprochements</strong> : « ces quatre idées parlent du même personnage, je les regroupe&nbsp;? »</span>
+            </li>
+            <li class="plan__item">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4.5 12.5 9.5 17.5 19.5 6.5"/></svg>
+              <span><strong>Les relances</strong> sur les projets que tu laisses dormir</span>
+            </li>
+            <li class="plan__item">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4.5 12.5 9.5 17.5 19.5 6.5"/></svg>
+              <span><strong>Le curseur de sollicitation</strong> : d'un mot par jour au silence complet</span>
+            </li>
+            <li class="plan__item">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4.5 12.5 9.5 17.5 19.5 6.5"/></svg>
+              <span>Une <strong>réponse par courriel sous 48 h</strong></span>
+            </li>
+          </ul>
+        </article>
+
+        <!-- ---------- Créatif ---------- -->
+        <article class="plan glass plan--venir revele">
+          <div class="plan__tete">
+            <h2 class="plan__nom">Créatif</h2>
+            <span class="mention mention--sourde">bientôt</span>
+          </div>
+          <p class="plan__promesse">
+            Pour ceux qui produisent tous les jours. La place sans compter, la définition
+            d'origine, et un Atlas qui met la main à la pâte.
+          </p>
+
+          <div class="plan__prix">
+            <span class="plan__montant">24,99 €</span>
+            <span class="plan__par">par mois, à l'ouverture</span>
+            <span class="plan__annee">Prix annoncé d'avance, et il ne bougera pas pour les premiers.</span>
+          </div>
+
+          <a class="btn" href="infos.html#contact">Me prévenir</a>
+
+          <hr class="filet plan__filet">
+
+          <ul class="plan__liste">
+            <li class="plan__item">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4.5 12.5 9.5 17.5 19.5 6.5"/></svg>
+              <span><strong>Tout le plan Compagnon</strong>, et&nbsp;:</span>
+            </li>
+            <li class="plan__item">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4.5 12.5 9.5 17.5 19.5 6.5"/></svg>
+              <span><strong>Notes illimitées</strong> et <strong>5 Go d'images</strong></span>
+            </li>
+            <li class="plan__item">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4.5 12.5 9.5 17.5 19.5 6.5"/></svg>
+              <span>Des <strong>images en pleine définition</strong>, jusqu'à 3000 px</span>
+            </li>
+            <li class="plan__item">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4.5 12.5 9.5 17.5 19.5 6.5"/></svg>
+              <span><strong>La dictée transcrite</strong>, rangée toute seule au bon endroit</span>
+            </li>
+            <li class="plan__item">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4.5 12.5 9.5 17.5 19.5 6.5"/></svg>
+              <span><strong>Le plan proposé</strong> : Atlas déplie une idée en chapitres, en scènes ou en séquences</span>
+            </li>
+            <li class="plan__item">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4.5 12.5 9.5 17.5 19.5 6.5"/></svg>
+              <span><strong>Les nouveautés en avant-première</strong></span>
+            </li>
+          </ul>
+        </article>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- ========================================================
+       Le tableau — sur la bande sombre
+       ======================================================== -->
+  <section class="bande" id="comparer" style="margin-top:clamp(48px,7vw,96px)">
+    <div class="contenu">
+      <p class="index"><span class="index__no">01</span> Point par point</p>
+
+      <div class="section__tete revele">
+        <h2 class="titre-section">Ce que contient<br>chaque <span class="inflexion">plan</span>.</h2>
+        <p class="chapo">
+          Une règle simple : les plans payants ouvrent du <strong>volume</strong> et donnent
+          la parole à Atlas. Tout ce qui sert à créer est déjà dans le gratuit.
+        </p>
+      </div>
+
+      <div class="tableau-boite revele">
+        <table class="tableau">
+          <thead>
+            <tr>
+              <th scope="col">&nbsp;</th>
+              <th scope="col">Bricoleur</th>
+              <th scope="col" class="col-vedette">Compagnon</th>
+              <th scope="col">Créatif</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <th scope="row">Prix</th>
+              <td><strong>0 €</strong></td>
+              <td class="col-vedette"><strong>12,50 €</strong> / mois</td>
+              <td><strong>24,99 €</strong> / mois</td>
+            </tr>
+
+            <tr class="groupe"><th scope="row" colspan="4">Volume</th></tr>
+            <tr>
+              <th scope="row">Notes</th>
+              <td>2 000</td>
+              <td class="col-vedette">20 000</td>
+              <td>illimité</td>
+            </tr>
+            <tr>
+              <th scope="row">Images</th>
+              <td>20 Mo</td>
+              <td class="col-vedette">500 Mo</td>
+              <td>5 Go</td>
+            </tr>
+            <tr>
+              <th scope="row">Définition des images</th>
+              <td>1600 px</td>
+              <td class="col-vedette">1600 px</td>
+              <td>3000 px</td>
+            </tr>
+            <tr>
+              <th scope="row">Appareils</th>
+              <td class="oui">illimité</td>
+              <td class="col-vedette oui">illimité</td>
+              <td class="oui">illimité</td>
+            </tr>
+
+            <tr class="groupe"><th scope="row" colspan="4">Créer</th></tr>
+            <tr>
+              <th scope="row">Les six formes</th>
+              <td class="oui">oui</td>
+              <td class="col-vedette oui">oui</td>
+              <td class="oui">oui</td>
+            </tr>
+            <tr>
+              <th scope="row">Synchronisation des textes</th>
+              <td class="oui">oui</td>
+              <td class="col-vedette oui">oui</td>
+              <td class="oui">oui</td>
+            </tr>
+            <tr>
+              <th scope="row">Synchronisation des images</th>
+              <td class="oui">oui</td>
+              <td class="col-vedette oui">oui</td>
+              <td class="oui">oui</td>
+            </tr>
+            <tr>
+              <th scope="row">Hors ligne, installable</th>
+              <td class="oui">oui</td>
+              <td class="col-vedette oui">oui</td>
+              <td class="oui">oui</td>
+            </tr>
+            <tr>
+              <th scope="row">Export complet</th>
+              <td class="oui">oui</td>
+              <td class="col-vedette oui">oui</td>
+              <td class="oui">oui</td>
+            </tr>
+            <tr>
+              <th scope="row">Les 37 rangements</th>
+              <td class="oui">oui</td>
+              <td class="col-vedette oui">oui</td>
+              <td class="oui">oui</td>
+            </tr>
+
+            <tr class="groupe"><th scope="row" colspan="4">Atlas prend la parole</th></tr>
+            <tr>
+              <th scope="row">Le briefing du matin</th>
+              <td class="non">—</td>
+              <td class="col-vedette oui">oui</td>
+              <td class="oui">oui</td>
+            </tr>
+            <tr>
+              <th scope="row">Les rapprochements entre idées</th>
+              <td class="non">—</td>
+              <td class="col-vedette oui">oui</td>
+              <td class="oui">oui</td>
+            </tr>
+            <tr>
+              <th scope="row">Les relances</th>
+              <td class="non">—</td>
+              <td class="col-vedette oui">oui</td>
+              <td class="oui">oui</td>
+            </tr>
+            <tr>
+              <th scope="row">La dictée transcrite</th>
+              <td class="non">—</td>
+              <td class="col-vedette non">—</td>
+              <td class="oui">oui</td>
+            </tr>
+            <tr>
+              <th scope="row">Le plan proposé</th>
+              <td class="non">—</td>
+              <td class="col-vedette non">—</td>
+              <td class="oui">oui</td>
+            </tr>
+
+            <tr class="groupe"><th scope="row" colspan="4">Le service</th></tr>
+            <tr>
+              <th scope="row">Réponse par courriel</th>
+              <td>dès que possible</td>
+              <td class="col-vedette">sous 48 h</td>
+              <td>sous 48 h</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========================================================
+       Les chiffres
+       ======================================================== -->
+  <section class="section" id="chiffres">
+    <div class="contenu">
+      <p class="index"><span class="index__no">02</span> Les chiffres</p>
+
+      <div class="section__tete revele">
+        <h2 class="titre-section">D'où viennent<br>ces <span class="inflexion">plafonds</span>.</h2>
+        <p class="chapo">
+          Ils sont calculés sur ce que pèse vraiment une idée, mesuré dans Atlas. C'est ce
+          qui permet de rendre le gratuit aussi large.
+        </p>
+      </div>
+
+      <div class="mesures revele">
+        <div class="mesure">
+          <p class="mesure__nombre">~500 o</p>
+          <p class="mesure__quoi">Le poids d'une note. Vingt mille notes tiennent dans une dizaine de méga-octets.</p>
+        </div>
+        <div class="mesure">
+          <p class="mesure__nombre">~10 Ko</p>
+          <p class="mesure__quoi">Le poids d'une image, une fois allégée. Une photo de 3 Mo descend jusque-là sans que ça se voie.</p>
+        </div>
+        <div class="mesure">
+          <p class="mesure__nombre">2 000</p>
+          <p class="mesure__quoi">Le nombre d'images qui tiennent dans le plan gratuit. De quoi remplir beaucoup de planches.</p>
+        </div>
+        <div class="mesure">
+          <p class="mesure__nombre">1×</p>
+          <p class="mesure__quoi">Le nombre de fois qu'une image est téléchargée par appareil. Ensuite, elle est chez toi.</p>
+        </div>
+      </div>
+
+      <div class="mosaique" style="margin-top:clamp(32px,4vw,52px)">
+        <article class="bloc glass large revele">
+          <h3 class="bloc__titre">Pourquoi le gratuit est si large</h3>
+          <p class="bloc__texte">
+            Parce qu'une idée ne pèse presque rien. Écrire, chercher et synchroniser du texte
+            coûte si peu qu'il n'y a aucune raison de le faire payer. Le plan gratuit tient
+            des années d'usage quotidien.
+          </p>
+        </article>
+
+        <article class="bloc glass large revele">
+          <h3 class="bloc__titre">Pourquoi les plans payants existent</h3>
+          <p class="bloc__texte">
+            Les images occupent de la place pour de bon, et la parole d'Atlas se calcule à
+            chaque phrase. Les plans payants couvrent exactement ces deux postes.
+          </p>
+        </article>
+
+        <article class="bloc bloc--nu pleine revele">
+          <h3 class="bloc__titre">Ce qui reste gratuit, toujours</h3>
+          <p class="bloc__texte" style="max-width:70ch">
+            Capturer, écrire, chercher, exporter, et la synchronisation des textes. C'est la
+            promesse d'Atlas : elle ne sera jamais un supplément.
+          </p>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========================================================
+       Les questions
+       ======================================================== -->
+  <section class="section" id="questions">
+    <div class="contenu">
+      <p class="index"><span class="index__no">03</span> Les questions</p>
+
+      <div class="questions revele">
+        <details class="question">
+          <summary>Que se passe-t-il quand j'atteins mon plafond&nbsp;?</summary>
+          <div class="question__corps">
+            <p>
+              Écrire reste possible, toujours. Atlas te prévient bien avant, dès 80 % de la
+              place utilisée, et te propose de faire le ménage dans les images que plus aucune
+              note n'utilise.
+            </p>
+            <p>
+              Tes notes et tes images restent en place et consultables. C'est l'ajout de
+              nouvelles images qui attend que tu fasses de la place ou que tu changes de plan.
+            </p>
+          </div>
+        </details>
+
+        <details class="question">
+          <summary>Je peux utiliser Atlas sans compte&nbsp;?</summary>
+          <div class="question__corps">
+            <p>
+              Oui, c'est même le mode par défaut. Tout vit sur ton appareil, rien ne part, et
+              la seule limite est la place qu'accepte ton navigateur.
+            </p>
+            <p>
+              Le compte sert à retrouver tes idées sur un autre écran. Tu peux le créer plus
+              tard : tes notes existantes te suivront.
+            </p>
+          </div>
+        </details>
+
+        <details class="question">
+          <summary>Comment je récupère mes idées&nbsp;?</summary>
+          <div class="question__corps">
+            <p>
+              Réglages puis Sauvegarde, et tu obtiens une archive qui contient ton markdown
+              lisible à l'œil nu et tes images d'origine. Elle s'ouvre dans n'importe quel
+              éditeur de texte.
+            </p>
+            <p>
+              L'export est disponible sur tous les plans, gratuit compris, et depuis le premier
+              jour.
+            </p>
+          </div>
+        </details>
+
+        <details class="question">
+          <summary>Pourquoi le Créatif coûte-t-il plus cher&nbsp;?</summary>
+          <div class="question__corps">
+            <p>
+              Parce qu'il ouvre la place sans compter et qu'il fait travailler Atlas : la
+              transcription de la dictée, les plans proposés, les images en pleine définition.
+              Ce sont les seules choses dont le coût grandit avec l'usage.
+            </p>
+          </div>
+        </details>
+
+        <details class="question">
+          <summary>Le prix peut-il changer&nbsp;?</summary>
+          <div class="question__corps">
+            <p>
+              Le prix affiché aujourd'hui est celui que tu paieras tant que tu restes abonné.
+              S'il évolue un jour pour les nouveaux venus, les abonnés en place gardent le leur.
+            </p>
+          </div>
+        </details>
+
+        <details class="question">
+          <summary>Il y a un tarif étudiant, ou pour les associations&nbsp;?</summary>
+          <div class="question__corps">
+            <p>
+              Écris-nous en racontant ce que tu fais. Il n'y a pas de grille à remplir, il y a
+              quelqu'un qui lit et qui répond.
+            </p>
+          </div>
+        </details>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========================================================
+       L'appel
+       ======================================================== -->
+  <section class="section section--ample">
+    <div class="contenu">
+      <div class="final revele">
+        <div class="hero__oeil" data-oeil="76" style="justify-content:center;margin-bottom:26px"></div>
+        <h2 class="titre-affiche">Commence par le <span class="inflexion">gratuit</span>.</h2>
+        <p class="chapo" style="max-width:44ch">
+          C'est Atlas en entier, avec de quoi voir venir. Tu changeras de plan le jour où tes
+          planches d'images déborderont.
+        </p>
+        <div class="hero__actions">
+          <a class="btn btn--accent btn--grand" href="https://atlas.vercel.app">Ouvrir Atlas</a>
+          <a class="btn btn--grand" href="produit.html">Voir le produit</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<footer class="pied">
+  <div class="contenu">
+    <div class="pied__grille">
+      <div>
+        <a class="marque" href="index.html" aria-label="Atlas, accueil">
+          <span data-oeil="26" data-flux="non"></span>
+          <span class="marque__nom">Atlas</span>
+        </a>
+        <p class="texte" style="margin-top:14px;font-size:14px;max-width:30ch">
+          Un endroit pour tout ce que tu crées. Pensé par un créatif, fait pour tout le monde.
+        </p>
+      </div>
+      <div>
+        <p class="pied__titre">Le produit</p>
+        <ul class="pied__liste">
+          <li><a href="produit.html#capture">La capture</a></li>
+          <li><a href="produit.html#formes">Les six formes</a></li>
+          <li><a href="produit.html#partout">Partout, même hors ligne</a></li>
+          <li><a href="tarifs.html">Les prix</a></li>
+        </ul>
+      </div>
+      <div>
+        <p class="pied__titre">Atlas</p>
+        <ul class="pied__liste">
+          <li><a href="infos.html#histoire">L'histoire</a></li>
+          <li><a href="infos.html#donnees">Tes données</a></li>
+          <li><a href="infos.html#journal">Les nouveautés</a></li>
+          <li><a href="infos.html#contact">Nous écrire</a></li>
+        </ul>
+      </div>
+      <div>
+        <p class="pied__titre">Le thème</p>
+        <ul class="pied__liste">
+          <li><button type="button" data-mode="auto" aria-pressed="false">Automatique à l'heure</button></li>
+          <li><button type="button" data-mode="light" aria-pressed="false">Toujours clair</button></li>
+          <li><button type="button" data-mode="dark" aria-pressed="false">Toujours sombre</button></li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="pied__bas">
+      <span>© 2026 Atlas</span>
+      <span style="margin-left:auto"><a class="lien" href="infos.html#donnees">Tes données</a></span>
+    </div>
+  </div>
+</footer>
+
+<script src="maquettes.js"></script>
+<script src="atlas.js"></script>
+</body>
+</html>

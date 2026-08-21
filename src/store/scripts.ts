@@ -51,6 +51,7 @@ import { QUOTA_IMAGES, usage } from './quota'
 const JOUR = 86_400_000
 
 export type Famille =
+  | 'creer'
   | 'ranger'
   | 'nettoyer'
   | 'relancer'
@@ -60,6 +61,7 @@ export type Famille =
   | 'retrouver'
 
 export const FAMILLES: { id: Famille; nom: string; quoi: string }[] = [
+  { id: 'creer', nom: 'Créer', quoi: 'Fabriquer ce que tu me dis, avec le nom que tu donnes.' },
   { id: 'ranger', nom: 'Ranger', quoi: 'Mettre les notes libres là où elles vont.' },
   { id: 'nettoyer', nom: 'Nettoyer', quoi: 'Retirer ce qui ne sert plus et rend de la place.' },
   { id: 'relancer', nom: 'Relancer', quoi: 'Faire remonter ce qui dort.' },
@@ -104,7 +106,24 @@ export type Script = {
   regle: string
   /** les mots qui font mouche quand on tape une demande */
   cles: string
-  chercher: () => Resultat
+  /**
+   * LA TOURNURE QUI DÉCLENCHE UNE CONSIGNE, s'il y en a une.
+   *
+   * Les autres logiques SCRUTENT la base : « quelles notes traînent »,
+   * « quels espaces sont vides ». On les appelle, elles regardent, elles
+   * répondent. Une consigne est l'inverse — elle ne cherche rien, elle
+   * exécute ce qu'on vient de dire, et le NOM À DONNER est dans la
+   * phrase : « crée un espace Roman noir » ne veut rien dire sans
+   * « Roman noir ».
+   *
+   * D'où la reconnaissance par tournure et non par mots-clés : la
+   * recherche floue attrape des mots isolés, elle ne sait pas où
+   * s'arrête le verbe et où commence le nom. Une consigne reconnue
+   * l'emporte donc sur tout le reste — quand on dicte un ordre précis,
+   * on n'attend pas qu'on devine.
+   */
+  consigne?: RegExp
+  chercher: (demande?: string) => Resultat
 }
 
 /* ================= le vocabulaire ================= */
@@ -409,6 +428,163 @@ const espaceANaitre: Script = {
             a.defaire()
             etat().supprimerEspaces([id])
           },
+        }
+      },
+    }
+  },
+}
+
+/* ================= CRÉER ================= */
+
+/* ---------------------------------------------------------------
+   Lire un nom dans une phrase.
+
+   Ce n'est pas de la compréhension : c'est du découpage. On sait où
+   commence le nom — après le mot « espace » ou « note » — et on
+   enlève ce qui, en français, n'appartient jamais au nom : les
+   articles, les tournures de nommage (« qui s'appelle », « intitulé »),
+   la ponctuation d'annonce, les guillemets.
+
+   Ce qui reste est pris TEL QUEL, sans correction ni interprétation.
+   Un nom qu'on retouche est un nom qu'on n'a pas choisi.
+   --------------------------------------------------------------- */
+
+const VERBES_CREER = String.raw`(?:cr[ée]{1,2}[rz]?|creer|fabrique|fais|ajoute|ouvre|monte|d[ée]marre|commence)`
+
+function consigneDe(quoi: 'espace' | 'note') {
+  /* « note » accepte aussi la forme sans verbe — « note : rappeler Marc »
+     est la façon la plus courte de capturer, et refuser de la lire
+     serait ne pas écouter. */
+  const seul = quoi === 'note' ? String.raw`|^note\s*[:—-]` : ''
+  return new RegExp(
+    String.raw`(?:^|\b)${VERBES_CREER}(?:\s+moi)?\s+(?:un|une|le|la|l['’]|mon|ma)?\s*(?:nouvel|nouvelle|nouveau)?\s*${quoi}s?\b${seul}`,
+    'i',
+  )
+}
+
+/** Ce qui suit le mot « espace » ou « note », débarrassé de l'emballage. */
+function nomApres(demande: string, quoi: 'espace' | 'note'): string {
+  const coupe = new RegExp(String.raw`${quoi}s?\b`, 'i')
+  const i = demande.search(coupe)
+  if (i < 0) return ''
+  let reste = demande.slice(i).replace(coupe, '')
+
+  reste = reste
+    // les tournures de nommage, qui annoncent le nom sans en faire partie
+    .replace(
+      /^\s*(?:qui\s+s['’]appelle|qui\s+se\s+nomme|appel[ée]e?|nomm[ée]e?|intitul[ée]e?|pour|sur|[àa]\s+propos\s+de|au\s+sujet\s+de|du|de\s+la|des|de|d['’])\b/i,
+      '',
+    )
+    .replace(/^\s*[:—–-]+\s*/, '')
+    .trim()
+    // les guillemets, de toutes les familles
+    .replace(/^["'«“”‘’]+|["'»“”‘’]+$/g, '')
+    .replace(/[.!?]+$/, '')
+    .trim()
+
+  return reste
+}
+
+/** L'espace nommé en fin de phrase, s'il existe déjà. */
+function espaceVise(demande: string): { espace: Espace; sansLui: string } | null {
+  const m = /\s+dans\s+(?:l['’]espace\s+|le\s+|la\s+|les\s+|mon\s+|ma\s+|mes\s+)?(.+)$/i.exec(
+    demande,
+  )
+  if (!m) return null
+  const vise = m[1].trim().replace(/[.!?]+$/, '')
+  const espace = etat().espaces.find(
+    (e) => !e.supprime && e.nom.trim().toLocaleLowerCase('fr') === vise.toLocaleLowerCase('fr'),
+  )
+  return espace ? { espace, sansLui: demande.slice(0, m.index).trim() } : null
+}
+
+const creerEspace: Script = {
+  id: 'creer-espace',
+  nom: 'Créer un espace',
+  famille: 'creer',
+  quoi: 'Un espace portant le nom que tu dis.',
+  regle:
+    'Tu dis « crée un espace » suivi d’un nom, et je le fabrique avec ce nom exact. Rien n’y est rangé : un espace naît vide, et se remplit quand tu le décides.',
+  cles: 'creer espace nouveau fabriquer ajouter',
+  consigne: consigneDe('espace'),
+  chercher(demande = '') {
+    const nom = nomApres(demande, 'espace')
+    if (!nom) {
+      return {
+        sorte: 'rien',
+        mot: 'Dis-moi son nom — « crée un espace Roman noir ». Ou demande « un espace à naître », et je cherche un sujet qui revient assez pour en mériter un.',
+      }
+    }
+
+    const existe = etat().espaces.find(
+      (e) => !e.supprime && e.nom.trim().toLocaleLowerCase('fr') === nom.toLocaleLowerCase('fr'),
+    )
+    if (existe) {
+      return { sorte: 'rien', mot: `« ${existe.nom} » existe déjà. Deux espaces du même nom, on ne saurait plus lequel ouvrir.` }
+    }
+
+    return {
+      sorte: 'proposition',
+      titre: `Créer l'espace « ${nom} »`,
+      pourquoi:
+        'Il naîtra vide. C’est voulu : un espace se remplit des notes qu’on y met, pas de celles qu’on aurait devinées pour toi.',
+      elements: [{ id: 'e', libelle: nom, detail: 'Nouvel espace', pris: true }],
+      verbe: () => 'Créer l’espace',
+      faire: (ids) => {
+        if (!ids.length) return null
+        const id = etat().creerEspace()
+        etat().majEspace(id, { nom })
+        return {
+          libelle: `Espace « ${nom} » supprimé`,
+          defaire: () => etat().supprimerEspaces([id]),
+        }
+      },
+    }
+  },
+}
+
+const creerNote: Script = {
+  id: 'creer-note',
+  nom: 'Créer une note',
+  famille: 'creer',
+  quoi: 'Une note portant le titre que tu dis, rangée si tu le précises.',
+  regle:
+    'Tu dis « crée une note » suivi d’un titre, et je la fabrique. Ajoute « dans <espace> » et elle y va directement — à condition que cet espace existe déjà, sinon je ne saurais pas lequel tu vises.',
+  cles: 'creer note nouvelle ecrire capturer ajouter',
+  consigne: consigneDe('note'),
+  chercher(demande = '') {
+    const vise = espaceVise(demande)
+    const titre = nomApres(vise?.sansLui ?? demande, 'note')
+
+    if (!titre) {
+      return {
+        sorte: 'rien',
+        mot: 'Dis-moi ce qu’elle raconte — « crée une note Idée de première scène ». Tu peux ajouter « dans <espace> » pour la ranger tout de suite.',
+      }
+    }
+
+    return {
+      sorte: 'proposition',
+      titre: `Créer la note « ${titre} »`,
+      pourquoi: vise
+        ? `Elle ira dans « ${vise.espace.nom} », avec une fiche vide à remplir.`
+        : 'Elle restera libre, avec une fiche vide à remplir. Tu la rangeras le jour où un projet en aura besoin.',
+      elements: [
+        {
+          id: 'n',
+          libelle: titre,
+          detail: vise ? `Dans « ${vise.espace.nom} »` : 'Note libre',
+          pris: true,
+        },
+      ],
+      verbe: () => 'Créer la note',
+      faire: (ids) => {
+        if (!ids.length) return null
+        const id = etat().creerPost('', vise?.espace.id ?? null)
+        etat().majPost(id, { titre })
+        return {
+          libelle: `Note « ${titre} » supprimée`,
+          defaire: () => etat().supprimerPosts([id]),
         }
       },
     }
@@ -1452,6 +1628,8 @@ const attachesAuxLignes: Script = {
 /* ================= le registre ================= */
 
 export const SCRIPTS: Script[] = [
+  creerEspace,
+  creerNote,
   rangerParNom,
   rangerParVoisinage,
   demenager,
@@ -1587,6 +1765,20 @@ export function chercherScriptEtScore(demande: string): { s: Script; score: numb
     if (score > 0 && (!meilleur || score > meilleur.score)) meilleur = { s, score }
   }
   return meilleur
+}
+
+/**
+ * Une CONSIGNE reconnue — un ordre précis, avec son nom dedans.
+ *
+ * Elle passe avant tout le reste, et sans score : une tournure comme
+ * « crée un espace Roman noir » ne laisse aucun doute sur l'intention,
+ * alors que la recherche floue y verrait surtout « espace » et
+ * lancerait « Un espace à naître », qui scrute la base au lieu de faire
+ * ce qu'on demande. Deviner quand on a été explicite est la pire des
+ * réponses.
+ */
+export function chercherConsigne(demande: string): Script | null {
+  return SCRIPTS.find((s) => s.consigne?.test(demande)) ?? null
 }
 
 /** La même comparaison, pour reconnaître le nom d'une famille. */

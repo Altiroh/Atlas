@@ -756,22 +756,37 @@
     height: 36px;
   }
 
-  /* Le « + » se voit vraiment : plein, teinté de l'accent, rond. C'est
-     la seule affordance d'ajout au doigt — la discrétion reviendrait
-     ici à le cacher. */
+  /* LES DEUX OUTILS SE VALENT, ET AUCUN NE CRIE.
+
+     Le « + » était plein d'accent, rond, et porté par une ombre : sur
+     une page de texte il tirait l'œil plus fort que le texte lui-même,
+     et le cercle parfait le faisait lire comme un bouton flottant posé
+     par-dessus l'éditeur plutôt que comme un outil de la marge.
+
+     Pire, il écrasait son voisin. La poignée était à demi effacée
+     alors qu'elle ouvre TOUT le reste — transformer un paragraphe en
+     titre ou en citation, dupliquer, supprimer la ligne. On cherchait
+     ces actions sans les trouver : elles étaient derrière le bouton
+     qu'on avait pris soin de rendre invisible.
+
+     Les deux ont donc la même forme et le même poids : un carré aux
+     angles doux, un fond posé, une teinte lisible. Le « + » garde
+     l'accent parce qu'il ajoute ; la poignée reste neutre parce
+     qu'elle ouvre un menu. Ni l'un ni l'autre ne domine la page. */
   .ed__bouton--plus {
-    background: var(--accent);
-    color: var(--accent-ink);
-    border-radius: 50%;
-    box-shadow: var(--shadow-sm);
+    background: var(--accent-soft);
+    color: var(--accent-text);
+    border-radius: 11px;
   }
   .ed__bouton--plus:hover {
-    background: var(--accent);
-    color: var(--accent-ink);
+    background: var(--accent-soft);
+    color: var(--accent-text);
   }
 
   .ed__poignee {
-    opacity: 0.5;
+    background: var(--surface-sunken);
+    color: var(--text-2);
+    border-radius: 11px;
   }
 
   /* dans une colonne, la bande réservée n'existe pas : les outils se
