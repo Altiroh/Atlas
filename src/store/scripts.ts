@@ -452,6 +452,9 @@ const espaceANaitre: Script = {
 const VERBES_CREER = String.raw`(?:cr[ée]{1,2}[rz]?|creer|fabrique|fais|ajoute|ouvre|monte|d[ée]marre|commence)`
 const VERBES_SUPPRIMER = String.raw`(?:supprime[rz]?|efface[rz]?|retire[rz]?|enl[èe]ve[rz]?|vire[rz]?|jette[rz]?|d[ée]truis|balance)`
 const VERBES_ARCHIVER = String.raw`(?:archive[rz]?|classe[rz]?\s+aux\s+archives|range[rz]?\s+aux\s+archives|mets?\s+aux\s+archives)`
+const VERBES_RANGER = String.raw`(?:range[rz]?|classe[rz]?|mets?|met|d[ée]place[rz]?|envoie|bouge)`
+const VERBES_RENOMMER = String.raw`(?:renomme[rz]?|rebaptise|appelle|nomme[rz]?)`
+const VERBES_CHERCHER = String.raw`(?:cherche[rz]?|trouve[rz]?|retrouve[rz]?|montre[- ]moi|liste[rz]?|qu['’]?est.ce que j['’]ai|qu['’]?ai.je|o[ùu] (?:est|sont))`
 const VERBES_RESTAURER = String.raw`(?:restaure[rz]?|d[ée]sarchive[rz]?|ressors|sors|d[ée]sarchiver|remets?\s+dans\s+le\s+flux|sortir)`
 
 /**
@@ -873,6 +876,238 @@ const archiverEspace: Script = {
           defaire: () => etat().restaurerPosts(choisis),
         }
       },
+    }
+  },
+}
+
+/**
+ * Ce qui suit « dans », quand la phrase désigne une destination.
+ *
+ * Séparé de `espaceVise` — qui, lui, sert à la CRÉATION et rend aussi
+ * la phrase amputée. Ici on ne veut que la cible, et on la veut même
+ * si l'espace n'existe pas encore : dire « aucun espace ne s'appelle
+ * ainsi » vaut mieux que faire comme si le mot « dans » n'avait pas
+ * été prononcé.
+ */
+function apresDans(demande: string): string {
+  const m = /\s+(?:dans|vers|sous|sur)\s+(?:l['’]espace\s+|le\s+|la\s+|les\s+|mon\s+|ma\s+|mes\s+)?(.+)$/i.exec(
+    demande,
+  )
+  return m ? m[1].trim().replace(/[.!?]+$/, '') : ''
+}
+
+/** Ce qui suit « en » ou « → » : le nouveau nom d'un renommage. */
+function apresEn(demande: string): { avant: string; apres: string } {
+  const m = /^(.*?)\s+(?:en|=>|→|:)\s+(.+)$/i.exec(demande)
+  if (!m) return { avant: demande, apres: '' }
+  return {
+    avant: m[1].trim(),
+    apres: m[2]
+      .trim()
+      .replace(/^["'«“”‘’]+|["'»“”‘’]+$/g, '')
+      .replace(/[.!?]+$/, '')
+      .trim(),
+  }
+}
+
+const rangerNote: Script = {
+  id: 'ranger-note',
+  nom: 'Ranger une note',
+  famille: 'creer',
+  quoi: 'Mettre une note dans un espace, en le nommant.',
+  regle:
+    'Tu nommes une note et un espace, je l’y range. L’espace doit exister : je n’en fabrique pas un au passage, sinon une faute de frappe créerait un doublon qu’on ne verrait qu’un mois plus tard.',
+  cles: 'ranger note espace classer deplacer mettre',
+  consigne: tournure(VERBES_RANGER, 'note'),
+  chercher(demande = '') {
+    const cible = apresDans(demande)
+    if (!cible) {
+      return faute('où la mettre', 'range la note Première scène dans Roman noir')
+    }
+    /* Le nom de la note se lit sur la phrase AMPUTÉE de sa
+       destination : sinon « la note Scène dans Roman noir » chercherait
+       une note appelée « Scène dans Roman noir ». */
+    const sansCible = demande.slice(0, demande.toLowerCase().lastIndexOf(cible.toLowerCase()))
+    const terme = nomApres(sansCible.replace(/\s+(?:dans|vers|sous|sur)\s*.*$/i, ''), 'note')
+    if (!terme) return faute('laquelle', 'range la note Première scène dans Roman noir')
+
+    const espaces = espacesNommes(cible)
+    if (!espaces.length) {
+      return {
+        sorte: 'rien',
+        mot: `Aucun espace ne s'appelle « ${cible} ». Dis-moi « crée un espace ${cible} » d'abord, si c'est ce que tu veux.`,
+      }
+    }
+    const trouvees = notesNommees(terme).filter((p) => p.etat !== 'archivee')
+    if (!trouvees.length) return { sorte: 'rien', mot: `Aucune note ne s'appelle « ${terme} ».` }
+
+    const espace = espaces[0]
+    return {
+      sorte: 'proposition',
+      titre:
+        trouvees.length === 1
+          ? `Ranger « ${titreDe(trouvees[0])} » dans « ${espace.nom} »`
+          : `Ranger ${trouvees.length} notes dans « ${espace.nom} »`,
+      pourquoi: 'Le rangement se défait : rien n’est perdu, la note change juste de place.',
+      elements: trouvees.map((p) =>
+        elementPost(
+          p,
+          p.espaceId
+            ? `vient de « ${etat().espaces.find((e) => e.id === p.espaceId)?.nom ?? '?'} »`
+            : 'libre pour l’instant',
+        ),
+      ),
+      verbe: (n) => `Ranger ${n} note${n > 1 ? 's' : ''}`,
+      faire: (ids) => (ids.length ? classer(ids, espace.id) : null),
+    }
+  },
+}
+
+const renommer: Script = {
+  id: 'renommer',
+  nom: 'Renommer',
+  famille: 'creer',
+  quoi: 'Changer le nom d’un espace ou le titre d’une note.',
+  regle:
+    'Tu dis « renomme l’espace X en Y », et je change le nom — rien d’autre. Le contenu, le rangement et les liens ne bougent pas : un nom n’est qu’une étiquette.',
+  cles: 'renommer espace note titre nom rebaptiser',
+  consigne: new RegExp(
+    String.raw`(?:^|\b)${VERBES_RENOMMER}\s+(?:un|une|le|la|l['’]|mon|ma|ce|cet|cette)?\s*(?:espace|note)s?\b`,
+    'i',
+  ),
+  chercher(demande = '') {
+    const { avant, apres } = apresEn(demande)
+    if (!apres) {
+      return faute('le nouveau nom', 'renomme l’espace Roman noir en Polar')
+    }
+
+    /* L'ordre de lecture : on regarde d'abord si la phrase parle d'un
+       espace, parce que « note » apparaît rarement dans un nom
+       d'espace, alors que l'inverse arrive tout le temps. */
+    const versEspace = /\bespaces?\b/i.test(avant)
+    const terme = nomApres(avant, versEspace ? 'espace' : 'note')
+    if (!terme) return faute('quoi renommer', 'renomme l’espace Roman noir en Polar')
+
+    if (versEspace) {
+      const trouves = espacesNommes(terme)
+      if (!trouves.length) return { sorte: 'rien', mot: `Aucun espace ne s'appelle « ${terme} ».` }
+      const e = trouves[0]
+      const ancien = e.nom
+      return {
+        sorte: 'proposition',
+        titre: `Renommer « ${ancien} » en « ${apres} »`,
+        pourquoi: 'Seul le nom change. Les notes rangées dedans y restent.',
+        /* Le libellé porte le NOUVEAU nom, l'ancien passe en détail.
+           Ce n'est pas cosmétique : c'est par le libellé que la mémoire
+           du fil retrouve la chose, et « X → Y » n'est le nom de rien. */
+        elements: [
+          { id: e.id, libelle: apres, detail: `Espace — était « ${ancien} »`, pris: true },
+        ],
+        verbe: () => 'Renommer',
+        faire: (ids) => {
+          if (!ids.length) return null
+          etat().majEspace(e.id, { nom: apres })
+          return {
+            libelle: `Espace revenu à « ${ancien} »`,
+            defaire: () => etat().majEspace(e.id, { nom: ancien }),
+          }
+        },
+      }
+    }
+
+    const trouvees = notesNommees(terme)
+    if (!trouvees.length) return { sorte: 'rien', mot: `Aucune note ne s'appelle « ${terme} ».` }
+    const p = trouvees[0]
+    const ancien = p.titre
+    return {
+      sorte: 'proposition',
+      titre: `Renommer « ${titreDe(p)} » en « ${apres} »`,
+      pourquoi: 'Seul le titre change. Le contenu ne bouge pas.',
+      elements: [
+        { id: p.id, libelle: apres, detail: `Note — était « ${titreDe(p)} »`, pris: true },
+      ],
+      verbe: () => 'Renommer',
+      faire: (ids) => {
+        if (!ids.length) return null
+        etat().majPost(p.id, { titre: apres })
+        return {
+          libelle: 'Titre remis comme il était',
+          defaire: () => etat().majPost(p.id, { titre: ancien }),
+        }
+      },
+    }
+  },
+}
+
+const chercherDedans: Script = {
+  id: 'chercher-dedans',
+  nom: 'Chercher dans tes notes',
+  famille: 'retrouver',
+  quoi: 'Ce que tu as écrit sur un sujet, où que ce soit.',
+  regle:
+    'Je cherche le mot dans les titres ET dans le contenu de toutes les formes — fiches, cartes, planches, tables, chronologies. Les archives comptent, et sont signalées comme telles.',
+  cles: 'chercher trouver retrouver montrer notes sujet',
+  consigne: new RegExp(String.raw`(?:^|\b)${VERBES_CHERCHER}\b`, 'i'),
+  chercher(demande = '') {
+    /* On retire le verbe et les mots de liaison qui ne sont jamais le
+       sujet cherché. Ce qui reste est pris au mot : Atlas ne devine
+       pas de synonymes, et il vaut mieux ne rien trouver que trouver
+       autre chose. */
+    const terme = demande
+      .replace(new RegExp(String.raw`^.*?${VERBES_CHERCHER}`, 'i'), '')
+      .replace(
+        /* L'ARTICLE PEUT ÊTRE DES DEUX CÔTÉS DE LA PRÉPOSITION.
+           « sur le port » n'en laissait qu'un : on cherchait donc la
+           chaîne « le port », qui ne se trouve dans aucune note parlant
+           « du port ». Un déterminant n'est jamais le sujet — on le
+           retire où qu'il soit. */
+        /^\s*(?:moi\s+)?(?:mes|les|des|la|le|l['’]|toutes?\s+les|tous\s+les)?\s*(?:notes?\s+)?(?:qui\s+parlent\s+)?(?:sur|de|du|d['’]|[àa]\s+propos\s+de|concernant|au\s+sujet\s+de|avec)?\s*(?:le|la|les|l['’]|un|une|des|du|mon|ma|mes)?\s*/i,
+        '',
+      )
+      .trim()
+      .replace(/^["'«“”‘’]+|["'»“”‘’?!.]+$/g, '')
+      .trim()
+
+    if (terme.length < 2) {
+      return faute('quoi chercher', 'qu’est-ce que j’ai sur le port')
+    }
+
+    const t = sansAccents(terme)
+    const trouvees = etat()
+      .posts.filter((p) => !p.supprime)
+      .map((p) => {
+        const corps = `${p.titre} ${p.texte} ${texteDesFormes(p.formes ?? [])}`
+        return { p, dans: sansAccents(corps).includes(t) }
+      })
+      .filter((x) => x.dans)
+      .map((x) => x.p)
+
+    if (!trouvees.length) {
+      return {
+        sorte: 'rien',
+        mot: `Rien sur « ${terme} » — ni dans les titres, ni dans le contenu, ni dans les archives.`,
+      }
+    }
+
+    return {
+      sorte: 'constat',
+      titre: `${trouvees.length} note${trouvees.length > 1 ? 's' : ''} parle${trouvees.length > 1 ? 'nt' : ''} de « ${terme} »`,
+      pourquoi: 'Titres et contenu de toutes les formes, archives comprises.',
+      elements: trouvees.slice(0, 25).map((p) =>
+        elementPost(
+          p,
+          [
+            p.etat === 'archivee' ? 'archivée' : null,
+            p.espaceId ? etat().espaces.find((e) => e.id === p.espaceId)?.nom : 'libre',
+          ]
+            .filter(Boolean)
+            .join(' · '),
+        ),
+      ),
+      note:
+        trouvees.length > 25
+          ? `${trouvees.length - 25} autres ne sont pas montrées : passé vingt-cinq, une liste ne se lit plus, elle se subit.`
+          : undefined,
     }
   },
 }
@@ -1554,7 +1789,13 @@ const imagesManquantes: Script = {
   quoi: 'Des images qu’une note affiche mais que cet appareil n’a pas.',
   regle:
     'Une note référence une image absente de la base locale — le symptôme d’une synchronisation incomplète.',
-  cles: 'image manquante absente cassee vide synchro',
+  /* PAS DE « SYNCHRO » ICI, et c'est une clé retirée, pas ajoutée.
+     Ce mot-là est le SYMPTÔME de cette logique, pas son sujet : il lui
+     faisait rafler toute question sur la synchronisation — « la
+     synchro, comment ça marche » répondait « toutes les images
+     référencées sont là », ce qui n'est pas faux et n'a aucun rapport.
+     Une clé trop large coûte toujours plus cher qu'une clé manquante. */
+  cles: 'image manquante absente cassee vide',
   chercher() {
     const { posts, espaces } = etat()
     const registre = registreImages()
@@ -1916,6 +2157,9 @@ const attachesAuxLignes: Script = {
 export const SCRIPTS: Script[] = [
   creerEspace,
   creerNote,
+  rangerNote,
+  renommer,
+  chercherDedans,
   supprimerEspace,
   supprimerNote,
   archiverNote,
@@ -2051,6 +2295,19 @@ export function chercherScriptEtScore(demande: string): { s: Script; score: numb
 
   let meilleur: { s: Script; score: number } | null = null
   for (const s of SCRIPTS) {
+    /* UNE CONSIGNE NE SE DEVINE JAMAIS PAR MOTS-CLÉS.
+
+       Elle a besoin d'un NOM pris dans la phrase — sans lui, elle ne
+       sait que répondre « dis-moi lequel », ce qui n'est une réponse à
+       rien. « D'où vient le titre d'une note » tombait ainsi sur
+       « Renommer », dont les clés portent « titre » et « note » : Atlas
+       réclamait un nouveau nom à une question qui n'en demandait aucun.
+
+       Une consigne s'atteint par sa TOURNURE — un verbe suivi de son
+       objet — ou d'un appui dans la liste des capacités. Jamais par
+       ressemblance : c'est le seul endroit du moteur où deviner ne peut
+       produire qu'une absurdité. */
+    if (s.consigne) continue
     const vocabulaire = motsDe(`${s.cles} ${s.nom}`)
     const score = mots.filter((m) => vocabulaire.some((v) => memeMot(m, v))).length
     if (score > 0 && (!meilleur || score > meilleur.score)) meilleur = { s, score }
@@ -2070,6 +2327,128 @@ export function chercherScriptEtScore(demande: string): { s: Script; score: numb
  */
 export function chercherConsigne(demande: string): Script | null {
   return SCRIPTS.find((s) => s.consigne?.test(demande)) ?? null
+}
+
+/* ---------------------------------------------------------------
+   CE DONT ON VIENT DE PARLER.
+
+   Une conversation se reconnaît à ceci : le tour précédent compte.
+   Sans mémoire, chaque phrase repart de zéro — Atlas nomme « Première
+   scène du port », on répond « supprime-la », et il ne sait pas de
+   quoi on parle. Il fallait renommer la chose en entier à chaque fois,
+   ce qui n'est plus une conversation mais une ligne de commande avec
+   des accents.
+
+   ── ON NE SE SOUVIENT QUE DE CE QUI EST SANS ÉQUIVOQUE
+
+   La reprise ne vaut que si UN SEUL élément a été nommé. Deux notes
+   montrées, « supprime-la » : n'importe quelle réponse serait un pari,
+   et parier sur une suppression est exactement ce qu'il ne faut pas
+   faire. Atlas redemande alors, plutôt que de choisir.
+
+   C'est aussi pourquoi la reprise est une RÉÉCRITURE de la demande et
+   non un état caché : la phrase reconstituée repasse par le même
+   chemin que si on l'avait tapée, et la carte qui revient nomme
+   l'élément en toutes lettres. On voit donc toujours ce qu'Atlas a
+   compris — il n'y a rien à croire sur parole.
+   --------------------------------------------------------------- */
+
+export type Reprise = { quoi: 'note' | 'espace'; nom: string }
+
+/**
+ * Ce qu'un résultat désigne, quand il ne désigne qu'une chose.
+ *
+ * On lit les ÉLÉMENTS, pas le titre : ce sont eux qui portent les
+ * identifiants réels, et le titre est une phrase — « 2 notes portent
+ * « Scène » » n'est le nom de rien.
+ */
+export function repriseDe(res: Resultat): Reprise | null {
+  if (res.sorte === 'rien' || res.elements.length !== 1) return null
+  const e = res.elements[0]
+
+  const post = etat().posts.find((p) => p.id === e.id && !p.supprime)
+  if (post) return { quoi: 'note', nom: titreDe(post) }
+  const espace = etat().espaces.find((x) => x.id === e.id && !x.supprime)
+  if (espace) return { quoi: 'espace', nom: espace.nom }
+
+  /* L'IDENTIFIANT PEUT NE DÉSIGNER ENCORE RIEN.
+
+     Une proposition de création porte un élément fictif — la chose
+     n'existe pas, elle est justement ce qu'on propose de faire naître.
+     Chercher son identifiant ne rend donc jamais rien, et la mémoire
+     restait vide exactement après le geste qui donne le plus envie
+     d'enchaîner : « crée une note X »… « range-la dans Y ».
+
+     On se rabat sur le NOM AFFICHÉ, qui est précisément celui qu'on
+     vient de donner. Il ne résout qu'après coup, une fois la création
+     faite — d'où la seconde mise à jour de la mémoire, côté
+     conversation, quand l'action a eu lieu. */
+  const parNom = etat().posts.find((p) => !p.supprime && titreDe(p) === e.libelle)
+  if (parNom) return { quoi: 'note', nom: titreDe(parNom) }
+  const espaceNom = etat().espaces.find((x) => !x.supprime && x.nom === e.libelle)
+  if (espaceNom) return { quoi: 'espace', nom: espaceNom.nom }
+
+  return null
+}
+
+/* Les pronoms qui reprennent une chose déjà nommée. « leur » et « lui »
+   n'y sont pas : ils désignent un destinataire, pas un objet, et
+   aucune consigne d'Atlas n'en a. */
+const PRONOM =
+  /(^|[\s-])(?:la|le|les|l['’]|[cs]a|ça|cela|ceci|celle|celui|celle-ci|celui-ci|celles-ci|ceux-ci)(?=[\s,.!?]|$)/i
+
+/**
+ * Remplace le pronom par ce dont on vient de parler.
+ *
+ * Trois garde-fous, et chacun a coûté un essai raté :
+ *
+ * · RIEN SI LA PHRASE NOMME DÉJÀ. « range la note Scène dans Roman
+ *   noir » contient « la » — le réécrire donnerait « range la note
+ *   Première scène note Scène dans Roman noir ».
+ * · RIEN SANS VERBE D'ACTION. « la synchro, comment ça marche » n'est
+ *   pas une reprise, c'est une question pour la bibliothèque.
+ * · LE SÉPARATEUR DEVIENT UNE ESPACE. « supprime-la » réécrit avec le
+ *   trait d'union donnerait « supprime-note Scène », que plus aucune
+ *   tournure ne reconnaît.
+ */
+/* Les verbes qui AGISSENT sur une chose — donc les seuls après
+   lesquels un pronom désigne un objet. Une seule définition : le jour
+   où « déplace » s'ajoute, il s'ajoute pour la réécriture ET pour la
+   question posée quand elle échoue, sans quoi les deux divergent en
+   silence. */
+const VERBES_ACTION = new RegExp(
+  `(?:^|\\b)(?:${VERBES_SUPPRIMER}|${VERBES_ARCHIVER}|${VERBES_RESTAURER}|${VERBES_RANGER}|${VERBES_RENOMMER})\\b`,
+  'i',
+)
+
+/** Une phrase qui reprend quelque chose au lieu de le nommer. */
+function estUneReprise(demande: string): boolean {
+  /* SI LA PHRASE NOMME DÉJÀ, CE N'EST PAS UNE REPRISE — et c'est le
+     garde-fou le plus important des trois. « range la note Scène du
+     quai dans Polar » contient « la » et « range » : sans cette
+     sortie, une phrase complète et sans ambiguïté était traitée comme
+     un pronom orphelin, et Atlas répondait « de quoi parles-tu ? » à
+     une demande qui disait tout. */
+  if (/\b(notes?|espaces?)\b/i.test(demande)) return false
+  if (!PRONOM.test(demande)) return false
+  return VERBES_ACTION.test(demande)
+}
+
+export function reprendre(demande: string, memoire: Reprise | null): string {
+  if (!memoire) return demande
+  if (!estUneReprise(demande)) return demande
+  return demande.replace(PRONOM, ` ${memoire.quoi} ${memoire.nom}`)
+}
+
+/**
+ * Un pronom sans rien à quoi le rattacher.
+ *
+ * Atlas demande alors, au lieu de choisir. C'est le même test que la
+ * réécriture, à la mémoire près : ce qui aurait été repris s'il y
+ * avait eu de quoi.
+ */
+export function repriseOrpheline(demande: string, memoire: Reprise | null): boolean {
+  return !memoire && estUneReprise(demande)
 }
 
 /** La même comparaison, pour reconnaître le nom d'une famille. */

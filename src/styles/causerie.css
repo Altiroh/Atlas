@@ -59,13 +59,57 @@
   margin-top: 12px;
 }
 
-/* Les deux réponses restent COLLÉES l'une à l'autre, à droite, pendant
-   que le lien vers la règle garde sa gauche. Sans cette marge, le
-   `space-between` répartirait les trois à intervalles égaux et
-   « Laisser » flotterait au milieu du pied, sans qu'on sache s'il
-   appartient à la règle ou à l'action. */
-.carte-atlas__pied .btn--ghost {
+/* La question à gauche, les deux réponses groupées à droite. Le
+   groupe wrappe d'un bloc quand la carte devient étroite — jamais un
+   bouton tout seul, qui laisserait son voisin orphelin sur la ligne
+   du dessus. */
+.carte-atlas__pied {
+  flex-wrap: wrap;
+}
+.carte-atlas__pied .lien {
+  white-space: nowrap;
+}
+
+.carte-atlas__actes {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   margin-left: auto;
+}
+.carte-atlas__actes .btn {
+  white-space: nowrap;
+}
+
+/* AU DOIGT, LES DEUX RÉPONSES PRENNENT TOUTE LA LARGEUR.
+
+   Un bouton de vingt-huit pixels de haut coincé entre deux voisins se
+   rate une fois sur trois, et « Laisser » comme « Supprimer » sont
+   précisément les deux qu'il ne faut pas confondre. On empile : la
+   question d'abord, sur sa ligne et sans césure, puis les deux
+   réponses à parts égales, hautes de quarante-six pixels. */
+@media (pointer: coarse) {
+  .carte-atlas__pied {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+  .carte-atlas__pied .lien {
+    align-self: flex-start;
+  }
+  .carte-atlas__actes {
+    margin-left: 0;
+    gap: 10px;
+  }
+  /* Le sélecteur porte le pied EN PLUS du groupe : `.carte-atlas__pied
+     .btn` fixe plus bas une hauteur de 36 px et une taille de 13 px, au
+     même poids et plus loin dans le fichier — à égalité, c'est le
+     dernier qui gagne. */
+  .carte-atlas__pied .carte-atlas__actes .btn {
+    flex: 1;
+    min-width: 0;
+    min-height: 46px;
+    font-size: 14px;
+  }
 }
 
 .carte-atlas__pied .btn {
@@ -493,6 +537,19 @@
   left: 0;
   width: 100%;
   max-width: none;
+  /* LA HAUTEUR AUSSI, ET C'EST ELLE QUI MANQUAIT.
+
+     Sur téléphone, la feuille montante fixe `height: 60dvh`. Or une
+     boîte en position fixe à laquelle on donne top, bottom ET height
+     est SUR-CONTRAINTE : la règle du calcul veut qu'on ignore
+     `bottom`. La pleine page prenait donc toute la largeur et
+     s'arrêtait aux six dixièmes de l'écran, la barre d'onglets et
+     l'écran de dessous restant visibles — exactement ce qu'elle
+     promettait de recouvrir.
+
+     `height: auto` rend la main à top et bottom. Ne pas la déclarer
+     revenait à croire que défaire `max-height` suffisait. */
+  height: auto;
   max-height: none;
   z-index: 90;
   border-radius: 0;

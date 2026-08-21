@@ -3,12 +3,16 @@ import {
   chercherConsigne,
   chercherFamille,
   chercherScriptEtScore,
+  reprendre,
+  repriseDe,
+  repriseOrpheline,
   FAMILLES,
   SCRIPTS,
   scriptParId,
   scriptsDe,
   type Annulation,
   type Famille,
+  type Reprise,
   type Resultat,
   type Script,
 } from '../store/scripts'
@@ -114,6 +118,16 @@ export function Causerie({ fermer }: { fermer: () => void }) {
      sort d'un même bouton, et l'état ne survit pas à la fermeture :
      rouvrir Atlas pour une question doit redonner la petite fenêtre. */
   const [plein, setPlein] = useState(false)
+
+  /* CE DONT ON VIENT DE PARLER — un souvenir, pas un état.
+
+     Il ne pilote rien : il sert uniquement à reconstituer une phrase
+     dans laquelle un pronom remplace un nom. Le reste du chemin est
+     identique à une phrase tapée en entier, et la carte qui revient
+     nomme l'élément en toutes lettres — on voit donc toujours ce
+     qu'Atlas a compris. Il ne survit pas à la fermeture : rouvrir la
+     conversation, c'est repartir sans sous-entendu. */
+  const [memoire, setMemoire] = useState<Reprise | null>(null)
   const [aConfirmer, setAConfirmer] = useState<{ tour: number; ids: string[] } | null>(null)
   const champ = useRef<HTMLInputElement>(null)
   const fin = useRef<HTMLDivElement>(null)
@@ -136,10 +150,40 @@ export function Causerie({ fermer }: { fermer: () => void }) {
        5. les SUJETS de la bibliothèque — « comment marche la
           synchro » n'a de sens que si rien ne peut être fait ;
        6. l'aveu d'incompréhension, jamais une devinette. */
-  const repondre = (demande: string) => {
-    const d = demande.trim()
-    if (!d) return
-    ajouter({ k: 'moi', texte: d })
+  /** Lance une logique ET retient ce dont son résultat parle. */
+  const jouer = (scriptId: string, demande?: string) => {
+    const tours = lancer(scriptId, demande)
+    const res = tours.find((t) => t.k === 'resultat')
+    if (res?.k === 'resultat') setMemoire(repriseDe(res.res))
+    ajouter(...tours)
+  }
+
+  const repondre = (brut: string) => {
+    const demande = brut.trim()
+    if (!demande) return
+    ajouter({ k: 'moi', texte: demande })
+
+    /* LA REPRISE D'ABORD, ET SUR LA PHRASE ENTIÈRE.
+
+       « supprime-la » devient « supprime note Première scène du port »
+       avant que quoi que ce soit d'autre ne la regarde. Tout le reste
+       du chemin ignore donc qu'il y a eu un pronom — il n'y a pas deux
+       façons de résoudre une demande, il n'y en a qu'une. */
+    const d = reprendre(demande, memoire)
+
+    /* Un pronom qu'on ne sait pas résoudre ne se devine pas : Atlas
+       demande, au lieu de choisir à notre place — surtout quand le
+       verbe supprime. Le test vit dans `scripts.ts`, avec celui de la
+       réécriture : deux listes de verbes qui divergent, et l'un des
+       deux chemins cesse un jour de reconnaître ce que l'autre
+       reconnaît, sans que rien ne le signale. */
+    if (repriseOrpheline(demande, memoire)) {
+      return ajouter({
+        k: 'dit',
+        texte:
+          'De quoi parles-tu ? Nomme-la — « supprime la note Première scène » — ou demande-moi de la trouver d’abord.',
+      })
+    }
 
     if (AIDE.test(d)) return ajouter({ k: 'capacites' })
 
@@ -175,8 +219,22 @@ export function Causerie({ fermer }: { fermer: () => void }) {
        demande. Deviner quand on a été explicite est la pire des
        réponses ; c'est exactement ce qui faisait dire à Atlas qu'il ne
        savait pas créer d'espace. */
+    /* UNE TOURNURE RECONNUE EN ENTIER PASSE DEVANT LA CONSIGNE.
+
+       « Tu peux supprimer une note ? » contient « supprimer une note »
+       — la tournure exacte d'une consigne. Atlas répondait donc
+       « dis-moi laquelle » à quelqu'un qui demandait s'il savait le
+       faire. Or la bibliothèque reconnaît cette phrase-là par un motif
+       ancré, qui vaut cent : c'est une certitude, pas une
+       ressemblance, et une certitude ne se fait pas doubler.
+
+       La règle « agir passe avant expliquer » tient toujours pour tout
+       le reste — elle ne vaut qu'entre deux devinettes. */
+    const parole = sujet(d)
+    if (parole && parole.score >= 100) return ajouter(bulle(parole.r))
+
     const consigne = chercherConsigne(d)
-    if (consigne) return ajouter(...lancer(consigne.id, d))
+    if (consigne) return jouer(consigne.id, d)
 
     /* Un seul mot qui nomme une famille : on déplie la famille plutôt
        que de lancer le premier script qui y ressemble. « Nettoie »
@@ -193,11 +251,10 @@ export function Causerie({ fermer }: { fermer: () => void }) {
        à cause de « ligne ». Un mot commun sur deux ne vaut pas deux
        mots communs sur deux — on compare donc les deux scores, et
        l'action ne l'emporte qu'à égalité. */
-    const parole = sujet(d)
     const action = chercherScriptEtScore(d)
 
     if (parole && (!action || parole.score > action.score)) return ajouter(bulle(parole.r))
-    if (action) return ajouter(...lancer(action.s.id))
+    if (action) return jouer(action.s.id)
     if (parole) return ajouter(bulle(parole.r))
 
     /* L'aveu porte maintenant des pistes plutôt qu'une liste de
@@ -212,6 +269,15 @@ export function Causerie({ fermer }: { fermer: () => void }) {
     const t = tours[index]
     if (t?.k !== 'resultat' || t.res.sorte !== 'proposition') return
     const annulation = t.res.faire(ids)
+
+    /* UNE SECONDE FOIS, MAINTENANT QUE LA CHOSE EXISTE.
+       Au moment où la carte s'affiche, une création ne désigne rien
+       encore. Elle désigne quelque chose une fois faite — et c'est
+       précisément là qu'on veut pouvoir dire « range-la ». On ne
+       remplace jamais par du vide : une lecture qui échoue laisse le
+       souvenir précédent en place. */
+    const suite = repriseDe(t.res)
+    if (suite) setMemoire(suite)
     setTours((avant) => {
       const suite = [...avant]
       suite[index] = { ...t, fait: `${ids.length} traité${ids.length > 1 ? 's' : ''}` }
@@ -309,7 +375,7 @@ export function Causerie({ fermer }: { fermer: () => void }) {
             tour={t}
             demander={repondre}
             demanderTheme={(theme) => ajouter({ k: 'theme', theme })}
-            ouvrir={(id) => ajouter(...lancer(id))}
+            ouvrir={(id) => jouer(id)}
             regle={(id) => ajouter({ k: 'regle', scriptId: id })}
             cocher={(id) => cocher(i, id)}
             ecarter={() => ecarter(i)}
@@ -664,12 +730,23 @@ function ResultatRendu({
 
       {res.sorte === 'constat' && res.note && <p className="carte-atlas__note">{res.note}</p>}
 
+      {/* LE PIED EN DEUX ÉTAGES.
+
+          Les trois enfants se partageaient une seule ligne. Dans un
+          panneau de quatre cent soixante pixels — et plus encore sur
+          un téléphone — « sur quelle règle ? » passait à la ligne au
+          milieu de lui-même, « Laisser » se retrouvait coincé entre
+          deux voisins, et le verbe de l'action se cassait en deux. Une
+          question et deux réponses ne sont pas trois éléments de même
+          nature : la question se pose au-dessus, les réponses se
+          répondent côte à côte en dessous. */}
       <div className="carte-atlas__pied">
         {s && (
           <button className="lien" onClick={() => regle(s.id)}>
             sur quelle règle ?
           </button>
         )}
+
         {/* LAISSER, PUIS FAIRE — dans cet ordre.
 
             Le refus est à GAUCHE et sans couleur, l'action à droite et
@@ -677,19 +754,19 @@ function ResultatRendu({
             trouver l'entrée, pas l'inverse. C'est encore plus vrai
             quand l'action est une suppression. */}
         {proposition && !fait && (
-          <button className="btn btn--ghost" onClick={ecarter}>
-            Laisser
-          </button>
-        )}
-        {proposition && !fait && (
-          <button
-            className={res.danger ? 'btn btn--detruire' : 'btn btn--accent'}
-            disabled={!pris.length}
-            onClick={() => agir(pris, Boolean(res.danger))}
-          >
-            {res.verbe(pris.length)}
-            <IconChevron size={14} style={{ transform: 'rotate(180deg)' }} />
-          </button>
+          <div className="carte-atlas__actes">
+            <button className="btn btn--ghost" onClick={ecarter}>
+              Laisser
+            </button>
+            <button
+              className={res.danger ? 'btn btn--detruire' : 'btn btn--accent'}
+              disabled={!pris.length}
+              onClick={() => agir(pris, Boolean(res.danger))}
+            >
+              {res.verbe(pris.length)}
+              <IconChevron size={14} style={{ transform: 'rotate(180deg)' }} />
+            </button>
+          </div>
         )}
         {fait && <span className="carte-atlas__fait">{fait}</span>}
       </div>

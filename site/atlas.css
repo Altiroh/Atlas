@@ -1529,3 +1529,115 @@ table.tableau { width: 100%; min-width: 680px; border-collapse: collapse; font-s
   .fil { display: none; }
   :root.js .maq.revele { transform: none; }
 }
+
+/* ========================================================
+   31. Le bandeau de pied
+
+   Le pied était translucide : posé sur le même fond que le reste,
+   avec un simple filet au-dessus. Résultat, la page ne se termine
+   pas — elle s'arrête. Il devient donc un VRAI bandeau : un panneau
+   sombre en pleine largeur, avec son propre halo, qui ferme le
+   document d'un bloc.
+
+   Il est sombre dans les deux thèmes, et c'est volontaire : un pied
+   qui change de valeur avec le thème cesse d'être un point d'appui.
+   ======================================================== */
+
+.pied {
+  position: relative;
+  overflow: hidden;
+  margin-top: clamp(56px, 8vw, 110px);
+  padding-block: clamp(52px, 7vw, 92px) 0;
+  border-top: 0;
+  background: #0b0d12;
+  color: #f0f2f7;
+
+  /* Les valeurs du texte sont redéfinies une fois pour toutes, plutôt
+     que repeintes élément par élément. */
+  --text: #f0f2f7;
+  --text-2: #a3abbd;
+  --text-3: #767d90;
+  --border: rgba(255, 255, 255, 0.1);
+  --border-strong: rgba(255, 255, 255, 0.18);
+  --surface: rgba(255, 255, 255, 0.05);
+  --surface-strong: rgba(255, 255, 255, 0.09);
+  --surface-solid: #14171f;
+  --surface-sunken: rgba(255, 255, 255, 0.045);
+  --sheen: rgba(255, 255, 255, 0.14);
+  --accent-text: hsl(var(--accent-h) var(--accent-s) calc(var(--accent-l) + 10%));
+  --shadow-sm: 0 2px 10px rgba(0, 0, 0, 0.4);
+}
+
+/* Le halo, teinté par l'accent comme partout ailleurs. Il vient du
+   bas : c'est la dernière lueur avant la fin de la page. */
+.pied::before {
+  content: '';
+  position: absolute;
+  left: 50%;
+  bottom: -46%;
+  width: 130%;
+  aspect-ratio: 2 / 1;
+  transform: translateX(-50%);
+  background: radial-gradient(circle at 50% 50%,
+    hsl(var(--accent-h) var(--accent-s) 52% / 0.26), transparent 62%);
+  pointer-events: none;
+}
+
+/* L'arête haute : un cheveu de lumière qui détache le bandeau du
+   contenu, exactement comme sur les surfaces en verre. */
+.pied::after {
+  content: '';
+  position: absolute;
+  inset: 0 0 auto;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.18) 30%,
+    rgba(255, 255, 255, 0.18) 70%, transparent);
+  pointer-events: none;
+}
+
+.pied > .contenu { position: relative; z-index: 1; }
+
+.pied .grain { opacity: 0.05; z-index: 1; }
+
+/* --- le mot en grand, qui sort par le bas --- */
+
+/* La signature de fin. Elle n'a rien à lire : elle donne au bandeau
+   son poids et coupe court à l'impression de page qui s'interrompt.
+   Le bas du mot est coupé — un mot entier flotterait au milieu d'une
+   marge, un mot coupé appartient au bord. */
+.pied__geant {
+  position: relative;
+  z-index: 1;
+  margin-top: clamp(30px, 5vw, 56px);
+  margin-bottom: -0.24em;
+  font-size: clamp(88px, 23vw, 330px);
+  font-weight: 680;
+  letter-spacing: -0.065em;
+  line-height: 0.78;
+  text-align: center;
+  color: #fff;
+  opacity: 0.07;
+  user-select: none;
+  pointer-events: none;
+}
+
+.pied__bas { margin-bottom: 0; }
+
+/* Le halo du bandeau se lit mal derrière une bordure claire : le
+   filet interne reprend la valeur du bandeau, pas celle de la page. */
+.pied .filet { background: rgba(255, 255, 255, 0.16); opacity: 1; }
+
+/* En thème nuit, la page est déjà à #0b0d12 : un bandeau de la même
+   valeur serait invisible, et le pied redeviendrait ce qu'on vient de
+   corriger. Il passe donc au-DESSUS du fond au lieu d'en dessous —
+   un panneau soulevé plutôt qu'un trou. */
+:root[data-theme='dark'] .pied {
+  background: #161a23;
+  --surface-solid: #1c212c;
+  --surface-sunken: rgba(255, 255, 255, 0.05);
+}
+
+:root[data-theme='dark'] .pied::after {
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.12) 30%,
+    rgba(255, 255, 255, 0.12) 70%, transparent);
+}

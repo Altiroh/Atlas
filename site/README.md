@@ -124,13 +124,20 @@ Deux règles à tenir :
 - **aucune photo** : les images sont des aplats dégradés déduits de l'accent. Une fausse
   photo attire l'œil sur elle et détourne du sujet.
 
-## Les deux valeurs à remplacer
+## Les appels à l'action
 
-- **L'adresse de l'app** — `https://atlas.vercel.app`, sur chaque page :
-  ```bash
-  sed -i 's|https://atlas.vercel.app|https://ADRESSE-REELLE|g' site/*.html
-  ```
-- **L'adresse de contact** — `bonjour@atlas.fr`, dans `infos.html` (section `#contact`).
+**Le site ne propose nulle part d'ouvrir l'app.** Tous les appels — l'en-tête, l'ouverture,
+les plans, le pied de page — mènent au **bac à sable** de l'accueil (`index.html#essayer`).
+C'est le seul endroit où Atlas se manifeste vraiment, et ça évite d'envoyer quelqu'un sur
+une adresse qui n'existe pas encore.
+
+Le jour où l'app sera en ligne, il y aura un seul endroit par page à rebrancher : l'appel de
+l'en-tête, reconnaissable à sa classe `entete__cta`. Les autres appels peuvent rester sur le
+bac à sable — essayer avant d'ouvrir un compte reste le meilleur chemin.
+
+## L'adresse de contact
+
+`bonjour@atlas.fr`, dans `infos.html` (section `#contact`) — à remplacer par la vraie boîte.
 
 ## Les plans affichés
 
@@ -187,3 +194,15 @@ contenu.
 | `[data-compte]` | Le nombre monte une fois, quand il entre à l'écran |
 | `.fil` | Une ligne de deux pixels sous l'en-tête, qui suit le défilement |
 | Le bac à sable | L'idée gardée descend, l'idée archivée glisse et se referme |
+
+## Le bandeau de pied
+
+Le pied n'est pas une rangée de liens sur le fond de la page : c'est un **panneau opaque en
+pleine largeur**, avec son halo teinté par l'accent, son grain, un cheveu de lumière sur
+l'arête haute, et le mot « Atlas » en très grand qui sort par le bas. C'est lui qui ferme le
+document.
+
+Il est sombre dans les deux thèmes, mais **pas de la même valeur** : en thème clair il est à
+, en thème nuit à . Reprendre la même valeur qu'en clair le rendrait
+invisible sur un fond de page déjà noir — le pied redeviendrait alors ce qu'on vient de
+corriger.

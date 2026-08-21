@@ -314,11 +314,95 @@ const BIBLIOTHEQUE: Entree[] = [
       suites: ['La sélection multiple'],
     }),
   },
+  /* ============ ce qu'on peut me DIRE DE FAIRE ============
+
+     Ces trois entrées documentent les consignes — les logiques qui
+     agissent sur ce qu'on nomme dans la phrase. Sans elles, tout ce
+     vocabulaire existe et ne se découvre pas : personne ne tente
+     « range-la dans Roman noir » devant un champ vide s'il n'a jamais
+     lu que c'était possible. Une capacité qu'on ne peut pas deviner
+     n'existe qu'à moitié. */
+  {
+    id: 'consignes-quoi',
+    theme: 'atlas',
+    question: 'Tu peux créer des choses pour moi ?',
+    cles: 'consigne ordre dire creer fabriquer commande demander',
+    /* UN MOTIF, PAS DES CLÉS PLUS FINES.
+
+       « Tu peux créer des choses pour moi » partage le mot « créer »
+       avec « Un espace à naître », et à égalité de score c'est l'action
+       qui l'emporte : Atlas répondait « aucun sujet ne revient assez
+       pour mériter son espace » à quelqu'un qui demandait ce qu'il
+       savait faire. Une tournure reconnue en entier vaut cent, et
+       coupe court à l'arbitrage. */
+    motif: /tu (peux|sais).{0,24}(cr[ée]er|fabriquer|ajouter)/i,
+    repond: () => ({
+      texte:
+        'Oui, si tu me dis quoi. « Crée un espace Roman noir », « crée une note Première scène dans Roman noir » — je fabrique avec le nom exact que tu donnes, et jamais avant que tu aies validé la carte.',
+      suites: ['Tu peux supprimer et archiver ?', 'Tu te souviens de ce dont on parle ?'],
+    }),
+  },
+  {
+    id: 'consignes-defaire',
+    theme: 'atlas',
+    question: 'Tu peux supprimer et archiver ?',
+    cles: 'supprimer archiver ressortir defaire renommer ranger consigne',
+    motif: /tu (peux|sais).{0,24}(supprimer|effacer|archiver|renommer|ranger|classer)/i,
+    repond: () => ({
+      texte:
+        'Oui : « supprime la note X », « archive la note X », « ressors la note X », « range la note X dans Y », « renomme l’espace X en Y ». Une seule de ces cinq ne se défait pas — la suppression — et c’est la seule qui te demande de confirmer. Si plusieurs choses portent le nom que tu donnes, je les montre toutes et je n’en coche aucune : c’est à toi de désigner.',
+      suites: ['Tu te souviens de ce dont on parle ?'],
+    }),
+  },
+  {
+    id: 'consignes-reprise',
+    theme: 'atlas',
+    question: 'Tu te souviens de ce dont on parle ?',
+    cles: 'souvenir memoire reprise pronom enchainer suite contexte',
+    motif: /tu te (souviens|rappelles)|tu gardes le fil|de quoi on parl/i,
+    repond: () => ({
+      texte:
+        'D’un tour à l’autre, oui. Si je viens de nommer une seule chose, tu peux enchaîner sans la renommer : « range-la dans Roman noir », « archive-la », « supprime-la ». Si j’en ai nommé plusieurs, je ne devine pas — je te redemande. Et je ne garde rien après la fermeture : rouvrir la conversation, c’est repartir sans sous-entendu.',
+    }),
+  },
+  {
+    id: 'chercher-dedans-comment',
+    theme: 'capturer',
+    question: 'Tu peux retrouver ce que j’ai écrit ?',
+    cles: 'chercher trouver retrouver recherche fouiller contenu',
+    motif: /tu (peux|sais).{0,24}(retrouver|chercher|trouver|fouiller)/i,
+    repond: () => ({
+      texte:
+        'Demande-moi « qu’est-ce que j’ai sur le port » ou « cherche phare ». Je regarde les titres ET le contenu de toutes les formes — fiches, cartes, planches, tables, chronologies — archives comprises, et je te dis lesquelles sont archivées.',
+      suites: ['Tu peux supprimer et archiver ?'],
+    }),
+  },
+
+  /* ============ récupérer ses données ============ */
+  {
+    id: 'exporter-comment',
+    theme: 'garder',
+    question: 'Comment j’exporte mes notes ?',
+    cles: 'exporter export markdown telecharger copier recuperer sortir emporter',
+    repond: () => ({
+      texte:
+        'En markdown, par trois portes : une note s’exporte depuis son propre menu, un espace entier depuis la liste des espaces, et tout d’un coup depuis les réglages. Le markdown se relit dans n’importe quel éditeur de texte — c’est la promesse : ce que tu écris ici reste lisible sans moi.',
+      suites: ['Et si je veux tout effacer ?'],
+    }),
+  },
+
   {
     id: 'titre-comment',
     theme: 'capturer',
     question: 'D’où vient le titre d’une note ?',
-    cles: 'titre nommer nom note',
+    cles: 'titre nommer nom intitule note',
+    /* « Éclater une note » porte « titres » dans ses clés et « note »
+       dans son nom : deux mots communs, donc égalité, donc l'action
+       gagnait — et Atlas répondait « aucune note assez longue pour être
+       découpée » à une question sur les titres. La tournure est fixe,
+       on la reconnaît en entier plutôt que de raboter les clés d'une
+       logique qui, elle, n'a rien demandé. */
+    motif: /d.o[ùu] vient (le |son )?titre|(le )?titre d.une note/i,
     repond: () => ({
       texte:
         'De sa première ligne, tant que tu n’en écris pas un. Un titre qu’il faut remplir avant d’écrire, c’est un formulaire — et un formulaire, à l’instant où l’idée tombe, c’est une idée perdue.',
